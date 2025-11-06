@@ -159,6 +159,9 @@
 }
 
 .link-button {
+  display: block;
+  width: 100%;
+  text-align: left;
   background: none;
   border: none;
   color: #2563eb;
