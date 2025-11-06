@@ -19,8 +19,8 @@ const Header: React.FC = () => {
       <div className="header-content">
         <div className="header-left">
           <div className="logo">
-            <h1>DDMSU</h1>
-            <span className="logo-subtitle">Data Driven Management System for Universities</span>
+            <h1>STIVS</h1>
+            <span className="logo-subtitle">Scientific and Technical Information Visualization System</span>
           </div>
         </div>
 
