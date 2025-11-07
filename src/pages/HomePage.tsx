@@ -141,6 +141,18 @@ const HomePage: React.FC = () => {
               <option value="kaznu">KazNU</option>
               <option value="enu">ENU</option>
             </select>
+            <select defaultValue="priority" aria-label="Приоритетные направления развития науки">
+              <option value="priority">Все приоритеты</option>
+              <option value="energy">Энергия, передовые материалы и транспорт</option>
+              <option value="advanced-tech">Передовое производство, цифровые и космические технологии</option>
+              <option value="intellect-natural">"Интеллектуальный потенциал страны" (Естественные науки)</option>
+              <option value="intellect-social">"Интеллектуальный потенциал страны" (Социальные, гуманитарные науки и искусство)</option>
+              <option value="agriculture">Устойчивое развитие агропромышленного комплекса</option>
+              <option value="life-health">Наука о жизни и здоровье</option>
+              <option value="security">Национальная безопасность и оборона, биологическая безопасность</option>
+              <option value="commercialization">Коммерциализация результатов научной и (или) научно-технической деятельности</option>
+              <option value="ecology">Экология, окружающая среда и рациональное природопользование</option>
+            </select>
           </div>
 
           <div className="map-panel">
