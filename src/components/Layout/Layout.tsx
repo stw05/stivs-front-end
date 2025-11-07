@@ -14,7 +14,7 @@ const Layout: React.FC = () => {
       </main>
       <footer className="footer">
         <div className="container">
-          <p style={{ color: 'white' }}>Copyright © 2022 Lorem All Rights Reserved</p>
+          <p>Copyright © 2022 Lorem All Rights Reserved</p>
         </div>
       </footer>
     </div>

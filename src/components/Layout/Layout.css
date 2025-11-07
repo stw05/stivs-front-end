@@ -17,19 +17,20 @@
 }
 
 .footer {
-  background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
-  color: #f8fafc;
-  padding: 1.25rem 0;
+  background: linear-gradient(135deg, #0b1f44 0%, #1e3a8a 55%, #2563eb 100%);
+  color: #ffffff;
+  padding: 1.5rem 0;
   text-align: center;
   margin-top: auto;
-  box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.15);
+  box-shadow: 0 -18px 38px rgba(15, 23, 42, 0.18);
 }
 
 .footer p {
   margin: 0;
-  font-size: 0.9rem;
-  letter-spacing: 0.04em;
-  opacity: 0.9;
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  opacity: 0.96;
+  color: #ffffff;
 }
 
 @media (max-width: 768px) {
