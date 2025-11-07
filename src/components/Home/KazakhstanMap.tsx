@@ -1,13 +1,11 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import clsx from 'clsx';
 import { geoMercator, geoPath } from 'd3-geo';
 import type { Feature, FeatureCollection } from 'geojson';
 import './KazakhstanMap.css';
 import { regionsData } from './regionsData';
 import type { RegionType } from './regionsData';
-import mapGeoJsonRaw from '../../assets/geo/kazakhstan-adm1.geojson?raw';
-
-const featureCollectionData = JSON.parse(mapGeoJsonRaw) as FeatureCollection;
+import mapGeoJsonUrl from '../../assets/geo/kazakhstan-adm1.geojson?url';
 
 interface KazakhstanMapProps {
   selectedRegionId: string;
@@ -26,16 +24,55 @@ type MapFeature = {
 
 const KazakhstanMap: React.FC<KazakhstanMapProps> = ({ selectedRegionId, onRegionSelect }) => {
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
+  const [featureCollection, setFeatureCollection] = useState<FeatureCollection | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadGeoJson = async () => {
+      try {
+        const response = await fetch(mapGeoJsonUrl);
+        if (!response.ok) {
+          throw new Error('Не удалось загрузить данные карты');
+        }
+
+        const data = (await response.json()) as FeatureCollection;
+        if (isActive) {
+          setFeatureCollection(data);
+        }
+      } catch (error) {
+        if (isActive) {
+          setLoadError(error instanceof Error ? error.message : 'Ошибка загрузки карты');
+        }
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadGeoJson();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   const regionLookup = useMemo(() => {
     return new Map(regionsData.map((region) => [region.id, region]));
   }, []);
 
   const mapFeatures = useMemo(() => {
-    const projection = geoMercator().fitSize([820, 560], featureCollectionData);
+    if (!featureCollection) {
+      return [];
+    }
+
+    const projection = geoMercator().fitSize([820, 560], featureCollection);
     const pathGenerator = geoPath(projection);
 
-    return featureCollectionData.features
+    return featureCollection.features
       .map((feature) => {
         const props = feature.properties as Feature['properties'] & {
           id?: string;
@@ -65,17 +102,15 @@ const KazakhstanMap: React.FC<KazakhstanMapProps> = ({ selectedRegionId, onRegio
         } satisfies MapFeature;
       })
       .filter((item): item is MapFeature => item !== null);
-  }, [regionLookup]);
+  }, [featureCollection, regionLookup]);
 
-  const regionFeatures = useMemo(
-    () => mapFeatures.filter((feature) => feature.type === 'region'),
-    [mapFeatures],
-  );
+  const regionFeatures = useMemo(() => {
+    return mapFeatures.filter((feature) => feature.type === 'region');
+  }, [mapFeatures]);
 
-  const cityFeatures = useMemo(
-    () => mapFeatures.filter((feature) => feature.type === 'city'),
-    [mapFeatures],
-  );
+  const cityFeatures = useMemo(() => {
+    return mapFeatures.filter((feature) => feature.type === 'city');
+  }, [mapFeatures]);
 
   const handleSelect = useCallback(
     (regionId: string) => {
@@ -151,6 +186,26 @@ const KazakhstanMap: React.FC<KazakhstanMapProps> = ({ selectedRegionId, onRegio
     },
     [handleSelect, hoveredRegion, selectedRegionId],
   );
+
+  if (isLoading) {
+    return (
+      <div className="map-loading" role="status" aria-live="polite">
+        Загрузка карты...
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="map-error" role="alert">
+        {loadError}
+      </div>
+    );
+  }
+
+  if (!featureCollection) {
+    return null;
+  }
 
   return (
     <svg
