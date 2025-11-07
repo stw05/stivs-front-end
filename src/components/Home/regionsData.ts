@@ -30,22 +30,24 @@ export interface RegionMetrics {
   };
 }
 
+export type RegionType = 'region' | 'city';
+
 export interface RegionShape {
   id: string;
   name: string;
   shortName: string;
-  path: string;
-  labelPosition: { x: number; y: number };
+  type: RegionType;
+  labelOffset?: { x: number; y: number };
   stats: RegionMetrics;
 }
 
 export const regionsData: RegionShape[] = [
   {
-    id: 'wko',
+    id: 'west-kazakhstan',
     name: 'Западно-Казахстанская область',
     shortName: 'ЗКО',
-    path: 'M120 280 L200 236 L250 256 L240 316 L170 332 L126 306 Z',
-    labelPosition: { x: 180, y: 290 },
+    type: 'region',
+  labelOffset: { x: -3.3, y: -20 },
     stats: {
       projects: { total: 420, grants: 150, programs: 110, contracts: 95, commercialization: 65, avgDuration: 22 },
       publications: { total: 880, journals: 320, conferences: 190, books: 90, other: 280 },
@@ -57,8 +59,8 @@ export const regionsData: RegionShape[] = [
     id: 'atyrau',
     name: 'Атырауская область',
     shortName: 'АТЫ',
-    path: 'M150 348 L222 334 L260 360 L244 408 L184 404 L146 374 Z',
-    labelPosition: { x: 205, y: 370 },
+    type: 'region',
+  labelOffset: { x: -7.4, y: -14.9 },
     stats: {
       projects: { total: 365, grants: 120, programs: 90, contracts: 85, commercialization: 70, avgDuration: 20 },
       publications: { total: 620, journals: 210, conferences: 140, books: 70, other: 200 },
@@ -70,8 +72,8 @@ export const regionsData: RegionShape[] = [
     id: 'mangystau',
     name: 'Мангистауская область',
     shortName: 'МАН',
-    path: 'M126 412 L188 408 L226 436 L210 480 L154 474 L126 444 Z',
-    labelPosition: { x: 182, y: 440 },
+    type: 'region',
+  labelOffset: { x: -11.9, y: -16.1 },
     stats: {
       projects: { total: 280, grants: 95, programs: 70, contracts: 62, commercialization: 53, avgDuration: 18 },
       publications: { total: 470, journals: 155, conferences: 110, books: 55, other: 150 },
@@ -83,8 +85,8 @@ export const regionsData: RegionShape[] = [
     id: 'aktobe',
     name: 'Актюбинская область',
     shortName: 'АКТ',
-    path: 'M240 264 L326 224 L382 244 L366 312 L282 322 L238 300 Z',
-    labelPosition: { x: 310, y: 270 },
+    type: 'region',
+  labelOffset: { x: 7.7, y: -18.3 },
     stats: {
       projects: { total: 510, grants: 180, programs: 130, contracts: 110, commercialization: 90, avgDuration: 24 },
       publications: { total: 920, journals: 330, conferences: 210, books: 110, other: 270 },
@@ -96,8 +98,8 @@ export const regionsData: RegionShape[] = [
     id: 'kostanay',
     name: 'Костанайская область',
     shortName: 'КОС',
-    path: 'M340 210 L408 176 L470 196 L450 246 L382 250 L338 234 Z',
-    labelPosition: { x: 405, y: 210 },
+    type: 'region',
+  labelOffset: { x: 2.4, y: -28.1 },
     stats: {
       projects: { total: 480, grants: 160, programs: 135, contracts: 105, commercialization: 80, avgDuration: 23 },
       publications: { total: 860, journals: 300, conferences: 190, books: 95, other: 275 },
@@ -109,8 +111,8 @@ export const regionsData: RegionShape[] = [
     id: 'north-kazakhstan',
     name: 'Северо-Казахстанская область',
     shortName: 'СКО',
-    path: 'M452 180 L526 158 L562 192 L544 234 L472 226 L448 206 Z',
-    labelPosition: { x: 510, y: 200 },
+    type: 'region',
+  labelOffset: { x: 15, y: -16 },
     stats: {
       projects: { total: 390, grants: 145, programs: 105, contracts: 80, commercialization: 60, avgDuration: 21 },
       publications: { total: 780, journals: 270, conferences: 170, books: 82, other: 258 },
@@ -122,8 +124,8 @@ export const regionsData: RegionShape[] = [
     id: 'akmola',
     name: 'Акмолинская область',
     shortName: 'АКМ',
-    path: 'M420 238 L478 224 L524 244 L512 290 L444 298 L406 276 Z',
-    labelPosition: { x: 470, y: 270 },
+    type: 'region',
+  labelOffset: { x: -3.1, y: -21.2 },
     stats: {
       projects: { total: 540, grants: 190, programs: 145, contracts: 120, commercialization: 85, avgDuration: 25 },
       publications: { total: 940, journals: 340, conferences: 220, books: 120, other: 260 },
@@ -135,8 +137,8 @@ export const regionsData: RegionShape[] = [
     id: 'pavlodar',
     name: 'Павлодарская область',
     shortName: 'ПАВ',
-    path: 'M548 204 L618 190 L656 224 L636 272 L572 262 L536 238 Z',
-    labelPosition: { x: 610, y: 235 },
+    type: 'region',
+  labelOffset: { x: 2.7, y: -28.2 },
     stats: {
       projects: { total: 470, grants: 155, programs: 130, contracts: 95, commercialization: 90, avgDuration: 24 },
       publications: { total: 910, journals: 320, conferences: 210, books: 108, other: 272 },
@@ -148,8 +150,8 @@ export const regionsData: RegionShape[] = [
     id: 'east-kazakhstan',
     name: 'Восточно-Казахстанская область',
     shortName: 'ВКО',
-    path: 'M636 272 L700 246 L748 284 L734 340 L672 334 L626 310 Z',
-    labelPosition: { x: 690, y: 300 },
+    type: 'region',
+  labelOffset: { x: 2, y: -19.4 },
     stats: {
       projects: { total: 600, grants: 210, programs: 165, contracts: 130, commercialization: 95, avgDuration: 26 },
       publications: { total: 1120, journals: 380, conferences: 260, books: 140, other: 340 },
@@ -161,8 +163,8 @@ export const regionsData: RegionShape[] = [
     id: 'abai',
     name: 'Абайская область',
     shortName: 'АБАЙ',
-    path: 'M630 320 L678 318 L714 352 L694 394 L640 386 L616 346 Z',
-    labelPosition: { x: 665, y: 360 },
+    type: 'region',
+  labelOffset: { x: 12, y: -29.2 },
     stats: {
       projects: { total: 350, grants: 120, programs: 95, contracts: 68, commercialization: 67, avgDuration: 23 },
       publications: { total: 640, journals: 220, conferences: 150, books: 72, other: 198 },
@@ -174,8 +176,8 @@ export const regionsData: RegionShape[] = [
     id: 'jetisu',
     name: 'Жетысуская область',
     shortName: 'ЖТС',
-    path: 'M588 358 L634 350 L666 388 L642 432 L598 428 L572 384 Z',
-    labelPosition: { x: 620, y: 400 },
+    type: 'region',
+  labelOffset: { x: 8.9, y: -15.5 },
     stats: {
       projects: { total: 320, grants: 110, programs: 88, contracts: 62, commercialization: 60, avgDuration: 22 },
       publications: { total: 590, journals: 205, conferences: 135, books: 68, other: 182 },
@@ -187,8 +189,8 @@ export const regionsData: RegionShape[] = [
     id: 'almaty',
     name: 'Алматинская область',
     shortName: 'АЛМ',
-    path: 'M540 372 L592 362 L616 404 L588 448 L540 440 L520 398 Z',
-    labelPosition: { x: 566, y: 412 },
+    type: 'region',
+    labelOffset: { x: -25, y: -15 },
     stats: {
       projects: { total: 580, grants: 205, programs: 150, contracts: 120, commercialization: 105, avgDuration: 25 },
       publications: { total: 990, journals: 340, conferences: 230, books: 120, other: 300 },
@@ -200,8 +202,8 @@ export const regionsData: RegionShape[] = [
     id: 'zhambyl',
     name: 'Жамбылская область',
     shortName: 'ЖАМ',
-    path: 'M494 392 L540 382 L568 426 L536 470 L486 458 L470 418 Z',
-    labelPosition: { x: 518, y: 436 },
+    type: 'region',
+  labelOffset: { x: 5.9, y: -11.5 },
     stats: {
       projects: { total: 410, grants: 145, programs: 112, contracts: 86, commercialization: 67, avgDuration: 21 },
       publications: { total: 720, journals: 250, conferences: 180, books: 85, other: 205 },
@@ -213,8 +215,8 @@ export const regionsData: RegionShape[] = [
     id: 'turkistan',
     name: 'Туркестанская область',
     shortName: 'ТРК',
-    path: 'M438 378 L500 360 L526 402 L498 440 L446 434 L420 398 Z',
-    labelPosition: { x: 476, y: 394 },
+    type: 'region',
+  labelOffset: { x: -0.6, y: -24 },
     stats: {
       projects: { total: 640, grants: 230, programs: 170, contracts: 130, commercialization: 110, avgDuration: 24 },
       publications: { total: 1080, journals: 360, conferences: 260, books: 130, other: 330 },
@@ -226,8 +228,8 @@ export const regionsData: RegionShape[] = [
     id: 'kyzylorda',
     name: 'Кызылординская область',
     shortName: 'КЫЗ',
-    path: 'M360 354 L420 332 L452 368 L420 404 L362 402 L336 372 Z',
-    labelPosition: { x: 396, y: 368 },
+    type: 'region',
+  labelOffset: { x: 0.5, y: -21.7 },
     stats: {
       projects: { total: 398, grants: 138, programs: 104, contracts: 78, commercialization: 78, avgDuration: 22 },
       publications: { total: 670, journals: 230, conferences: 160, books: 82, other: 198 },
@@ -239,8 +241,8 @@ export const regionsData: RegionShape[] = [
     id: 'ulytau',
     name: 'Улытауская область',
     shortName: 'УЛЫ',
-    path: 'M326 320 L388 302 L420 332 L392 364 L336 354 L310 332 Z',
-    labelPosition: { x: 366, y: 332 },
+    type: 'region',
+  labelOffset: { x: -11.1, y: -27 },
     stats: {
       projects: { total: 285, grants: 98, programs: 76, contracts: 58, commercialization: 53, avgDuration: 20 },
       publications: { total: 520, journals: 180, conferences: 120, books: 60, other: 160 },
@@ -252,8 +254,8 @@ export const regionsData: RegionShape[] = [
     id: 'karaganda',
     name: 'Карагандинская область',
     shortName: 'КАР',
-    path: 'M344 264 L420 240 L470 272 L450 326 L372 330 L330 300 Z',
-    labelPosition: { x: 400, y: 286 },
+    type: 'region',
+  labelOffset: { x: -15.2, y: -24.7 },
     stats: {
       projects: { total: 690, grants: 240, programs: 200, contracts: 150, commercialization: 100, avgDuration: 26 },
       publications: { total: 1180, journals: 400, conferences: 270, books: 150, other: 360 },
@@ -265,8 +267,8 @@ export const regionsData: RegionShape[] = [
     id: 'astana',
     name: 'Город Астана',
     shortName: 'АСТ',
-    path: 'M466 298 L488 292 L504 312 L480 324 L462 312 Z',
-    labelPosition: { x: 482, y: 312 },
+    type: 'city',
+    labelOffset: { x: 0, y: -16 },
     stats: {
       projects: { total: 520, grants: 190, programs: 150, contracts: 110, commercialization: 70, avgDuration: 24 },
       publications: { total: 960, journals: 340, conferences: 230, books: 120, other: 270 },
@@ -278,8 +280,8 @@ export const regionsData: RegionShape[] = [
     id: 'almaty-city',
     name: 'Город Алматы',
     shortName: 'АЛМГ',
-    path: 'M592 436 L612 430 L626 452 L602 464 L586 446 Z',
-    labelPosition: { x: 606, y: 452 },
+    type: 'city',
+    labelOffset: { x: 0, y: -13 },
     stats: {
       projects: { total: 640, grants: 220, programs: 185, contracts: 140, commercialization: 95, avgDuration: 25 },
       publications: { total: 1320, journals: 450, conferences: 310, books: 170, other: 390 },
@@ -291,8 +293,8 @@ export const regionsData: RegionShape[] = [
     id: 'shymkent',
     name: 'Город Шымкент',
     shortName: 'ШЫМ',
-    path: 'M448 420 L480 412 L498 442 L466 462 L440 446 Z',
-    labelPosition: { x: 468, y: 444 },
+    type: 'city',
+    labelOffset: { x: 0, y: -16 },
     stats: {
       projects: { total: 520, grants: 185, programs: 165, contracts: 110, commercialization: 60, avgDuration: 23 },
       publications: { total: 960, journals: 330, conferences: 240, books: 120, other: 270 },

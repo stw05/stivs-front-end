@@ -40,6 +40,23 @@
   letter-spacing: 0.05em;
 }
 
+.city-marker {
+  fill: rgba(59, 130, 246, 0.95);
+  stroke: #bfdbfe;
+  stroke-width: 2;
+  transition: fill 0.2s ease, transform 0.2s ease, stroke 0.2s ease;
+}
+
+.city-marker.hovered {
+  fill: rgba(147, 197, 253, 0.95);
+}
+
+.city-marker.selected {
+  fill: #2563eb;
+  stroke: #60a5fa;
+  transform: scale(1.05);
+}
+
 @media (max-width: 1024px) {
   .map-svg {
     max-width: 100%;
