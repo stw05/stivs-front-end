@@ -19,8 +19,8 @@ const Header: React.FC = () => {
       <div className="header-content">
         <div className="header-left">
           <div className="logo">
-            <h1>STIVS</h1>
-            <span className="logo-subtitle">Scientific and Technical Information Visualization System</span>
+            <h1>UISKS</h1>
+            <span className="logo-subtitle">Unified information system "Kazakhstan Science"</span>
           </div>
         </div>
 
