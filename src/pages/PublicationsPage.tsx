@@ -60,7 +60,8 @@ interface SortState {
 
 // --- 3. Компонент страницы ---
 const PublicationsPage: React.FC = () => {
-  const { selectedRegionId, regions, setSelectedRegionId } = useRegionContext();
+const { selectedRegionId, regions, setSelectedRegionId } = useRegionContext();
+//обновил запрос 
   const [filters, setFilters] = useState<PublicationFilters>({
     searchTerm: '',
     startDate: '2000-01-01', // Установка широкого диапазона по умолчанию
