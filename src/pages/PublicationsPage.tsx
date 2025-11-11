@@ -24,6 +24,7 @@ interface Publication {
   regionId: RegionId;
 }
 
+// УВЕЛИЧЕННОЕ КОЛИЧЕСТВО ЗАПИСЕЙ (10)
 const mockPublications: Publication[] = [
   { id: 'p1', authorName: 'Иванов И.И.', totalPublications: 45, hIndex: 12, latestPublicationTitle: 'Квантовые алгоритмы', latestPublicationDate: '2023-11-01', department: 'Кафедра А', affiliateType: 'staff', direction: 'tech', institute: 'ИИТ', chair: 'КМ', regionId: 'almaty-city' },
   { id: 'p2', authorName: 'Петрова А.К.', totalPublications: 88, hIndex: 21, latestPublicationTitle: 'Методы социологии', latestPublicationDate: '2024-03-15', department: 'Кафедра B', affiliateType: 'staff', direction: 'social', institute: 'ИГУМ', chair: 'СИ', regionId: 'west-kazakhstan' },
@@ -31,6 +32,8 @@ const mockPublications: Publication[] = [
   { id: 'p4', authorName: 'Касымов Р.Ж.', totalPublications: 120, hIndex: 35, latestPublicationTitle: 'Новые материалы', latestPublicationDate: '2023-05-10', department: 'Кафедра А', affiliateType: 'staff', direction: 'science', institute: 'ИИТ', chair: 'ХТ', regionId: 'almaty-city' },
   { id: 'p5', authorName: 'Ахметова З.М.', totalPublications: 8, hIndex: 3, latestPublicationTitle: 'Педагогические основы', latestPublicationDate: '2024-01-25', department: 'Кафедра C', affiliateType: 'staff', direction: 'social', institute: 'ИПЕД', chair: 'ПТ', regionId: 'west-kazakhstan' },
   { id: 'p6', authorName: 'Нурланов Б.К.', totalPublications: 3, hIndex: 1, latestPublicationTitle: 'Блокчейн в финансах', latestPublicationDate: '2024-04-05', department: 'Внештатно', affiliateType: 'external', direction: 'tech', institute: 'ИИТ', chair: 'КМ', regionId: 'astana-city' },
+  
+  // НОВЫЕ ЗАПИСИ
   { id: 'p7', authorName: 'Султанова Г.Р.', totalPublications: 60, hIndex: 18, latestPublicationTitle: 'Моделирование систем', latestPublicationDate: '2023-10-10', department: 'Кафедра D', affiliateType: 'staff', direction: 'tech', institute: 'ИИТ', chair: 'ИС', regionId: 'almaty-city' },
   { id: 'p8', authorName: 'Абишев К.Т.', totalPublications: 22, hIndex: 7, latestPublicationTitle: 'Экономический рост', latestPublicationDate: '2024-02-01', department: 'НИИ Экономики', affiliateType: 'external', direction: 'social', institute: 'ИГУМ', chair: 'ИС', regionId: 'astana-city' },
   { id: 'p9', authorName: 'Мұсаев Е.А.', totalPublications: 155, hIndex: 40, latestPublicationTitle: 'Передовая физика', latestPublicationDate: '2023-07-28', department: 'Кафедра E', affiliateType: 'staff', direction: 'science', institute: 'ИФМ', chair: 'ФМ', regionId: 'shymkent-city' },
@@ -60,8 +63,9 @@ interface SortState {
 
 // --- 3. Компонент страницы ---
 const PublicationsPage: React.FC = () => {
-const { selectedRegionId, regions, setSelectedRegionId } = useRegionContext();
-//обновил запрос 
+  // ИСПРАВЛЕНИЕ: Теперь все три переменные используются, что устранит ошибку TS6133
+  const { selectedRegionId, regions, setSelectedRegionId } = useRegionContext(); 
+  
   const [filters, setFilters] = useState<PublicationFilters>({
     searchTerm: '',
     startDate: '2000-01-01', // Установка широкого диапазона по умолчанию
@@ -95,8 +99,10 @@ const { selectedRegionId, regions, setSelectedRegionId } = useRegionContext();
     let list = mockPublications;
     const { searchTerm, department, affiliateType, direction, institute, chair, startDate, endDate } = filters;
 
-    // 1. Фильтрация по региону
-
+    // 1. Фильтрация по региону (Использует selectedRegionId)
+    if (selectedRegionId !== 'national') {
+      list = list.filter((p) => p.regionId === selectedRegionId);
+    }
     
     // 2. Фильтрация по периоду (latestPublicationDate)
     const startTimestamp = new Date(startDate).getTime();
@@ -105,8 +111,9 @@ const { selectedRegionId, regions, setSelectedRegionId } = useRegionContext();
     if (startDate && endDate) {
         list = list.filter(p => {
             const pubDateTimestamp = new Date(p.latestPublicationDate).getTime();
-            // Сравниваем только дату (без времени), поэтому просто >= и <= должно работать
-            return pubDateTimestamp >= startTimestamp && pubDateTimestamp <= endTimestamp;
+            // Добавляем один день к конечной дате, чтобы включить весь день
+            const adjustedEndTimestamp = endTimestamp + 86400000; 
+            return pubDateTimestamp >= startTimestamp && pubDateTimestamp < adjustedEndTimestamp;
         });
     }
 
@@ -208,6 +215,25 @@ const { selectedRegionId, regions, setSelectedRegionId } = useRegionContext();
                 onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
               />
             </div>
+          </div>
+          
+          {/* Фильтр региона (ИСПОЛЬЗУЕТ regions и setSelectedRegionId) */}
+          <div className="sidebar-section">
+            <label htmlFor="region-filter" className="filter-label">Фильтр по региону</label>
+            <select
+              id="region-filter"
+              value={selectedRegionId} 
+              onChange={(e) => setSelectedRegionId(e.target.value as RegionId)} 
+              className="sidebar-select"
+            >
+              <option value="national">Все регионы</option>
+              {/* regions используется для создания списка опций */}
+              {regions.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
           </div>
           
           {/* СЕКЦИЯ: ПЕРИОД ПУБЛИКАЦИИ */}
@@ -365,7 +391,6 @@ const { selectedRegionId, regions, setSelectedRegionId } = useRegionContext();
                     <td className="actions-column">
                       <div className="actions-buttons">
                         <button onClick={() => handleAction(`Просмотр ${pub.id}`)} title="Просмотр">
-                           {/* Вы можете добавить иконки Eye, Pencil, Trash2, как на странице "Сотрудники" */}
                            Просмотр
                         </button>
                       </div>
