@@ -10,8 +10,8 @@ const Header: React.FC = () => {
     { path: '/', label: 'Главная' },
     { path: '/projects', label: 'Проекты' },
     { path: '/employees', label: 'Сотрудники' },
-    { path: '/publications', label: 'Публикации' },
     { path: '/finances', label: 'Финансы' },
+    { path: '/publications', label: 'Результаты' },
   ];
 
   return (
