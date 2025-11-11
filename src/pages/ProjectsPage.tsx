@@ -8,10 +8,25 @@ import {
   Plus,
   Search,
   Trash2,
+  ArrowUpDown,
 } from 'lucide-react';
 import './ProjectsPage.css';
 
+// --- ТИПЫ ДАННЫХ ---
 type ProjectStatus = 'completed' | 'in-progress' | 'overdue';
+type FundingType = 'government' | 'program' | 'commercial' | 'all';
+type FundingPriority =
+  | 'energy'
+  | 'production'
+  | 'natural_sciences'
+  | 'social_sciences'
+  | 'agriculture'
+  | 'health'
+  | 'security'
+  | 'commercialization'
+  | 'ecology'
+  | 'all';
+type OrganizationType = 'ovpo' | 'nii' | 'private' | 'all';
 
 interface ProjectRecord {
   id: string;
@@ -24,202 +39,70 @@ interface ProjectRecord {
   nirContractNumber: string;
   customer: string;
   status: ProjectStatus;
+  fundingType: FundingType;
+  fundingPriority: FundingPriority;
+  organizationType: OrganizationType;
 }
 
+interface SidebarFilters {
+  fundingType: FundingType;
+  fundingPriority: FundingPriority;
+  organizationType: OrganizationType;
+}
+
+// --- ДАННЫЕ ПРОЕКТОВ (Обновлены для демо-фильтров) ---
 const projectsData: ProjectRecord[] = [
   {
-    id: 'p-1',
-    order: 1,
-    name: 'Тест проект 1',
-    contractNumber: '5365',
-    startDate: '2022-08-15T02:03:00',
-    endDate: '2022-10-20T08:00:00',
-    irnId: '423',
-    nirContractNumber: '440207',
-    customer: 'ТОО «Тест»',
-    status: 'completed',
+    id: 'p-1', order: 1, name: 'Тест проект 1', contractNumber: '5365', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '423', nirContractNumber: '440207', customer: 'ТОО «Тест»', status: 'completed', fundingType: 'government', fundingPriority: 'energy', organizationType: 'ovpo',
   },
   {
-    id: 'p-2',
-    order: 2,
-    name: 'Тест проект 2',
-    contractNumber: '6578',
-    startDate: '2022-08-15T02:03:00',
-    endDate: '2022-10-20T08:00:00',
-    irnId: '578',
-    nirContractNumber: '654377',
-    customer: 'ТОО «Нуртан»',
-    status: 'overdue',
+    id: 'p-2', order: 2, name: 'Тест проект 2', contractNumber: '6578', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '578', nirContractNumber: '654377', customer: 'ТОО «Нуртан»', status: 'overdue', fundingType: 'program', fundingPriority: 'production', organizationType: 'nii',
   },
   {
-    id: 'p-3',
-    order: 3,
-    name: 'Тест проект 3',
-    contractNumber: '6578',
-    startDate: '2022-08-15T02:03:00',
-    endDate: '2022-10-20T08:00:00',
-    irnId: '578',
-    nirContractNumber: '654377',
-    customer: 'ТОО «Нуртан»',
-    status: 'in-progress',
+    id: 'p-3', order: 3, name: 'Тест проект 3', contractNumber: '6578', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '578', nirContractNumber: '654377', customer: 'ТОО «Нуртан»', status: 'in-progress', fundingType: 'commercial', fundingPriority: 'natural_sciences', organizationType: 'private',
   },
   {
-    id: 'p-4',
-    order: 4,
-    name: 'Тест проект 4',
-    contractNumber: '5365',
-    startDate: '2022-08-15T02:03:00',
-    endDate: '2022-10-20T08:00:00',
-    irnId: '423',
-    nirContractNumber: '440207',
-    customer: 'ТОО «Тест»',
-    status: 'completed',
+    id: 'p-4', order: 4, name: 'Тест проект 4', contractNumber: '5365', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '423', nirContractNumber: '440207', customer: 'ТОО «Тест»', status: 'completed', fundingType: 'government', fundingPriority: 'social_sciences', organizationType: 'ovpo',
   },
   {
-    id: 'p-5',
-    order: 5,
-    name: 'Тест проект 5',
-    contractNumber: '6578',
-    startDate: '2022-08-15T02:03:00',
-    endDate: '2022-10-20T08:00:00',
-    irnId: '578',
-    nirContractNumber: '654377',
-    customer: 'ТОО «Нуртан»',
-    status: 'overdue',
+    id: 'p-5', order: 5, name: 'Тест проект 5', contractNumber: '6578', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '578', nirContractNumber: '654377', customer: 'ТОО «Нуртан»', status: 'overdue', fundingType: 'program', fundingPriority: 'agriculture', organizationType: 'nii',
   },
   {
-    id: 'p-6',
-    order: 6,
-    name: 'Тест проект 6',
-    contractNumber: '6578',
-    startDate: '2022-08-15T02:03:00',
-    endDate: '2022-10-20T08:00:00',
-    irnId: '578',
-    nirContractNumber: '654377',
-    customer: 'ТОО «Нуртан»',
-    status: 'in-progress',
+    id: 'p-6', order: 6, name: 'Тест проект 6', contractNumber: '6578', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '578', nirContractNumber: '654377', customer: 'ТОО «Нуртан»', status: 'in-progress', fundingType: 'commercial', fundingPriority: 'health', organizationType: 'private',
   },
   {
-    id: 'p-7',
-    order: 7,
-    name: 'Тест проект 7',
-    contractNumber: '6578',
-    startDate: '2022-08-15T02:03:00',
-    endDate: '2022-10-20T08:00:00',
-    irnId: '578',
-    nirContractNumber: '654377',
-    customer: 'ТОО «Нуртан»',
-    status: 'in-progress',
+    id: 'p-7', order: 7, name: 'Тест проект 7', contractNumber: '6578', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '578', nirContractNumber: '654377', customer: 'ТОО «Нуртан»', status: 'in-progress', fundingType: 'government', fundingPriority: 'security', organizationType: 'ovpo',
   },
   {
-    id: 'p-8',
-    order: 8,
-    name: 'Тест проект 8',
-    contractNumber: '5365',
-    startDate: '2022-08-15T02:03:00',
-    endDate: '2022-10-20T08:00:00',
-    irnId: '423',
-    nirContractNumber: '440207',
-    customer: 'ТОО «Тест»',
-    status: 'completed',
+    id: 'p-8', order: 8, name: 'Тест проект 8', contractNumber: '5365', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '423', nirContractNumber: '440207', customer: 'ТОО «Тест»', status: 'completed', fundingType: 'program', fundingPriority: 'commercialization', organizationType: 'nii',
   },
   {
-    id: 'p-9',
-    order: 9,
-    name: 'Тест проект 9',
-    contractNumber: '6578',
-    startDate: '2022-08-15T02:03:00',
-    endDate: '2022-10-20T08:00:00',
-    irnId: '578',
-    nirContractNumber: '654377',
-    customer: 'ТОО «Нуртан»',
-    status: 'overdue',
+    id: 'p-9', order: 9, name: 'Тест проект 9', contractNumber: '6578', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '578', nirContractNumber: '654377', customer: 'ТОО «Нуртан»', status: 'overdue', fundingType: 'commercial', fundingPriority: 'ecology', organizationType: 'private',
   },
   {
-    id: 'p-10',
-    order: 10,
-    name: 'Тест проект 10',
-    contractNumber: '6578',
-    startDate: '2022-08-15T02:03:00',
-    endDate: '2022-10-20T08:00:00',
-    irnId: '578',
-    nirContractNumber: '654377',
-    customer: 'ТОО «Нуртан»',
-    status: 'in-progress',
+    id: 'p-10', order: 10, name: 'Тест проект 10', contractNumber: '6578', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '578', nirContractNumber: '654377', customer: 'ТОО «Нуртан»', status: 'in-progress', fundingType: 'government', fundingPriority: 'energy', organizationType: 'ovpo',
   },
   {
-    id: 'p-11',
-    order: 11,
-    name: 'Тест проект 11',
-    contractNumber: '6578',
-    startDate: '2022-08-15T02:03:00',
-    endDate: '2022-10-20T08:00:00',
-    irnId: '578',
-    nirContractNumber: '654377',
-    customer: 'ТОО «Нуртан»',
-    status: 'overdue',
+    id: 'p-11', order: 11, name: 'Тест проект 11', contractNumber: '6578', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '578', nirContractNumber: '654377', customer: 'ТОО «Нуртан»', status: 'overdue', fundingType: 'program', fundingPriority: 'production', organizationType: 'nii',
   },
   {
-    id: 'p-12',
-    order: 12,
-    name: 'Тест проект 12',
-    contractNumber: '6578',
-    startDate: '2022-08-15T02:03:00',
-    endDate: '2022-10-20T08:00:00',
-    irnId: '578',
-    nirContractNumber: '654377',
-    customer: 'ТОО «Нуртан»',
-    status: 'in-progress',
+    id: 'p-12', order: 12, name: 'Тест проект 12', contractNumber: '6578', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '578', nirContractNumber: '654377', customer: 'ТОО «Нуртан»', status: 'in-progress', fundingType: 'commercial', fundingPriority: 'natural_sciences', organizationType: 'private',
   },
   {
-    id: 'p-13',
-    order: 13,
-    name: 'Тест проект 13',
-    contractNumber: '5365',
-    startDate: '2022-08-15T02:03:00',
-    endDate: '2022-10-20T08:00:00',
-    irnId: '423',
-    nirContractNumber: '440207',
-    customer: 'ТОО «Тест»',
-    status: 'completed',
+    id: 'p-13', order: 13, name: 'Тест проект 13', contractNumber: '5365', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '423', nirContractNumber: '440207', customer: 'ТОО «Тест»', status: 'completed', fundingType: 'government', fundingPriority: 'social_sciences', organizationType: 'ovpo',
   },
   {
-    id: 'p-14',
-    order: 14,
-    name: 'Тест проект 14',
-    contractNumber: '5365',
-    startDate: '2022-08-15T02:03:00',
-    endDate: '2022-10-20T08:00:00',
-    irnId: '423',
-    nirContractNumber: '440207',
-    customer: 'ТОО «Тест»',
-    status: 'completed',
+    id: 'p-14', order: 14, name: 'Тест проект 14', contractNumber: '5365', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '423', nirContractNumber: '440207', customer: 'ТОО «Тест»', status: 'completed', fundingType: 'program', fundingPriority: 'agriculture', organizationType: 'nii',
   },
   {
-    id: 'p-15',
-    order: 15,
-    name: 'Тест проект 15',
-    contractNumber: '5365',
-    startDate: '2022-08-15T02:03:00',
-    endDate: '2022-10-20T08:00:00',
-    irnId: '423',
-    nirContractNumber: '440207',
-    customer: 'ТОО «Тест»',
-    status: 'completed',
+    id: 'p-15', order: 15, name: 'Тест проект 15', contractNumber: '5365', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '423', nirContractNumber: '440207', customer: 'ТОО «Тест»', status: 'completed', fundingType: 'commercial', fundingPriority: 'health', organizationType: 'private',
   },
   {
-    id: 'p-16',
-    order: 16,
-    name: 'Тест проект 16',
-    contractNumber: '6578',
-    startDate: '2022-08-15T02:03:00',
-    endDate: '2022-10-20T08:00:00',
-    irnId: '578',
-    nirContractNumber: '654377',
-    customer: 'ТОО «Нуртан»',
-    status: 'overdue',
+    id: 'p-16', order: 16, name: 'Тест проект 16', contractNumber: '6578', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '578', nirContractNumber: '654377', customer: 'ТОО «Нуртан»', status: 'overdue', fundingType: 'government', fundingPriority: 'security', organizationType: 'ovpo',
   },
 ];
+
+// --- ДАННЫЕ ДЛЯ ФИЛЬТРОВ ---
 
 const statusLabels: Record<ProjectStatus, string> = {
   completed: 'Завершён',
@@ -236,6 +119,60 @@ const statusFilterOptions: { value: StatusFilter; label: string }[] = [
   { value: 'completed', label: 'Завершённые' },
 ];
 
+const fundingTypeOptions: { value: FundingType; label: string }[] = [
+  { value: 'all', label: 'Все типы' },
+  { value: 'government', label: 'ГФ (Грантовое финансирование)' },
+  { value: 'program', label: 'ПЦФ (Программно-целевое финансирование)' },
+  { value: 'commercial', label: 'Коммерциализация' },
+];
+
+const fundingPriorityOptions: { value: FundingPriority; label: string }[] = [
+  { value: 'all', label: 'Все приоритеты' },
+  {
+    value: 'energy',
+    label: 'Энергия, передовые материалы и транспорт',
+  },
+  {
+    value: 'production',
+    label: 'Передовое производство, цифровые и космические технологии',
+  },
+  {
+    value: 'natural_sciences',
+    label:
+      'Интеллектуальный потенциал страны (Естественные науки)',
+  },
+  {
+    value: 'social_sciences',
+    label:
+      'Интеллектуальный потенциал страны (Социальные, гуманитарные науки и искусство)',
+  },
+  { value: 'agriculture', label: 'Устойчивое развитие агропромышленного комплекса' },
+  { value: 'health', label: 'Наука о жизни и здоровье' },
+  {
+    value: 'security',
+    label:
+      'Национальная безопасность и оборона, биологическая безопасность',
+  },
+  {
+    value: 'commercialization',
+    label:
+      'Коммерциализация результатов научной и (или) научно-технической деятельности',
+  },
+  {
+    value: 'ecology',
+    label: 'Экология, окружающая среда и рациональное природопользование',
+  },
+];
+
+const organizationTypeOptions: { value: OrganizationType; label: string }[] = [
+  { value: 'all', label: 'Все типы организаций' },
+  { value: 'ovpo', label: 'ОВПО' },
+  { value: 'nii', label: 'НИИ' },
+  { value: 'private', label: 'Частные организации' },
+];
+
+// --- КОНСТАНТЫ И ФУНКЦИИ ФОРМАТИРОВАНИЯ ---
+
 const ITEMS_PER_PAGE = 10;
 
 const formatDate = (value: string) =>
@@ -247,9 +184,16 @@ const formatDate = (value: string) =>
     minute: '2-digit',
   }).format(new Date(value));
 
+// --- ГЛАВНЫЙ КОМПОНЕНТ ---
+
 const ProjectsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [sidebarFilters, setSidebarFilters] = useState<SidebarFilters>({
+    fundingType: 'all',
+    fundingPriority: 'all',
+    organizationType: 'all',
+  });
   const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
@@ -261,6 +205,31 @@ const ProjectsPage: React.FC = () => {
 
   const exportMenuRef = useRef<HTMLDivElement | null>(null);
   const notify = (message: string) => console.info(message);
+
+  // --- МЕТОДЫ ОБНОВЛЕНИЯ СОСТОЯНИЯ ---
+
+  const handleSidebarFilterChange = <
+    K extends keyof SidebarFilters,
+    V extends SidebarFilters[K],
+  >(
+    key: K,
+    value: V,
+  ) => {
+    setSidebarFilters((prev) => ({ ...prev, [key]: value }));
+    setCurrentPage(1); // Сбросить страницу при изменении фильтров
+  };
+
+  const handleStatusFilterChange = (value: StatusFilter) => {
+    setStatusFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value);
+    setCurrentPage(1);
+  };
+
+  // --- МЕТОДЫ ВЫЧИСЛЕНИЯ (useMemo) ---
 
   const totals = useMemo(() => {
     return projectsData.reduce(
@@ -280,10 +249,14 @@ const ProjectsPage: React.FC = () => {
 
   const filteredProjects = useMemo(() => {
     const normalizedQuery = searchTerm.trim().toLowerCase();
+    const { fundingType, fundingPriority, organizationType } = sidebarFilters;
+
     return projectsData.filter((project) => {
+      // 1. Фильтр по статусу (Чипсы)
       const matchesStatus =
         statusFilter === 'all' ? true : project.status === statusFilter;
 
+      // 2. Поиск по тексту
       const matchesSearch =
         normalizedQuery.length === 0
           ? true
@@ -298,11 +271,38 @@ const ProjectsPage: React.FC = () => {
               .toLowerCase()
               .includes(normalizedQuery);
 
-      return matchesStatus && matchesSearch;
-    });
-  }, [searchTerm, statusFilter]);
+      // 3. Фильтр Боковой панели: Тип финансирования
+      const matchesFundingType =
+        fundingType === 'all' ? true : project.fundingType === fundingType;
 
-  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / ITEMS_PER_PAGE));
+      // 4. Фильтр Боковой панели: Приоритет финансирования
+      const matchesFundingPriority =
+        fundingPriority === 'all'
+          ? true
+          : project.fundingPriority === fundingPriority;
+
+      // 5. Фильтр Боковой панели: Тип организации
+      const matchesOrganizationType =
+        organizationType === 'all'
+          ? true
+          : project.organizationType === organizationType;
+
+      return (
+        matchesStatus &&
+        matchesSearch &&
+        matchesFundingType &&
+        matchesFundingPriority &&
+        matchesOrganizationType
+      );
+    });
+  }, [searchTerm, statusFilter, sidebarFilters]);
+
+  // --- МЕТОДЫ ПАГИНАЦИИ И ВЫБОРА ---
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredProjects.length / ITEMS_PER_PAGE),
+  );
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -322,24 +322,7 @@ const ProjectsPage: React.FC = () => {
     );
   }, [paginatedProjects, selectedProjects]);
 
-  useEffect(() => {
-    // Close export dropdown on outside click
-    const handleClickOutside = (event: MouseEvent) => {
-      if (!isExportMenuOpen) {
-        return;
-      }
-      if (
-        exportMenuRef.current &&
-        event.target instanceof Node &&
-        !exportMenuRef.current.contains(event.target)
-      ) {
-        setIsExportMenuOpen(false);
-      }
-    };
-
-    window.addEventListener('mousedown', handleClickOutside);
-    return () => window.removeEventListener('mousedown', handleClickOutside);
-  }, [isExportMenuOpen]);
+  // --- МЕТОДЫ ВЫБОРА ---
 
   const toggleProjectSelection = (projectId: string) => {
     setSelectedProjects((prev) => {
@@ -367,15 +350,15 @@ const ProjectsPage: React.FC = () => {
     });
   };
 
-  const handleStatusFilterChange = (value: StatusFilter) => {
-    setStatusFilter(value);
-    setCurrentPage(1);
+  const selectedCount = selectedProjects.size;
+
+  const summaryText = `Отфильтровано: ${filteredProjects.length} из ${projectsData.length}`;
+
+  const handlePlaceholderAction = (action: string, project: ProjectRecord) => {
+    notify(`${action} — ${project.name}`);
   };
 
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
-    setCurrentPage(1);
-  };
+  // --- МЕТОДЫ ЭКСПОРТА ---
 
   const exportAllSelected = exportStatuses.length === 3;
 
@@ -393,14 +376,6 @@ const ProjectsPage: React.FC = () => {
     );
   };
 
-  const selectedCount = selectedProjects.size;
-
-  const summaryText = `Отфильтровано: ${filteredProjects.length} из ${projectsData.length}`;
-
-  const handlePlaceholderAction = (action: string, project: ProjectRecord) => {
-    notify(`${action} — ${project.name}`);
-  };
-
   const handleExport = (mode: 'preview' | 'download') => {
     notify(
       `${mode === 'preview' ? 'Предпросмотр' : 'Скачивание'} — выбрано ${selectedCount} проектов, статусы: ${exportStatuses
@@ -410,9 +385,122 @@ const ProjectsPage: React.FC = () => {
     setIsExportMenuOpen(false);
   };
 
+  // --- useEffect для закрытия экспорта по клику вне элемента ---
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!isExportMenuOpen) {
+        return;
+      }
+      if (
+        exportMenuRef.current &&
+        event.target instanceof Node &&
+        !exportMenuRef.current.contains(event.target)
+      ) {
+        setIsExportMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('mousedown', handleClickOutside);
+    return () => window.removeEventListener('mousedown', handleClickOutside);
+  }, [isExportMenuOpen]);
+
+  // --- РЕНДЕР КОМПОНЕНТА ---
+
   return (
     <div className="projects-page">
-      <section className="projects-card">
+      {/* 1. Секция Фильтров (ГОРИЗОНТАЛЬНАЯ ПАНЕЛЬ) */}
+      <section className="projects-card projects-filter-panel">
+        <aside className="projects-sidebar projects-sidebar--inline">
+          {/* СЕКЦИЯ: Типы финансирования */}
+          <div className="sidebar-section">
+            <label htmlFor="funding-type-filter" className="filter-label">
+              ТИПЫ ФИНАНСИРОВАНИЯ
+            </label>
+            <select
+              id="funding-type-filter"
+              value={sidebarFilters.fundingType}
+              onChange={(e) =>
+                handleSidebarFilterChange(
+                  'fundingType',
+                  e.target.value as FundingType,
+                )
+              }
+              className="sidebar-select"
+            >
+              {fundingTypeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* СЕКЦИЯ: Приоритеты финансирования */}
+          <div className="sidebar-section">
+            <label htmlFor="priority-filter" className="filter-label">
+              ПРИОРИТЕТЫ ФИНАНСИРОВАНИЯ
+            </label>
+            <select
+              id="priority-filter"
+              value={sidebarFilters.fundingPriority}
+              onChange={(e) =>
+                handleSidebarFilterChange(
+                  'fundingPriority',
+                  e.target.value as FundingPriority,
+                )
+              }
+              className="sidebar-select"
+            >
+              {fundingPriorityOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* СЕКЦИЯ: Типы организаций */}
+          <div className="sidebar-section">
+            <label htmlFor="organization-filter" className="filter-label">
+              ТИПЫ ОРГАНИЗАЦИЙ
+            </label>
+            <select
+              id="organization-filter"
+              value={sidebarFilters.organizationType}
+              onChange={(e) =>
+                handleSidebarFilterChange(
+                  'organizationType',
+                  e.target.value as OrganizationType,
+                )
+              }
+              className="sidebar-select"
+            >
+              {organizationTypeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            type="button"
+            className="projects-button projects-button--default sidebar-button"
+            onClick={() => {
+              notify(
+                'Фильтры применены. (Логика уже работает через select onChange)',
+              );
+            }}
+          >
+            <ArrowUpDown size={20} />
+            Сортировать / Применить
+          </button>
+        </aside>
+      </section>
+
+      {/* 2. Секция Заголовка и Кнопок */}
+      <section className="projects-card projects-header-panel">
         <div className="projects-page__headline">
           <div className="projects-page__title-block">
             <h1 className="projects-page__title">Проекты</h1>
@@ -424,15 +512,24 @@ const ProjectsPage: React.FC = () => {
                 Всего
                 <strong>{totals.total}</strong>
               </span>
-              <span className="projects-stat-pill" style={{ background: 'rgba(37, 99, 235, 0.08)', color: '#2563eb' }}>
+              <span
+                className="projects-stat-pill"
+                style={{ background: 'rgba(37, 99, 235, 0.08)', color: '#2563eb' }}
+              >
                 В работе
                 <strong>{totals['in-progress']}</strong>
               </span>
-              <span className="projects-stat-pill" style={{ background: 'rgba(244, 63, 94, 0.12)', color: '#dc2626' }}>
+              <span
+                className="projects-stat-pill"
+                style={{ background: 'rgba(244, 63, 94, 0.12)', color: '#dc2626' }}
+              >
                 Просрочено
                 <strong>{totals.overdue}</strong>
               </span>
-              <span className="projects-stat-pill" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#047857' }}>
+              <span
+                className="projects-stat-pill"
+                style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#047857' }}
+              >
                 Завершено
                 <strong>{totals.completed}</strong>
               </span>
@@ -474,7 +571,9 @@ const ProjectsPage: React.FC = () => {
                     </label>
                     <span>{totals.total}</span>
                   </div>
-                  {(['in-progress', 'overdue', 'completed'] as ProjectStatus[]).map((status) => (
+                  {(
+                    ['in-progress', 'overdue', 'completed'] as ProjectStatus[]
+                  ).map((status) => (
                     <div className="projects-export-menu__option" key={status}>
                       <label>
                         <input
@@ -488,10 +587,18 @@ const ProjectsPage: React.FC = () => {
                     </div>
                   ))}
                   <div className="projects-export-menu__footer">
-                    <button type="button" onClick={() => handleExport('preview')}>
+                    <button
+                      type="button"
+                      onClick={() => handleExport('preview')}
+                      disabled={exportStatuses.length === 0}
+                    >
                       Показать
                     </button>
-                    <button type="button" onClick={() => handleExport('download')}>
+                    <button
+                      type="button"
+                      onClick={() => handleExport('download')}
+                      disabled={exportStatuses.length === 0}
+                    >
                       Скачать
                     </button>
                   </div>
@@ -510,7 +617,8 @@ const ProjectsPage: React.FC = () => {
         </div>
       </section>
 
-      <section className="projects-card">
+      {/* 3. Секция Поиска и Чипсов */}
+      <section className="projects-card projects-toolbar-panel">
         <div className="projects-page__toolbar">
           <div className="projects-search">
             <Search size={18} />
@@ -538,6 +646,7 @@ const ProjectsPage: React.FC = () => {
         </div>
       </section>
 
+      {/* 4. Секция Таблицы */}
       <section className="projects-card projects-table-card">
         <div className="projects-page__summary-bar">
           <span className="projects-page__summary-text">{summaryText}</span>
@@ -574,13 +683,18 @@ const ProjectsPage: React.FC = () => {
             <tbody>
               {paginatedProjects.map((project, index) => {
                 const isSelected = selectedProjects.has(project.id);
-                const rowNumber = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
+                const rowNumber =
+                  (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
                 return (
                   <tr
                     key={project.id}
-                    className={clsx('projects-row', `projects-row--${project.status}`, {
-                      'projects-row--selected': isSelected,
-                    })}
+                    className={clsx(
+                      'projects-row',
+                      `projects-row--${project.status}`,
+                      {
+                        'projects-row--selected': isSelected,
+                      },
+                    )}
                   >
                     <td>
                       <input
@@ -608,21 +722,27 @@ const ProjectsPage: React.FC = () => {
                       <div className="projects-actions">
                         <button
                           type="button"
-                          onClick={() => handlePlaceholderAction('Карточка проекта', project)}
+                          onClick={() =>
+                            handlePlaceholderAction('Карточка проекта', project)
+                          }
                           aria-label="Просмотреть проект"
                         >
                           <Eye size={18} />
                         </button>
                         <button
                           type="button"
-                          onClick={() => handlePlaceholderAction('Редактирование', project)}
+                          onClick={() =>
+                            handlePlaceholderAction('Редактирование', project)
+                          }
                           aria-label="Редактировать проект"
                         >
                           <Pencil size={18} />
                         </button>
                         <button
                           type="button"
-                          onClick={() => handlePlaceholderAction('Удаление', project)}
+                          onClick={() =>
+                            handlePlaceholderAction('Удаление', project)
+                          }
                           aria-label="Удалить проект"
                         >
                           <Trash2 size={18} />
@@ -636,16 +756,18 @@ const ProjectsPage: React.FC = () => {
           </table>
         </div>
         <div className="projects-page__pagination">
-          {Array.from({ length: totalPages }, (_, pageIndex) => pageIndex + 1).map((page) => (
-            <button
-              key={page}
-              type="button"
-              className={clsx({ active: currentPage === page })}
-              onClick={() => setCurrentPage(page)}
-            >
-              {page}
-            </button>
-          ))}
+          {Array.from({ length: totalPages }, (_, pageIndex) => pageIndex + 1).map(
+            (page) => (
+              <button
+                key={page}
+                type="button"
+                className={clsx({ active: currentPage === page })}
+                onClick={() => setCurrentPage(page)}
+              >
+                {page}
+              </button>
+            ),
+          )}
         </div>
       </section>
     </div>

@@ -4,6 +4,7 @@
   gap: 2rem;
 }
 
+
 .finances-header {
   display: flex;
   flex-wrap: wrap;
@@ -16,12 +17,12 @@
   margin: 0;
   font-size: 2rem;
   font-weight: 700;
-  color: #1e3a8a;
+  color: var(--color-primary-dark);
 }
 
 .finances-header p {
   margin: 0.5rem 0 0;
-  color: #4b5563;
+  color: var(--color-text-medium);
   max-width: 600px;
 }
 
@@ -31,6 +32,11 @@
   align-items: center;
 }
 
+/*
+==================================================
+  Панель Фильтров (Filter Bar)
+==================================================
+*/
 .finances-filter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -38,8 +44,8 @@
   align-items: flex-end;
   background: white;
   padding: 1.5rem 1.75rem;
-  border-radius: 24px;
-  box-shadow: 0 24px 48px rgba(59, 130, 246, 0.14);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-l);
 }
 
 .finances-filter-group {
@@ -54,26 +60,38 @@
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--color-text-light);
   font-weight: 600;
 }
 
-.finances-filter-select {
+.finances-filter-select,
+.finances-region-select { /* Объединяем стили для единообразия */
   padding: 0.65rem 1rem;
-  border-radius: 14px;
-  border: 1px solid rgba(191, 219, 254, 0.8);
-  background-color: #f8fbff;
+  border-radius: var(--radius-s);
+  border: 1px solid rgba(191, 219, 254, 0.8); /* Используем light border */
+  background-color: var(--color-bg-light);
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-text-dark);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.finances-filter-select:focus {
+.finances-filter-select:focus,
+.finances-region-select:focus {
   outline: none;
-  border-color: #2563eb;
+  border-color: var(--color-primary-base);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
 }
 
+/* Специальные стили для выбора региона (если нужно шире) */
+.finances-region-select {
+  min-width: 260px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--color-border-light);
+  background-color: #eff6ff; /* Более насыщенный светлый фон */
+}
+
+
+/* Группа Диапазона (Range Group) */
 .finances-filter-group--range {
   flex: 2 1 260px;
   min-width: 220px;
@@ -89,15 +107,16 @@
 .finances-filter-value {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #1e3a8a;
+  color: var(--color-primary-dark);
 }
 
+/* Слайдер Диапазона (Range Slider) */
 .finances-filter-range {
   width: 100%;
   appearance: none;
   height: 6px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #2563eb, #60a5fa);
+  background: linear-gradient(90deg, var(--color-primary-base), var(--color-primary-light));
   outline: none;
   transition: opacity 0.2s ease;
 }
@@ -108,7 +127,7 @@
   height: 18px;
   border-radius: 50%;
   background: #fff;
-  border: 2px solid #2563eb;
+  border: 2px solid var(--color-primary-base);
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
 }
@@ -118,7 +137,7 @@
   height: 18px;
   border-radius: 50%;
   background: #fff;
-  border: 2px solid #2563eb;
+  border: 2px solid var(--color-primary-base);
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
 }
@@ -127,27 +146,11 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--color-text-muted);
   margin-top: 0.25rem;
 }
 
-.finances-region-select {
-  padding: 0.65rem 1rem;
-  border-radius: 12px;
-  border: 1px solid #dbeafe;
-  background-color: #eff6ff;
-  font-weight: 600;
-  color: #1f2937;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  min-width: 260px;
-}
-
-.finances-region-select:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
-}
-
+/* Скрытый текст для доступности */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -159,6 +162,11 @@
   border: 0;
 }
 
+/*
+==================================================
+  Карточки Сводки (Summary Cards)
+==================================================
+*/
 .finances-summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -167,7 +175,7 @@
 
 .finances-summary-card {
   background: white;
-  border-radius: 20px;
+  border-radius: var(--radius-m);
   padding: 1.5rem;
   box-shadow: 0 16px 30px rgba(59, 130, 246, 0.18);
   display: flex;
@@ -178,14 +186,14 @@
 .finances-summary-title {
   font-size: 0.85rem;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--color-text-light);
   letter-spacing: 0.08em;
 }
 
 .finances-summary-value {
   font-size: 1.8rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-text-dark);
 }
 
 .finances-summary-card p {
@@ -193,21 +201,33 @@
   color: #6b7280;
 }
 
+/*
+==================================================
+  Визуализация (Map and Charts)
+==================================================
+*/
 .finances-visuals {
+  /* Улучшенная компоновка с помощью grid-area для лучшей читаемости */
   display: grid;
   grid-template-columns: 1.6fr 1fr 1fr;
   gap: 1.5rem;
   align-items: stretch;
 }
 
+/* Карта */
 .finances-map-card {
-  background: linear-gradient(155deg, rgba(15, 23, 42, 0.95), rgba(30, 64, 175, 0.9));
-  border-radius: 28px;
+  /* Используем более темные цвета и тени из переменных */
+  background: linear-gradient(
+    155deg,
+    rgba(15, 23, 42, 0.95),
+    rgba(30, 64, 175, 0.9)
+  );
+  border-radius: var(--radius-xl);
   padding: 2rem;
   display: flex;
   flex-direction: column;
   gap: 1.75rem;
-  box-shadow: 0 32px 68px rgba(15, 23, 42, 0.32);
+  box-shadow: var(--shadow-xl);
   color: #f8fafc;
   grid-row: span 2;
   grid-column: 1 / 2;
@@ -248,8 +268,13 @@
 }
 
 .finances-map-frame {
-  background: linear-gradient(160deg, rgba(13, 42, 148, 0.32), rgba(37, 99, 235, 0.35), rgba(96, 165, 250, 0.24));
-  border-radius: 26px;
+  background: linear-gradient(
+    160deg,
+    rgba(13, 42, 148, 0.32),
+    rgba(37, 99, 235, 0.35),
+    rgba(96, 165, 250, 0.24)
+  );
+  border-radius: 26px; /* Оставляем 26px для уникальности */
   padding: 1.75rem;
   border: 1px solid rgba(148, 197, 253, 0.28);
   box-shadow: inset 0 0 0 1px rgba(30, 64, 175, 0.35);
@@ -286,9 +311,10 @@
   color: #f8fafc;
 }
 
+/* Графики (Chart Cards) */
 .finances-chart-card {
   background: white;
-  border-radius: 24px;
+  border-radius: var(--radius-l);
   padding: 1.75rem;
   box-shadow: 0 24px 48px rgba(99, 102, 241, 0.16);
   display: flex;
@@ -302,21 +328,12 @@
   gap: 1.25rem;
 }
 
-.finances-chart-card--primary {
-  grid-column: auto;
-}
-
-.finances-chart-card--secondary {
-  grid-column: 2 / 3;
-}
-
-.finances-chart-card--line {
-  grid-column: 3 / 4;
-}
-
-.finances-chart-card--line .finances-chart--line {
-  height: 280px;
-}
+/* Убрал специфические grid-column, чтобы полагаться на общую сетку .finances-visuals */
+/*
+.finances-chart-card--primary { grid-column: auto; }
+.finances-chart-card--secondary { grid-column: 2 / 3; }
+.finances-chart-card--line { grid-column: 3 / 4; }
+*/
 
 .finances-chart-header {
   display: flex;
@@ -328,19 +345,22 @@
   margin: 0;
   font-size: 1.2rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-text-dark);
 }
 
 .finances-chart-header span {
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--color-text-light);
 }
 
-.finances-chart {
+.finances-chart,
+.finances-doughnut-wrapper {
   position: relative;
-  height: 280px;
+  /* Устанавливаем высоту для всех контейнеров графиков */
+  height: 280px; 
 }
 
+/* Модификаторы высоты */
 .finances-chart--horizontal {
   height: 240px;
 }
@@ -349,10 +369,6 @@
   height: 260px;
 }
 
-.finances-doughnut-wrapper {
-  position: relative;
-  height: 280px;
-}
 
 .finances-doughnut-center {
   position: absolute;
@@ -368,16 +384,21 @@
 .finances-doughnut-center .value {
   font-size: 1.9rem;
   font-weight: 700;
-  color: #1e3a8a;
+  color: var(--color-primary-dark);
 }
 
 .finances-doughnut-center .label {
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #64748b;
+  color: var(--color-text-light);
 }
 
+/*
+==================================================
+  Табличные Данные (Top and Comparison)
+==================================================
+*/
 .finances-grid {
   display: grid;
   grid-template-columns: 2fr 1.4fr;
@@ -406,14 +427,15 @@
   margin: 0;
   font-size: 1.2rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-text-dark);
 }
 
 .finances-panel-header span {
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--color-text-light);
 }
 
+/* Стили Таблиц */
 .finances-top table,
 .finances-comparison table {
   width: 100%;
@@ -435,7 +457,7 @@
   text-transform: uppercase;
   font-size: 0.75rem;
   letter-spacing: 0.08em;
-  color: #94a3b8;
+  color: var(--color-text-muted);
 }
 
 .finances-top tbody tr:last-of-type td,
@@ -443,16 +465,18 @@
   border-bottom: none;
 }
 
+/* Кнопка-ссылка */
 .link-button {
   display: block;
   width: 100%;
   text-align: left;
   background: none;
   border: none;
-  color: #2563eb;
+  color: var(--color-primary-base);
   font-weight: 600;
   cursor: pointer;
   padding: 0;
+  margin-top: 0.5rem; /* Небольшой отступ, если используется в футере */
 }
 
 .link-button:hover {
@@ -469,10 +493,17 @@
 
 .finances-placeholder {
   margin: 0;
-  color: #64748b;
+  color: var(--color-text-light);
   padding: 1rem 0;
 }
 
+/*
+==================================================
+  Адаптивный Дизайн (Media Queries)
+==================================================
+*/
+
+/* Планшеты и Десктопы среднего размера */
 @media (max-width: 1200px) {
   .finances-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -489,8 +520,10 @@
 
   .finances-visuals {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem; /* Немного уменьшим отступ */
   }
 
+  /* Карта занимает всю ширину в 2 колонки */
   .finances-map-card {
     grid-column: span 2;
     grid-row: auto;
@@ -503,6 +536,7 @@
   }
 }
 
+/* Мобильные устройства (Ландшафт и Планшеты маленького размера) */
 @media (max-width: 768px) {
   .finances-header {
     align-items: flex-start;
@@ -523,7 +557,13 @@
   }
 
   .finances-visuals {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr; /* Одна колонка для всех графиков */
+    gap: 1rem;
+  }
+
+  .finances-map-card {
+    grid-column: span 1;
+    padding: 1.5rem;
   }
 
   .finances-map-frame {
@@ -536,11 +576,20 @@
 
   .finances-chart,
   .finances-doughnut-wrapper {
-    height: 240px;
+    height: 240px; /* Немного уменьшаем высоту графиков */
   }
 }
 
+/* Мобильные устройства (Портрет) */
 @media (max-width: 520px) {
+  .finances-page {
+    gap: 1.5rem;
+  }
+  
+  .finances-header h1 {
+    font-size: 1.75rem;
+  }
+
   .finances-region-select {
     min-width: 100%;
   }
