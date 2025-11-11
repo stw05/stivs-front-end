@@ -1,13 +1,33 @@
-import React, { useMemo, useState } from 'react';
-import { Plus, Download, ArrowUpDown, Search } from 'lucide-react';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Download, ArrowUpDown } from 'lucide-react';
 import { useRegionContext } from '../context/RegionContext';
-import type { RegionId } from '../context/RegionContext'; 
+import type { RegionId } from '../context/RegionContext';
+import KazakhstanMap from '../components/Home/KazakhstanMap';
+import {
+  buildPublicationTimeline,
+  buildPublicationTypeDistribution,
+  calculateNationalMetrics,
+  formatNumber,
+} from '../utils/metrics';
+import {
+  Chart as ChartJS,
+  ArcElement,
+  BarElement,
+  CategoryScale,
+  Legend,
+  LinearScale,
+  Tooltip,
+  type ChartOptions,
+} from 'chart.js';
+import { Bar, Doughnut } from 'react-chartjs-2';
 // !!! Обязательный импорт стилей !!!
 import './PublicationsPage.css';
 
+ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
+
 // --- 1. Типы данных и мок-данные ---
-export type AffiliateType = 'staff' | 'external' | 'all';
-export type DirectionType = 'science' | 'tech' | 'social' | 'all';
+type PublicationIndex = 'wos' | 'scopus' | 'kazinc' | 'kokmvo';
+type PatentRegistry = 'kazPatent' | 'derwent' | 'none';
 
 interface Publication {
   id: string;
@@ -16,44 +36,165 @@ interface Publication {
   hIndex: number;
   latestPublicationTitle: string;
   latestPublicationDate: string; // Формат YYYY-MM-DD
-  department: string;
-  affiliateType: AffiliateType;
-  direction: DirectionType;
-  institute: string;
-  chair: string;
   regionId: RegionId;
+  publicationIndex: PublicationIndex;
+  patentRegistry: PatentRegistry;
+  hasImplementationAct: boolean;
 }
 
 // УВЕЛИЧЕННОЕ КОЛИЧЕСТВО ЗАПИСЕЙ (10)
 const mockPublications: Publication[] = [
-  { id: 'p1', authorName: 'Иванов И.И.', totalPublications: 45, hIndex: 12, latestPublicationTitle: 'Квантовые алгоритмы', latestPublicationDate: '2023-11-01', department: 'Кафедра А', affiliateType: 'staff', direction: 'tech', institute: 'ИИТ', chair: 'КМ', regionId: 'almaty-city' },
-  { id: 'p2', authorName: 'Петрова А.К.', totalPublications: 88, hIndex: 21, latestPublicationTitle: 'Методы социологии', latestPublicationDate: '2024-03-15', department: 'Кафедра B', affiliateType: 'staff', direction: 'social', institute: 'ИГУМ', chair: 'СИ', regionId: 'west-kazakhstan' },
-  { id: 'p3', authorName: 'Сидоров Н.В.', totalPublications: 15, hIndex: 5, latestPublicationTitle: 'История Казахстана', latestPublicationDate: '2022-09-20', department: 'Лаборатория', affiliateType: 'external', direction: 'social', institute: 'ИГУМ', chair: 'ИС', regionId: 'shymkent-city' },
-  { id: 'p4', authorName: 'Касымов Р.Ж.', totalPublications: 120, hIndex: 35, latestPublicationTitle: 'Новые материалы', latestPublicationDate: '2023-05-10', department: 'Кафедра А', affiliateType: 'staff', direction: 'science', institute: 'ИИТ', chair: 'ХТ', regionId: 'almaty-city' },
-  { id: 'p5', authorName: 'Ахметова З.М.', totalPublications: 8, hIndex: 3, latestPublicationTitle: 'Педагогические основы', latestPublicationDate: '2024-01-25', department: 'Кафедра C', affiliateType: 'staff', direction: 'social', institute: 'ИПЕД', chair: 'ПТ', regionId: 'west-kazakhstan' },
-  { id: 'p6', authorName: 'Нурланов Б.К.', totalPublications: 3, hIndex: 1, latestPublicationTitle: 'Блокчейн в финансах', latestPublicationDate: '2024-04-05', department: 'Внештатно', affiliateType: 'external', direction: 'tech', institute: 'ИИТ', chair: 'КМ', regionId: 'astana-city' },
-  
-  // НОВЫЕ ЗАПИСИ
-  { id: 'p7', authorName: 'Султанова Г.Р.', totalPublications: 60, hIndex: 18, latestPublicationTitle: 'Моделирование систем', latestPublicationDate: '2023-10-10', department: 'Кафедра D', affiliateType: 'staff', direction: 'tech', institute: 'ИИТ', chair: 'ИС', regionId: 'almaty-city' },
-  { id: 'p8', authorName: 'Абишев К.Т.', totalPublications: 22, hIndex: 7, latestPublicationTitle: 'Экономический рост', latestPublicationDate: '2024-02-01', department: 'НИИ Экономики', affiliateType: 'external', direction: 'social', institute: 'ИГУМ', chair: 'ИС', regionId: 'astana-city' },
-  { id: 'p9', authorName: 'Мұсаев Е.А.', totalPublications: 155, hIndex: 40, latestPublicationTitle: 'Передовая физика', latestPublicationDate: '2023-07-28', department: 'Кафедра E', affiliateType: 'staff', direction: 'science', institute: 'ИФМ', chair: 'ФМ', regionId: 'shymkent-city' },
-  { id: 'p10', authorName: 'Тұрар Г.Ж.', totalPublications: 5, hIndex: 2, latestPublicationTitle: 'Современная литература', latestPublicationDate: '2024-05-01', department: 'Кафедра C', affiliateType: 'staff', direction: 'social', institute: 'ИПЕД', chair: 'ПТ', regionId: 'west-kazakhstan' },
+  {
+    id: 'p1',
+    authorName: 'Иванов И.И.',
+    totalPublications: 45,
+    hIndex: 12,
+    latestPublicationTitle: 'Квантовые алгоритмы',
+    latestPublicationDate: '2023-11-01',
+    regionId: 'almaty-city',
+    publicationIndex: 'wos',
+    patentRegistry: 'kazPatent',
+    hasImplementationAct: true,
+  },
+  {
+    id: 'p2',
+    authorName: 'Петрова А.К.',
+    totalPublications: 88,
+    hIndex: 21,
+    latestPublicationTitle: 'Методы социологии',
+    latestPublicationDate: '2024-03-15',
+    regionId: 'west-kazakhstan',
+    publicationIndex: 'scopus',
+    patentRegistry: 'derwent',
+    hasImplementationAct: true,
+  },
+  {
+    id: 'p3',
+    authorName: 'Сидоров Н.В.',
+    totalPublications: 15,
+    hIndex: 5,
+    latestPublicationTitle: 'История Казахстана',
+    latestPublicationDate: '2022-09-20',
+    regionId: 'shymkent-city',
+    publicationIndex: 'kazinc',
+    patentRegistry: 'kazPatent',
+    hasImplementationAct: false,
+  },
+  {
+    id: 'p4',
+    authorName: 'Касымов Р.Ж.',
+    totalPublications: 120,
+    hIndex: 35,
+    latestPublicationTitle: 'Новые материалы',
+    latestPublicationDate: '2023-05-10',
+    regionId: 'almaty-city',
+    publicationIndex: 'kokmvo',
+    patentRegistry: 'derwent',
+    hasImplementationAct: true,
+  },
+  {
+    id: 'p5',
+    authorName: 'Ахметова З.М.',
+    totalPublications: 8,
+    hIndex: 3,
+    latestPublicationTitle: 'Педагогические основы',
+    latestPublicationDate: '2024-01-25',
+    regionId: 'west-kazakhstan',
+    publicationIndex: 'kazinc',
+    patentRegistry: 'kazPatent',
+    hasImplementationAct: false,
+  },
+  {
+    id: 'p6',
+    authorName: 'Нурланов Б.К.',
+    totalPublications: 3,
+    hIndex: 1,
+    latestPublicationTitle: 'Блокчейн в финансах',
+    latestPublicationDate: '2024-04-05',
+    regionId: 'astana-city',
+    publicationIndex: 'scopus',
+    patentRegistry: 'none',
+    hasImplementationAct: false,
+  },
+  {
+    id: 'p7',
+    authorName: 'Султанова Г.Р.',
+    totalPublications: 60,
+    hIndex: 18,
+    latestPublicationTitle: 'Моделирование систем',
+    latestPublicationDate: '2023-10-10',
+    regionId: 'almaty-city',
+    publicationIndex: 'wos',
+    patentRegistry: 'kazPatent',
+    hasImplementationAct: true,
+  },
+  {
+    id: 'p8',
+    authorName: 'Абишев К.Т.',
+    totalPublications: 22,
+    hIndex: 7,
+    latestPublicationTitle: 'Экономический рост',
+    latestPublicationDate: '2024-02-01',
+    regionId: 'astana-city',
+    publicationIndex: 'scopus',
+    patentRegistry: 'derwent',
+    hasImplementationAct: true,
+  },
+  {
+    id: 'p9',
+    authorName: 'Мұсаев Е.А.',
+    totalPublications: 155,
+    hIndex: 40,
+    latestPublicationTitle: 'Передовая физика',
+    latestPublicationDate: '2023-07-28',
+    regionId: 'shymkent-city',
+    publicationIndex: 'wos',
+    patentRegistry: 'kazPatent',
+    hasImplementationAct: true,
+  },
+  {
+    id: 'p10',
+    authorName: 'Тұрар Г.Ж.',
+    totalPublications: 5,
+    hIndex: 2,
+    latestPublicationTitle: 'Современная литература',
+    latestPublicationDate: '2024-05-01',
+    regionId: 'west-kazakhstan',
+    publicationIndex: 'kokmvo',
+    patentRegistry: 'none',
+    hasImplementationAct: false,
+  },
 ];
 
 // --- 2. Определение значений фильтров и типов ---
-const allDepartments = Array.from(new Set(mockPublications.map(p => p.department))).sort();
-const allInstitutes = Array.from(new Set(mockPublications.map(p => p.institute))).sort();
-const allChairs = Array.from(new Set(mockPublications.map(p => p.chair))).sort();
+type PublicationIndexFilter = 'all' | PublicationIndex;
+type PatentRegistryFilter = 'all' | 'kazPatent' | 'derwent';
+type ImplementationActFilter = 'all' | 'yes' | 'no';
+
+const PUBLICATION_INDEX_OPTIONS: Array<{ value: PublicationIndexFilter; label: string }> = [
+  { value: 'all', label: 'Все публикации' },
+  { value: 'wos', label: 'Web of Science (WoS)' },
+  { value: 'scopus', label: 'Scopus' },
+  { value: 'kazinc', label: 'КазИНЦ' },
+  { value: 'kokmvo', label: 'КОКМВО' },
+];
+
+const PATENT_REGISTRY_OPTIONS: Array<{ value: PatentRegistryFilter; label: string }> = [
+  { value: 'all', label: 'Все реестры' },
+  { value: 'kazPatent', label: 'КазПатент' },
+  { value: 'derwent', label: 'Derwent Innovations' },
+];
+
+const IMPLEMENTATION_ACT_OPTIONS: Array<{ value: ImplementationActFilter; label: string }> = [
+  { value: 'all', label: 'Все' },
+  { value: 'yes', label: 'Есть' },
+  { value: 'no', label: 'Нет' },
+];
 
 interface PublicationFilters {
-  searchTerm: string;
-  startDate: string; // 'YYYY-MM-DD'
-  endDate: string; // 'YYYY-MM-DD'
-  department: string;
-  affiliateType: AffiliateType | 'all';
-  direction: DirectionType | 'all';
-  institute: string;
-  chair: string;
+  publicationIndex: PublicationIndexFilter;
+  patentRegistry: PatentRegistryFilter;
+  implementationAct: ImplementationActFilter;
 }
 
 interface SortState {
@@ -63,26 +204,159 @@ interface SortState {
 
 // --- 3. Компонент страницы ---
 const PublicationsPage: React.FC = () => {
-  // ИСПРАВЛЕНИЕ: Теперь все три переменные используются, что устранит ошибку TS6133
-  const { selectedRegionId, regions, setSelectedRegionId } = useRegionContext(); 
+  const { selectedRegion, selectedRegionId, regions, setSelectedRegionId } = useRegionContext();
   
   const [filters, setFilters] = useState<PublicationFilters>({
-    searchTerm: '',
-    startDate: '2000-01-01', // Установка широкого диапазона по умолчанию
-    endDate: new Date().toISOString().split('T')[0],
-    department: 'all',
-    affiliateType: 'all',
-    direction: 'all',
-    institute: 'all',
-    chair: 'all',
+    publicationIndex: 'all',
+    patentRegistry: 'all',
+    implementationAct: 'all',
   });
   const [sort, setSort] = useState<SortState>({ key: 'totalPublications', direction: 'desc' });
 
-  // Универсальный обработчик
-  const handleFilterChange = (name: keyof PublicationFilters, value: string) => {
-    setFilters(prev => ({ ...prev, [name]: value }));
-  };
-  
+  const nationalMetrics = useMemo(() => calculateNationalMetrics(), []);
+  const metrics = selectedRegion?.stats ?? nationalMetrics;
+  const timelinePoints = useMemo(
+    () => buildPublicationTimeline(metrics.publications),
+    [metrics.publications],
+  );
+  const typeDistribution = useMemo(
+    () => buildPublicationTypeDistribution(metrics.publications),
+    [metrics.publications],
+  );
+  const { journals, conferences, books, other } = typeDistribution;
+  const totalPublications = metrics.publications.total;
+  const timelineChartData = useMemo(() => {
+    return {
+      labels: timelinePoints.map((point) => point.label),
+      datasets: [
+        {
+          label: 'Количество публикаций',
+          data: timelinePoints.map((point) => point.value),
+          backgroundColor: '#2563eb',
+          hoverBackgroundColor: '#1e3a8a',
+          borderRadius: 12,
+          maxBarThickness: 56,
+        },
+      ],
+    };
+  }, [timelinePoints]);
+
+  const timelineChartOptions = useMemo<ChartOptions<'bar'>>(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleFont: { weight: 600 },
+          bodyFont: { weight: 500 },
+          callbacks: {
+            label: (context) => {
+              const value = context.raw as number;
+              return `${formatNumber(value)} публикаций`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            color: '#475569',
+            font: { weight: 600 },
+          },
+          border: { display: false },
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(148, 163, 184, 0.2)', drawBorder: false },
+          ticks: {
+            color: '#475569',
+            callback: (value) => formatNumber(Number(value)),
+          },
+        },
+      },
+    }),
+    [],
+  );
+
+  const distributionChartData = useMemo(
+    () => ({
+      labels: ['Журналы', 'Конференции', 'Книги', 'Прочее'],
+      datasets: [
+        {
+          data: [journals, conferences, books, other],
+          backgroundColor: ['#1e3a8a', '#2563eb', '#38bdf8', '#81d4fa'],
+          hoverBackgroundColor: ['#172554', '#1d4ed8', '#0ea5e9', '#4fc3f7'],
+          borderWidth: 0,
+        },
+      ],
+    }),
+    [journals, conferences, books, other],
+  );
+
+  const distributionChartOptions = useMemo<ChartOptions<'doughnut'>>(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '68%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            color: '#475569',
+            usePointStyle: true,
+            pointStyle: 'circle',
+            padding: 16,
+          },
+        },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleFont: { weight: 600 },
+          bodyFont: { weight: 500 },
+          callbacks: {
+            label: (context) => {
+              const label = context.label ?? '';
+              const value = context.raw as number;
+              const share = totalPublications ? ((value / totalPublications) * 100).toFixed(1) : '0.0';
+              return `${label}: ${formatNumber(value)} (${share}%)`;
+            },
+          },
+        },
+      },
+    }),
+    [totalPublications],
+  );
+
+  const mapHighlights = useMemo(
+    () => [
+      { label: 'Всего публикаций', value: formatNumber(totalPublications) },
+      { label: 'Журнальные статьи', value: formatNumber(journals) },
+      { label: 'Конференции', value: formatNumber(conferences) },
+      { label: 'Книги и прочее', value: formatNumber(books + other) },
+    ],
+    [totalPublications, journals, conferences, books, other],
+  );
+
+  const handleMapSelect = useCallback(
+    (regionId: string) => {
+      const typedId = regionId as RegionId;
+      const nextRegionId = selectedRegionId === typedId ? 'national' : typedId;
+      setSelectedRegionId(nextRegionId);
+    },
+    [selectedRegionId, setSelectedRegionId],
+  );
+
+  const handleResetFilters = useCallback(() => {
+    setFilters({
+      publicationIndex: 'all',
+      patentRegistry: 'all',
+      implementationAct: 'all',
+    });
+    setSelectedRegionId('national');
+  }, [setSelectedRegionId]);
+
   // Функция для изменения сортировки
   const handleSortChange = (key: keyof Publication) => {
     setSort(prev => {
@@ -97,54 +371,28 @@ const PublicationsPage: React.FC = () => {
   // --- ЛОГИКА ФИЛЬТРАЦИИ И СОРТИРОВКИ ---
   const filteredPublications = useMemo(() => {
     let list = mockPublications;
-    const { searchTerm, department, affiliateType, direction, institute, chair, startDate, endDate } = filters;
+    const { publicationIndex, patentRegistry, implementationAct } = filters;
 
-    // 1. Фильтрация по региону (Использует selectedRegionId)
     if (selectedRegionId !== 'national') {
       list = list.filter((p) => p.regionId === selectedRegionId);
     }
-    
-    // 2. Фильтрация по периоду (latestPublicationDate)
-    const startTimestamp = new Date(startDate).getTime();
-    const endTimestamp = new Date(endDate).getTime();
-    
-    if (startDate && endDate) {
-        list = list.filter(p => {
-            const pubDateTimestamp = new Date(p.latestPublicationDate).getTime();
-            // Добавляем один день к конечной дате, чтобы включить весь день
-            const adjustedEndTimestamp = endTimestamp + 86400000; 
-            return pubDateTimestamp >= startTimestamp && pubDateTimestamp < adjustedEndTimestamp;
-        });
+
+    if (publicationIndex !== 'all') {
+      list = list.filter((p) => p.publicationIndex === publicationIndex);
     }
 
-    // 3. Фильтрация по подразделениям, аффилированности и направлениям
-    if (department !== 'all') {
-      list = list.filter((p) => p.department === department);
-    }
-    if (affiliateType !== 'all') {
-        list = list.filter((p) => p.affiliateType === affiliateType);
-    }
-    if (direction !== 'all') {
-        list = list.filter((p) => p.direction === direction);
-    }
-    if (institute !== 'all') {
-        list = list.filter((p) => p.institute === institute);
-    }
-    if (chair !== 'all') {
-        list = list.filter((p) => p.chair === chair);
-    }
-    
-    // 4. Фильтрация по поисковому запросу (ФИО или Название публикации)
-    if (searchTerm) {
-      const lowerCaseSearch = searchTerm.toLowerCase();
-      list = list.filter(
-        (p) =>
-          p.authorName.toLowerCase().includes(lowerCaseSearch) ||
-          p.latestPublicationTitle.toLowerCase().includes(lowerCaseSearch),
-      );
+    if (patentRegistry !== 'all') {
+      list = list.filter((p) => p.patentRegistry === patentRegistry);
     }
 
-    // 5. Сортировка
+    if (implementationAct === 'yes') {
+      list = list.filter((p) => p.hasImplementationAct);
+    }
+
+    if (implementationAct === 'no') {
+      list = list.filter((p) => !p.hasImplementationAct);
+    }
+
     if (sort.key && sort.direction) {
       list = [...list].sort((a, b) => {
         const aValue = a[sort.key as keyof Publication];
@@ -178,7 +426,7 @@ const PublicationsPage: React.FC = () => {
       
       {/* --- ШАПКА СТРАНИЦЫ (Заголовок, Экспорт, Создать) --- */}
       <div className="page-header-controls">
-        <h1>Публикации</h1>
+        <h1>Результаты</h1>
         <div className="header-actions">
            <button 
               type="button" 
@@ -188,14 +436,6 @@ const PublicationsPage: React.FC = () => {
               <Download size={20} />
               Экспорт данных
             </button>
-            <button 
-              type="button" 
-              className="action-button add-button"
-              onClick={() => handleAction('Создать публикацию')}
-            >
-              <Plus size={20} />
-              Создать публикацию
-            </button>
         </div>
       </div>
       
@@ -203,31 +443,78 @@ const PublicationsPage: React.FC = () => {
         
         {/* === БОКОВАЯ ПАНЕЛЬ ФИЛЬТРОВ === */}
         <aside className="publications-sidebar">
-          
-          <div className="sidebar-section search-section">
-            <label className="filter-label">Поиск</label>
-            <div className="search-input">
-              <Search size={20} className="search-icon" />
-              <input
-                type="text"
-                placeholder="ФИО или название публикации"
-                value={filters.searchTerm}
-                onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
-              />
-            </div>
-          </div>
-          
-          {/* Фильтр региона (ИСПОЛЬЗУЕТ regions и setSelectedRegionId) */}
           <div className="sidebar-section">
-            <label htmlFor="region-filter" className="filter-label">Фильтр по региону</label>
+            <label htmlFor="publication-index-filter" className="filter-label">Публикации</label>
+            <select
+              id="publication-index-filter"
+              value={filters.publicationIndex}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  publicationIndex: e.target.value as PublicationIndexFilter,
+                }))
+              }
+              className="sidebar-select"
+            >
+              {PUBLICATION_INDEX_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="sidebar-section">
+            <label htmlFor="patent-registry-filter" className="filter-label">Патенты</label>
+            <select
+              id="patent-registry-filter"
+              value={filters.patentRegistry}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  patentRegistry: e.target.value as PatentRegistryFilter,
+                }))
+              }
+              className="sidebar-select"
+            >
+              {PATENT_REGISTRY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="sidebar-section">
+            <label htmlFor="implementation-act-filter" className="filter-label">Акты внедрения</label>
+            <select
+              id="implementation-act-filter"
+              value={filters.implementationAct}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  implementationAct: e.target.value as ImplementationActFilter,
+                }))
+              }
+              className="sidebar-select"
+            >
+              {IMPLEMENTATION_ACT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="sidebar-section">
+            <label htmlFor="region-filter" className="filter-label">Регионы</label>
             <select
               id="region-filter"
-              value={selectedRegionId} 
-              onChange={(e) => setSelectedRegionId(e.target.value as RegionId)} 
+              value={selectedRegionId}
+              onChange={(e) => setSelectedRegionId(e.target.value as RegionId)}
               className="sidebar-select"
             >
               <option value="national">Все регионы</option>
-              {/* regions используется для создания списка опций */}
               {regions.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.name}
@@ -235,128 +522,68 @@ const PublicationsPage: React.FC = () => {
               ))}
             </select>
           </div>
-          
-          {/* СЕКЦИЯ: ПЕРИОД ПУБЛИКАЦИИ */}
-          <div className="sidebar-section">
-            <label className="filter-label">Период публикации (Последняя)</label>
-            <div className="date-range-inputs">
-                <input
-                    type="date"
-                    value={filters.startDate}
-                    onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                    className="sidebar-input date-input"
-                    aria-label="Дата начала"
-                />
-                <span className="date-separator">-</span>
-                <input
-                    type="date"
-                    value={filters.endDate}
-                    onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                    className="sidebar-input date-input"
-                    aria-label="Дата окончания"
-                />
-            </div>
-          </div>
-          
-          {/* Фильтр подразделения (Department) */}
-          <div className="sidebar-section">
-            <label htmlFor="department-filter" className="filter-label">Подразделение (Отдел)</label>
-            <select
-              id="department-filter"
-              value={filters.department}
-              onChange={(e) => handleFilterChange('department', e.target.value)}
-              className="sidebar-select"
-            >
-              <option value="all">Все подразделения</option>
-              {allDepartments.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          {/* Фильтр Института */}
-          <div className="sidebar-section">
-            <label htmlFor="institute-filter" className="filter-label">Институт</label>
-            <select
-              id="institute-filter"
-              value={filters.institute}
-              onChange={(e) => handleFilterChange('institute', e.target.value)}
-              className="sidebar-select"
-            >
-              <option value="all">Все институты</option>
-              {allInstitutes.map((i) => (
-                <option key={i} value={i}>
-                  {i}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          {/* Фильтр Кафедры */}
-          <div className="sidebar-section">
-            <label htmlFor="chair-filter" className="filter-label">Кафедра</label>
-            <select
-              id="chair-filter"
-              value={filters.chair}
-              onChange={(e) => handleFilterChange('chair', e.target.value)}
-              className="sidebar-select"
-            >
-              <option value="all">Все кафедры</option>
-              {allChairs.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          {/* СЕКЦИЯ: АФФИЛИРОВАННОСТЬ */}
-          <div className="sidebar-section">
-            <label htmlFor="affiliate-filter" className="filter-label">Аффилированность</label>
-            <select
-              id="affiliate-filter"
-              value={filters.affiliateType}
-              onChange={(e) => handleFilterChange('affiliateType', e.target.value)}
-              className="sidebar-select"
-            >
-              <option value="all">Все</option>
-              <option value="staff">Штатный сотрудник</option>
-              <option value="external">Сторонний исполнитель</option>
-            </select>
-          </div>
-          
-          {/* СЕКЦИЯ: НАПРАВЛЕНИЯ */}
-          <div className="sidebar-section">
-            <label htmlFor="direction-filter" className="filter-label">Направление</label>
-            <select
-              id="direction-filter"
-              value={filters.direction}
-              onChange={(e) => handleFilterChange('direction', e.target.value)}
-              className="sidebar-select"
-            >
-              <option value="all">Все направления</option>
-              <option value="science">Естественные науки</option>
-              <option value="tech">Технические науки</option>
-              <option value="social">Социальные/Гуманитарные</option>
-            </select>
-          </div>
-          
-          {/* КНОПКА: СОРТИРОВАТЬ / ПРИМЕНИТЬ */}
-          <button 
-            type="button" 
+
+          <button
+            type="button"
             className="action-button apply-button"
-            onClick={() => { /* Применить сортировку/фильтры */ alert('Фильтры применены.'); }}
+            style={{ color: '#fff', backgroundColor: '#2563eb', border: 'none', marginTop: '20px' }}
+            onClick={handleResetFilters}
           >
             <ArrowUpDown size={20} />
-            Сортировать / Применить
+            Сбросить фильтры
           </button>
-          
         </aside>
         
-        {/* === ОСНОВНОЕ СОДЕРЖИМОЕ (ТАБЛИЦА) === */}
+        {/* === ОСНОВНОЕ СОДЕРЖИМОЕ === */}
         <main className="publications-main-content">
+          <section className="publications-visuals" aria-label="Аналитика публикаций">
+            <article className="publications-map-card">
+              <header className="publications-map-header">
+                <div>
+                  <span className="publications-map-tag">Публикации по регионам</span>
+                  <h2>{selectedRegion?.name ?? 'Республика Казахстан'}</h2>
+                </div>
+                <span className="publications-map-hint">Нажмите на карту для фильтрации</span>
+              </header>
+
+              <div className="publications-map-frame">
+                <KazakhstanMap selectedRegionId={selectedRegionId} onRegionSelect={handleMapSelect} />
+              </div>
+
+              <div className="publications-map-stats">
+                {mapHighlights.map((item) => (
+                  <div key={item.label} className="publications-map-stat">
+                    <span className="publications-map-stat-label">{item.label}</span>
+                    <span className="publications-map-stat-value">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article className="publications-chart-card" aria-label="Динамика публикаций">
+              <header className="publications-chart-header">
+                <h2>Публикации по годам</h2>
+                <span>Количество работ в UISKS</span>
+              </header>
+              <div className="publications-chart">
+                <Bar data={timelineChartData} options={timelineChartOptions} updateMode="resize" />
+              </div>
+            </article>
+
+            <article className="publications-chart-card" aria-label="Структура публикаций">
+              <header className="publications-chart-header">
+                <h2>Структура по типам</h2>
+                <span>Журналы, конференции, книги, прочее</span>
+              </header>
+              <div className="publications-doughnut-wrapper">
+                <Doughnut data={distributionChartData} options={distributionChartOptions} updateMode="resize" />
+                <div className="publications-doughnut-center">
+                  <span className="value">{formatNumber(totalPublications)}</span>
+                  <span className="label">всего</span>
+                </div>
+              </div>
+            </article>
+          </section>
 
           <div className="publication-table-container">
             <table className="publication-table">

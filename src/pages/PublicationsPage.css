@@ -89,12 +89,174 @@
     border: 1px solid rgba(148, 163, 184, 0.2);
     height: fit-content;
     position: sticky;
-    top: 1rem;
+    top: 6.5rem;
 }
 
 .publications-main-content {
     flex: 1;
     min-width: 0;
+}
+
+.publications-visuals {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    grid-auto-rows: minmax(260px, auto);
+    gap: 1.5rem;
+    align-items: stretch;
+    margin-bottom: 2rem;
+}
+
+.publications-map-card {
+    background: linear-gradient(155deg, rgba(15, 23, 42, 0.96), rgba(30, 64, 175, 0.88));
+    border-radius: 24px;
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    box-shadow: 0 24px 48px rgba(15, 23, 42, 0.3);
+    color: #f8fafc;
+    grid-row: span 2;
+    min-width: 0;
+}
+
+.publications-map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.publications-map-header h2 {
+    margin: 0.4rem 0 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+.publications-map-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: rgba(96, 165, 250, 0.25);
+    color: #e0f2fe;
+    font-weight: 600;
+}
+
+.publications-map-hint {
+    font-size: 0.85rem;
+    color: rgba(226, 232, 240, 0.78);
+}
+
+.publications-map-frame {
+    background: linear-gradient(160deg, rgba(30, 64, 175, 0.25), rgba(15, 23, 42, 0.35));
+    border-radius: 22px;
+    padding: 1.25rem;
+    border: 1px solid rgba(148, 197, 253, 0.25);
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.28);
+    min-height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.publications-map-frame .map-svg {
+    width: 100%;
+    max-width: 640px;
+    height: auto;
+}
+
+.publications-map-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+}
+
+.publications-map-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.publications-map-stat-label {
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(226, 232, 240, 0.74);
+    font-weight: 600;
+}
+
+.publications-map-stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+.publications-chart-card {
+    background: #ffffff;
+    border-radius: 22px;
+    padding: 1.5rem;
+    box-shadow: 0 18px 36px rgba(15, 23, 42, 0.14);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    min-width: 0;
+}
+
+.publications-chart-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.publications-chart-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.publications-chart-header span {
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.publications-chart {
+    position: relative;
+    height: 260px;
+}
+
+.publications-doughnut-wrapper {
+    position: relative;
+    height: 280px;
+}
+
+.publications-doughnut-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.publications-doughnut-center .value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1e3a8a;
+}
+
+.publications-doughnut-center .label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #64748b;
 }
 
 .sidebar-section {
@@ -181,7 +343,7 @@
 
 /* Кнопка "Сортировать / Применить" в сайдбаре */
 .publications-sidebar .apply-button {
-    color: whitenpm;
+    color: #fff;
     width: 100%;
     margin-top: 0.5rem;
     background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); /* Используем синий цвет */
@@ -311,6 +473,17 @@
     color: #64748b;
 }
 
+@media (max-width: 1280px) {
+    .publications-visuals {
+        grid-template-columns: 1fr;
+        grid-auto-rows: auto;
+    }
+
+    .publications-map-card {
+        grid-row: auto;
+    }
+}
+
 
 /* --- АДАПТИВНОСТЬ --- */
 @media (max-width: 1024px) {
@@ -342,5 +515,23 @@
     .publications-main-content {
         width: 100%;
         overflow-x: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .publications-map-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .publications-map-frame {
+        min-height: 260px;
+    }
+
+    .publications-chart {
+        height: 220px;
+    }
+
+    .publications-doughnut-wrapper {
+        height: 240px;
     }
 }
