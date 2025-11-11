@@ -347,6 +347,7 @@ const PublicationsPage: React.FC = () => {
           <button 
             type="button" 
             className="action-button apply-button"
+            style={{ color: '#fff', backgroundColor: '#2563eb', border: 'none', marginTop: '20px' }}
             onClick={() => { /* Применить сортировку/фильтры */ alert('Фильтры применены.'); }}
           >
             <ArrowUpDown size={20} />
