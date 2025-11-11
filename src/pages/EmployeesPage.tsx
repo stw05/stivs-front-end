@@ -46,7 +46,7 @@ const currentYear = new Date().getFullYear();
 const MIN_AGE_LIMIT = 20; 
 const MAX_AGE_LIMIT = 80;
 const allPositions = Array.from(new Set(mockEmployees.map(e => e.position))).sort();
-const allDepartments = Array.from(new Set(mockEmployees.map(e => e.department))).sort();
+// const allDepartments = Array.from(new Set(mockEmployees.map(e => e.department))).sort();
 const allProjectRoles = Array.from(new Set(mockEmployees.map(e => e.projectRole))).sort();
 
 
@@ -72,7 +72,7 @@ interface SortState {
 
 // --- 3. Компонент страницы ---
 const EmployeesPage: React.FC = () => {
-  const { selectedRegionId, regions, setSelectedRegionId } = useRegionContext();
+  const { selectedRegionId, regions } = useRegionContext();
   
   const [filters, setFilters] = useState<EmployeeFilters>({
     searchTerm: '',
@@ -294,6 +294,8 @@ const EmployeesPage: React.FC = () => {
               <option value="female">Женский</option>
             </select>
           </div>
+
+          
 
           {/* СЕКЦИЯ: ВОЗРАСТ (20 - 80) */}
           <div className="sidebar-section">
