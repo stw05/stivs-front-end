@@ -22,6 +22,18 @@ export interface BudgetExecutionSeries {
   fact: number[];
 }
 
+export interface PublicationTimelinePoint {
+  label: string;
+  value: number;
+}
+
+export interface PublicationTypeDistribution {
+  journals: number;
+  conferences: number;
+  books: number;
+  other: number;
+}
+
 export const formatNumber = (
   value: number,
   options: Intl.NumberFormatOptions = { maximumFractionDigits: 0 },
@@ -213,6 +225,40 @@ export const buildProgramFundingBreakdown = (
       value,
     } satisfies ProgramFundingPoint;
   });
+};
+
+const clampNonNegative = (value: number): number => {
+  return Math.max(0, Math.round(value));
+};
+
+export const buildPublicationTimeline = (
+  publications: RegionMetrics['publications'],
+): PublicationTimelinePoint[] => {
+  const total = Math.max(publications.total, 0);
+  const baseShares = [0.12, 0.14, 0.16, 0.18, 0.2, 0.2];
+  const labels = ['2019', '2020', '2021', '2022', '2023', '2024'];
+
+  if (total === 0) {
+    return labels.map((label) => ({ label, value: 0 }));
+  }
+
+  const scale = total / baseShares.reduce((acc, share) => acc + share, 0);
+  const values = baseShares.map((share) => clampNonNegative(share * scale));
+  const diff = total - values.reduce((acc, value) => acc + value, 0);
+  values[values.length - 1] = clampNonNegative(values[values.length - 1] + diff);
+
+  return labels.map((label, index) => ({ label, value: values[index] ?? 0 }));
+};
+
+export const buildPublicationTypeDistribution = (
+  publications: RegionMetrics['publications'],
+): PublicationTypeDistribution => {
+  return {
+    journals: clampNonNegative(publications.journals),
+    conferences: clampNonNegative(publications.conferences),
+    books: clampNonNegative(publications.books),
+    other: clampNonNegative(publications.other),
+  };
 };
 
 export const buildBudgetExecutionSeries = (
