@@ -1,0 +1,332 @@
+/* --- ОСНОВНАЯ СТРУКТУРА --- */
+
+.employees-page {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.employees-page h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1e3a8a;
+    margin-bottom: 0;
+}
+
+/* --- ОСНОВНОЙ МАКЕТ: ДВЕ КОЛОНКИ --- */
+.employees-content-wrapper {
+    display: flex;
+    gap: 2rem; /* Расстояние между сайдбаром и таблицей */
+    align-items: flex-start; /* Чтобы сайдбар не растягивался */
+}
+/* --- СТИЛИ САЙДБАРА --- */
+.employees-sidebar {
+    flex: 0 0 300px; /* Фиксированная ширина сайдбара */
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 10px 20px -15px rgba(15, 23, 42, 0.1);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    height: fit-content; /* Сайдбар занимает только нужную высоту */
+    position: sticky; /* Приклеиваем к верху при прокрутке */
+    top: 1rem; /* Отступ сверху */
+}
+
+.employees-main-content {
+    flex: 1; /* Таблица занимает оставшееся пространство */
+    min-width: 0; /* Важно для корректного сжатия flex-элемента */
+}
+
+
+/* --- СТИЛИ ФИЛЬТРОВ И ИНПУТОВ --- */
+
+.sidebar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Поиск */
+.search-input {
+    display: flex;
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.search-input:focus-within {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.search-input input {
+    border: none;
+    background: transparent;
+    padding: 0 0.5rem;
+    font-size: 1rem;
+    color: #0f172a;
+    outline: none;
+    width: 100%;
+}
+
+.search-icon {
+    color: #1e3a8a;
+}
+
+/* Селекты */
+.sidebar-select {
+    padding: 0.65rem 1rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background-color: #f8fafc;
+    font-weight: 500;
+    color: #0f172a;
+    transition: border-color 0.2s ease;
+    cursor: pointer;
+    outline: none;
+    -webkit-appearance: none; /* Скрываем стандартную стрелку */
+    -moz-appearance: none;
+    appearance: none;
+}
+
+.sidebar-select:focus {
+    border-color: #2563eb;
+}
+
+/* --- НОВЫЕ СТИЛИ: ДИАПАЗОН ВОЗРАСТА --- */
+.age-range-inputs {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.age-input {
+    flex: 1;
+    text-align: center;
+    /* Переиспользуем общие стили инпутов, но с учетом ширины */
+    padding: 0.65rem 0.5rem; 
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background-color: #f8fafc;
+    font-weight: 500;
+    color: #0f172a;
+    transition: border-color 0.2s ease;
+    outline: none;
+}
+
+.age-input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.age-separator {
+    font-weight: 600;
+    color: #475569;
+}
+
+
+/* --- СТИЛИ КНОПОК --- */
+.page-header-controls {
+    display: flex;
+    justify-content: space-between; /* Растягивает заголовок и кнопку по краям */
+    align-items: center; /* Выравнивает элементы по вертикали */
+    margin-bottom: 1.5rem; /* Отступ между шапкой и контентом */
+}
+
+/* Переопределение ширины кнопки, чтобы она не была 100% (как в сайдбаре) */
+.add-employee-button.header-button {
+    width: auto;
+    margin-top: 0; /* Убираем margin-top: auto; который мог быть применен в сайдбаре */
+}
+
+/* Убедитесь, что h1 не имеет нижнего отступа, который может помешать выравниванию */
+.employees-page h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1e3a8a;
+    /* Убедитесь, что margin-bottom: 0; здесь или его вообще нет */
+    margin-bottom: 0; 
+}
+
+.add-employee-button {
+    background: linear-gradient(135deg, #2563eb 0%, #2563eb 100%);
+    color: #fff;
+    border: none;
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px -5px rgba(16, 185, 129, 0.5);
+}
+
+.add-employee-button:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #2563eb 100%);
+    box-shadow: 0 8px 16px -6px rgba(16, 185, 129, 0.7);
+}
+
+/* Кнопка "Сортировать/Применить" в сайдбаре */
+.employees-sidebar .add-employee-button {
+    width: 100%;
+    margin-top: auto; /* Прижимает кнопку вниз сайдбара */
+}
+
+/* --- СТИЛИ КНОПКИ НАД ТАБЛИЦЕЙ --- */
+.table-controls {
+    display: flex;
+    justify-content: flex-end; /* Выравнивание кнопки по правому краю */
+    margin-bottom: 1.5rem; /* Отступ между кнопкой и таблицей */
+}
+
+
+/* --- СТИЛИ ТАБЛИЦЫ --- */
+.employee-table-container {
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 10px 20px -15px rgba(15, 23, 42, 0.1);
+    overflow-x: auto;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.employee-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 800px;
+    font-size: 0.95rem;
+}
+
+.employee-table th, .employee-table td {
+    padding: 1rem 1.25rem;
+    text-align: left;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.employee-table th {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    color: #64748b;
+    font-weight: 600;
+    white-space: nowrap;
+    background-color: #f8fafc;
+}
+
+.employee-table tbody tr:hover {
+    background-color: #f1f5f9;
+}
+
+/* --- НОВЫЕ СТИЛИ: ИНДИКАТОРЫ СОРТИРОВКИ --- */
+.employee-table th {
+    cursor: pointer;
+    user-select: none;
+}
+
+.employee-table th svg {
+    margin-left: 0.5rem;
+    color: #94a3b8;
+    transition: all 0.2s ease;
+    opacity: 0.4;
+    vertical-align: middle;
+}
+
+.employee-table th:hover svg {
+    opacity: 1;
+    color: #334155;
+}
+
+/* Активная сортировка: ASC (зеленый цвет) */
+.employee-table th.asc svg {
+    color: #1e3a8a; 
+    opacity: 1;
+    transform: rotate(0deg);
+}
+
+/* Активная сортировка: DESC (переворот стрелки) */
+.employee-table th.desc svg {
+    color: #1e3a8a; 
+    opacity: 1;
+    transform: rotate(180deg);
+}
+
+
+/* --- Действия в таблице --- */
+.actions-column {
+    text-align: center;
+    min-width: 120px;
+}
+
+.actions-buttons {
+    display: flex;
+    gap: 0.4rem;
+    justify-content: center;
+}
+
+.actions-buttons button {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    padding: 0.4rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.actions-buttons button:hover {
+    background: #e2e8f0;
+    color: #1e3a8a;
+}
+
+.no-results {
+    text-align: center;
+    padding: 2rem;
+    color: #64748b;
+}
+
+
+/* --- АДАПТИВНОСТЬ --- */
+@media (max-width: 1024px) {
+    .employees-content-wrapper {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    .employees-sidebar {
+        flex: 1 1 auto;
+        width: 100%;
+        position: static;
+        top: auto;
+    }
+    
+    .employees-main-content {
+        width: 100%;
+        overflow-x: auto;
+    }
+    
+    .table-controls {
+        justify-content: center; /* Центрируем кнопку на мобильных */
+    }
+
+    .add-employee-button {
+        width: 100%; /* Кнопка на всю ширину на мобильных */
+        justify-content: center;
+    }
+}

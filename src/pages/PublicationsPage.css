@@ -1,0 +1,346 @@
+/* --- ОСНОВНАЯ СТРУКТУРА --- */
+
+.publications-page {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.publications-page h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1e3a8a;
+    margin-bottom: 0;
+}
+
+/* --- ШАПКА СТРАНИЦЫ (Заголовок + Кнопки) --- */
+.page-header-controls {
+    display: flex;
+    justify-content: space-between; /* Растягивает заголовок и кнопки по краям */
+    align-items: center; /* Выравнивает элементы по вертикали */
+    margin-bottom: 0.5rem; /* Отступ между шапкой и контентом */
+}
+
+.header-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+/* --- ОСНОВНОЙ МАКЕТ: ДВЕ КОЛОНКИ --- */
+.publications-content-wrapper {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
+/* --- СТИЛИ КНОПОК ДЕЙСТВИЙ (Создать/Экспорт) --- */
+
+.action-button {
+    border: none;
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    width: auto;
+}
+
+/* Кнопка "Создать публикацию" (зеленая) */
+.action-button.add-button {
+    background: linear-gradient(135deg, #10b981 0%, #2563eb 100%);
+    color: #fff;
+    box-shadow: 0 4px 12px -5px rgba(16, 185, 129, 0.5);
+}
+
+.action-button.add-button:hover {
+    background: linear-gradient(135deg, #059669 0%, #2563eb 100%);
+    box-shadow: 0 8px 16px -6px rgba(16, 185, 129, 0.7);
+}
+
+/* Кнопка "Экспорт данных" (синяя) */
+.action-button.export-button {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: #fff;
+    box-shadow: 0 4px 12px -5px rgba(59, 130, 246, 0.5);
+}
+
+.action-button.export-button:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+    box-shadow: 0 8px 16px -6px rgba(59, 130, 246, 0.7);
+}
+
+
+/* --- БОКОВАЯ ПАНЕЛЬ (САЙДБАР) --- */
+
+.publications-sidebar {
+    flex: 0 0 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 10px 20px -15px rgba(15, 23, 42, 0.1);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    height: fit-content;
+    position: sticky;
+    top: 1rem;
+}
+
+.publications-main-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.sidebar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Стили для всех инпутов и селектов в сайдбаре */
+.sidebar-input,
+.sidebar-select {
+    padding: 0.65rem 1rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background-color: #f8fafc;
+    font-weight: 500;
+    color: #0f172a;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    outline: none;
+    cursor: pointer;
+}
+
+.sidebar-input:focus,
+.sidebar-select:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Стили для поля поиска */
+.search-input {
+    display: flex;
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.search-input input {
+    border: none;
+    background: transparent;
+    padding: 0 0.5rem;
+    font-size: 1rem;
+    color: #0f172a;
+    outline: none;
+    width: 100%;
+}
+
+.search-icon {
+    color: #64748b;
+}
+
+
+/* Стили для ввода диапазона дат */
+.date-range-inputs {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.date-input {
+    flex: 1;
+    text-align: center;
+    min-width: 0; /* Обеспечивает сжатие */
+    /* Убираем стандартную стрелку для select, если она есть */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+.date-separator {
+    font-weight: 600;
+    color: #475569;
+}
+
+/* Кнопка "Сортировать / Применить" в сайдбаре */
+.publications-sidebar .apply-button {
+    color: whitenpm;
+    width: 100%;
+    margin-top: 0.5rem;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); /* Используем синий цвет */
+    box-shadow: 0 4px 12px -5px rgba(37, 99, 235, 0.5);
+}
+
+.publications-sidebar .apply-button:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+    box-shadow: 0 8px 16px -6px rgba(37, 99, 235, 0.7);
+}
+
+
+/* --- СТИЛИ ТАБЛИЦЫ --- */
+.publication-table-container {
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 10px 20px -15px rgba(15, 23, 42, 0.1);
+    overflow-x: auto;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.publication-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1000px; /* Достаточно широкая для колонок */
+    font-size: 0.95rem;
+}
+
+.publication-table th, .publication-table td {
+    padding: 1rem 1.25rem;
+    text-align: left;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.publication-table th {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    color: #64748b;
+    font-weight: 600;
+    white-space: nowrap;
+    background-color: #f8fafc;
+}
+
+.publication-table tbody tr:hover {
+    background-color: #f1f5f9;
+}
+
+/* Стиль для нумерации и центральных ячеек */
+.publication-table td:first-child, 
+.publication-table td.center-cell {
+    text-align: center;
+    width: 1%;
+    white-space: nowrap;
+}
+
+/* Стиль для ФИО */
+.publication-table td.name-cell {
+    font-weight: 600;
+    color: #1e3a8a;
+    width: 15%;
+}
+
+/* --- СОРТИРОВКА (как на странице сотрудников) --- */
+.publication-table th {
+    cursor: pointer;
+    user-select: none;
+}
+
+.publication-table th svg {
+    margin-left: 0.5rem;
+    color: #94a3b8;
+    transition: all 0.2s ease;
+    opacity: 0.4;
+    vertical-align: middle;
+}
+
+.publication-table th:hover svg {
+    opacity: 1;
+    color: #334155;
+}
+
+.publication-table th.asc svg {
+    color: #10b981; 
+    opacity: 1;
+    transform: rotate(0deg);
+}
+
+.publication-table th.desc svg {
+    color: #10b981; 
+    opacity: 1;
+    transform: rotate(180deg);
+}
+
+/* --- Действия в таблице --- */
+.actions-column {
+    text-align: center;
+    min-width: 100px;
+    width: 1%;
+    white-space: nowrap;
+}
+
+.actions-buttons {
+    display: flex;
+    gap: 0.4rem;
+    justify-content: center;
+}
+
+.actions-buttons button {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    padding: 0.4rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.actions-buttons button:hover {
+    background: #e2e8f0;
+    color: #1e3a8a;
+}
+
+.no-results {
+    text-align: center;
+    padding: 2rem;
+    color: #64748b;
+}
+
+
+/* --- АДАПТИВНОСТЬ --- */
+@media (max-width: 1024px) {
+    .page-header-controls {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    .header-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .action-button {
+        flex: 1;
+    }
+
+    .publications-content-wrapper {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    .publications-sidebar {
+        flex: 1 1 auto;
+        width: 100%;
+        position: static;
+        top: auto;
+    }
+    
+    .publications-main-content {
+        width: 100%;
+        overflow-x: auto;
+    }
+}
