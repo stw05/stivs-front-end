@@ -1,5 +1,6 @@
 #root {
   min-height: 100vh;
+  overflow-y: scroll;
 }
 
 body {
@@ -7,6 +8,7 @@ body {
   font-family: 'Inter', 'Segoe UI', sans-serif;
   background: #eef2ff;
   color: #1f2937;
+  
 }
 
 h1,

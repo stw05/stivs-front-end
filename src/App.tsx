@@ -8,6 +8,8 @@ import PublicationsPage from './pages/PublicationsPage';
 import FinancesPage from './pages/FinancesPage';
 import AdminPage from './pages/AdminPage';
 import NotFoundPage from './pages/NotFoundPage';
+import LoginPage from './pages/LoginPage';
+import RegistrationPage from './pages/RegistrationPage';
 import './App.css';
 
 const App: React.FC = () => {
@@ -21,6 +23,10 @@ const App: React.FC = () => {
         <Route path="finances" element={<FinancesPage />} />
         <Route path="admin" element={<AdminPage />} />
         <Route path="*" element={<NotFoundPage />} />
+        <Route path="/login" element={<LoginPage />} /> 
+        <Route path="/register" element={<RegistrationPage />} />
+        <Route path="/forgot-password" element={<div>Страница восстановления пароля</div>} />
+        <Route path="/privacy-policy" element={<div>Политика конфиденциальности</div>} />
       </Route>
     </Routes>
   );

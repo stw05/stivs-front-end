@@ -47,7 +47,9 @@ const Header: React.FC = () => {
           
           <div className="user-menu">
             <div className="user-avatar">
+              <Link to="/login" className="user-avatar-link">
               <User size={20} />
+              </Link>
             </div>
             <div className="user-dropdown">
               <Settings size={16} />

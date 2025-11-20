@@ -10,6 +10,8 @@ export type GenderType = 'male' | 'female' | 'all';
 export type CitizenshipType = 'resident' | 'non-resident' | 'all';
 export type DegreeType = 'doctor' | 'candidate' | 'master' | 'phd' | 'none' | 'all';
 export type HIndexGroup = '0-1' | '2-5' | '6-10' | '10+' | 'all';
+export type MRNTIType = '11.00.00' | '27.00.00' | '55.00.00' | 'all'; // Примерные коды
+export type ClassifierType = 'economic' | 'social' | 'technical' | 'all'; // Примерные категории
 
 interface Employee {
   id: string;
@@ -27,17 +29,22 @@ interface Employee {
   citizenship: CitizenshipType;
   projectRole: string; // Роль в проекте (напр., "Руководитель", "Исполнитель")
   hIndex: number;
+  mrntiCode: MRNTIType;
+  classifier: ClassifierType;
+  scopusAuthorId: string; // Author ID в Scopus
+  researcherIdWos: string; // Researcher ID Web of Science
 }
 
 const mockEmployees: Employee[] = [
-  { id: 'e1', name: 'Иванов И.И.', position: 'Профессор', department: 'Кафедра А', regionId: 'almaty-city', hireDate: '2015-01-10', email: 'ivanov@uni.kz', birthYear: 1985, affiliateType: 'staff', gender: 'male', degree: 'doctor', citizenship: 'resident', projectRole: 'Руководитель', hIndex: 7 },
-  { id: 'e2', name: 'Петрова А.К.', position: 'Доцент', department: 'Кафедра B', regionId: 'west-kazakhstan', hireDate: '2018-05-20', email: 'petrova@uni.kz', birthYear: 1990, affiliateType: 'staff', gender: 'female', degree: 'candidate', citizenship: 'resident', projectRole: 'Исполнитель', hIndex: 4 },
-  { id: 'e3', name: 'Сидоров Н.В.', position: 'Научный сотрудник', department: 'Лаборатория', regionId: 'shymkent-city', hireDate: '2020-09-01', email: 'sidorov@uni.kz', birthYear: 1978, affiliateType: 'external', gender: 'male', degree: 'phd', citizenship: 'non-resident', projectRole: 'Консультант', hIndex: 1 },
-  { id: 'e4', name: 'Касымов Р.Ж.', position: 'Профессор', department: 'Кафедра А', regionId: 'almaty-city', hireDate: '2012-03-01', email: 'kasymov@uni.kz', birthYear: 1965, affiliateType: 'staff', gender: 'male', degree: 'doctor', citizenship: 'resident', projectRole: 'Руководитель', hIndex: 11 },
-  { id: 'e5', name: 'Ахметова З.М.', position: 'Ассистент', department: 'Кафедра C', regionId: 'west-kazakhstan', hireDate: '2023-11-15', email: 'akhmetova@uni.kz', birthYear: 2000, affiliateType: 'staff', gender: 'female', degree: 'master', citizenship: 'resident', projectRole: 'Исполнитель', hIndex: 0 },
-  { id: 'e6', name: 'Нурланов Б.К.', position: 'Консультант', department: 'Внештатно', regionId: 'astana-city', hireDate: '2023-01-01', email: 'nurlan@ext.kz', birthYear: 1995, affiliateType: 'external', gender: 'male', degree: 'none', citizenship: 'non-resident', projectRole: 'Исполнитель', hIndex: 2 },
-  { id: 'e7', name: 'Есимова М.Е.', position: 'Лаборант', department: 'Кафедра C', regionId: 'astana-city', hireDate: '2024-02-01', email: 'esimova@uni.kz', birthYear: 2002, affiliateType: 'staff', gender: 'female', degree: 'none', citizenship: 'resident', projectRole: 'Исполнитель', hIndex: 0 },
-  { id: 'e8', name: 'Торекулов Ж.Т.', position: 'Менеджер проектов', department: 'Отдел разработок', regionId: 'shymkent-city', hireDate: '2019-07-01', email: 'torekulov@uni.kz', birthYear: 1980, affiliateType: 'staff', gender: 'male', degree: 'phd', citizenship: 'resident', projectRole: 'Руководитель', hIndex: 6 },
+  // 🟢 ОБНОВЛЕННЫЕ МОК-ДАННЫЕ (добавлены mrntiCode и classifier)
+  { id: 'e1', name: 'Иванов И.И.', position: 'Профессор', department: 'Кафедра А', regionId: 'almaty-city', hireDate: '2015-01-10', email: 'ivanov@uni.kz', birthYear: 1985, affiliateType: 'staff', gender: 'male', degree: 'doctor', citizenship: 'resident', projectRole: 'Руководитель', hIndex: 7, mrntiCode: '11.00.00', classifier: 'technical' , scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171' },
+  { id: 'e2', name: 'Петрова А.К.', position: 'Доцент', department: 'Кафедра B', regionId: 'west-kazakhstan', hireDate: '2018-05-20', email: 'petrova@uni.kz', birthYear: 1990, affiliateType: 'staff', gender: 'female', degree: 'candidate', citizenship: 'resident', projectRole: 'Исполнитель', hIndex: 4, mrntiCode: '27.00.00', classifier: 'social', scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171' },
+  { id: 'e3', name: 'Сидоров Н.В.', position: 'Научный сотрудник', department: 'Лаборатория', regionId: 'shymkent-city', hireDate: '2020-09-01', email: 'sidorov@uni.kz', birthYear: 1978, affiliateType: 'external', gender: 'male', degree: 'phd', citizenship: 'non-resident', projectRole: 'Консультант', hIndex: 1, mrntiCode: '11.00.00', classifier: 'economic' , scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171' },
+  { id: 'e4', name: 'Касымов Р.Ж.', position: 'Профессор', department: 'Кафедра А', regionId: 'almaty-city', hireDate: '2012-03-01', email: 'kasymov@uni.kz', birthYear: 1965, affiliateType: 'staff', gender: 'male', degree: 'doctor', citizenship: 'resident', projectRole: 'Руководитель', hIndex: 11, mrntiCode: '55.00.00', classifier: 'technical', scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171' },
+  { id: 'e5', name: 'Ахметова З.М.', position: 'Ассистент', department: 'Кафедра C', regionId: 'west-kazakhstan', hireDate: '2023-11-15', email: 'akhmetova@uni.kz', birthYear: 2000, affiliateType: 'staff', gender: 'female', degree: 'master', citizenship: 'resident', projectRole: 'Исполнитель', hIndex: 0, mrntiCode: '27.00.00', classifier: 'social' , scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171'},
+  { id: 'e6', name: 'Нурланов Б.К.', position: 'Консультант', department: 'Внештатно', regionId: 'astana-city', hireDate: '2023-01-01', email: 'nurlan@ext.kz', birthYear: 1995, affiliateType: 'external', gender: 'male', degree: 'none', citizenship: 'non-resident', projectRole: 'Исполнитель', hIndex: 2, mrntiCode: '55.00.00', classifier: 'technical' , scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171'},
+  { id: 'e7', name: 'Есимова М.Е.', position: 'Лаборант', department: 'Кафедра C', regionId: 'astana-city', hireDate: '2024-02-10', email: 'esimova@uni.kz', birthYear: 1998, affiliateType: 'staff', gender: 'female', degree: 'master', citizenship: 'resident', projectRole: 'Исполнитель', hIndex: 1, mrntiCode: '11.00.00', classifier: 'economic', scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171' },
+  { id: 'e8', name: 'Байтереков С.Т.', position: 'Младший научный сотрудник', department: 'Лаборатория', regionId: 'almaty-city', hireDate: '2024-03-01', email: 'baiterek@uni.kz', birthYear: 1996, affiliateType: 'staff', gender: 'male', degree: 'master', citizenship: 'resident', projectRole: 'Исполнитель', hIndex: 0, mrntiCode: '27.00.00', classifier: 'technical', scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171' },
 ];
 
 // --- 2. Определение значений фильтров и типов ---
@@ -46,7 +53,6 @@ const currentYear = new Date().getFullYear();
 const MIN_AGE_LIMIT = 20; 
 const MAX_AGE_LIMIT = 80;
 const allPositions = Array.from(new Set(mockEmployees.map(e => e.position))).sort();
-// const allDepartments = Array.from(new Set(mockEmployees.map(e => e.department))).sort();
 const allProjectRoles = Array.from(new Set(mockEmployees.map(e => e.projectRole))).sort();
 
 
@@ -63,6 +69,9 @@ interface EmployeeFilters {
   citizenship: CitizenshipType | 'all';
   projectRole: string;
   hIndexGroup: HIndexGroup | 'all';
+  mrnti: MRNTIType;
+  classifier: ClassifierType;
+  regionId: RegionId | 'all';
 }
 
 interface SortState {
@@ -78,8 +87,8 @@ const EmployeesPage: React.FC = () => {
     searchTerm: '',
     position: 'all',
     department: 'all',
-    minAge: MIN_AGE_LIMIT, // Инициализация с мин. границей
-    maxAge: MAX_AGE_LIMIT, // <--- ИСПРАВЛЕНО ЗДЕСЬ
+    minAge: MIN_AGE_LIMIT, 
+    maxAge: MAX_AGE_LIMIT, 
     affiliateType: 'all',
     // НОВЫЕ ФИЛЬТРЫ
     gender: 'all',
@@ -87,6 +96,10 @@ const EmployeesPage: React.FC = () => {
     citizenship: 'all',
     projectRole: 'all',
     hIndexGroup: 'all',
+    mrnti: 'all',
+  classifier: 'all',
+  regionId: 'all',
+    
   });
   
   const [sort, setSort] = useState<SortState>({ key: 'name', direction: 'asc' });
@@ -167,6 +180,24 @@ const EmployeesPage: React.FC = () => {
     if (department !== 'all') {
       list = list.filter((e) => e.department === department);
     }
+
+    // 🟢 7. ФИЛЬТРАЦИЯ ПО МРНТИ
+    if (filters.mrnti !== 'all') {
+        // ✅ ИСПРАВЛЕНО
+        list = list.filter((emp) => emp.mrntiCode === filters.mrnti); 
+    }
+    
+    // 🟢 8. ФИЛЬТРАЦИЯ ПО КЛАССИФИКАТОРУ
+    if (filters.classifier !== 'all') {
+        // ✅ ИСПРАВЛЕНО
+        list = list.filter((emp) => emp.classifier === filters.classifier);
+    }
+
+    // 🟢 9. ФИЛЬТРАЦИЯ ПО РЕГИОНУ (фильтр на боковой панели)
+    if (filters.regionId !== 'all') {
+        // ✅ ИСПРАВЛЕНО
+        list = list.filter((emp) => emp.regionId === filters.regionId);
+    }
     
     // 4. Фильтрация по аффилированности
     if (affiliateType !== 'all') {
@@ -246,40 +277,16 @@ const EmployeesPage: React.FC = () => {
     const employeeName = employee ? employee.name : 'новый сотрудник';
     alert(`${action}: ${employeeName}`);
   };
+  
+  const totalEmployeesCount = filteredEmployees.length;
 
   return (
+    // Используем Grid для всего макета
     <div className="employees-page">
-      <div className="page-header-controls">
-      <h1>Сотрудники</h1>
-        <button 
-          type="button" 
-          className="add-employee-button"
-          onClick={() => handleAction('Добавление')}
-        >
-          <Plus size={20} />
-          Добавить сотрудника
-        </button>
-      </div>
-
       
-      <div className="employees-content-wrapper">
-        
-        {/* === БОКОВАЯ ПАНЕЛЬ ФИЛЬТРОВ === */}
-        <aside className="employees-sidebar">
+      {/* 1. БОКОВАЯ ПАНЕЛЬ ФИЛЬТРОВ (Grid Area: sidebar) */}
+      <aside className="employees-sidebar">
           
-          <div className="sidebar-section search-section">
-            <label className="filter-label">Поиск</label>
-            <div className="search-input">
-              <Search size={20} className="search-icon" />
-              <input
-                type="text"
-                placeholder="Поиск по ФИО, email..."
-                value={filters.searchTerm}
-                onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
-              />
-            </div>
-          </div>
-
           {/* СЕКЦИЯ: ПОЛ */}
           <div className="sidebar-section">
             <label htmlFor="gender-filter" className="filter-label">Пол (Гендер)</label>
@@ -342,6 +349,75 @@ const EmployeesPage: React.FC = () => {
               <option value="none">Нет степени</option>
             </select>
           </div>
+
+          {/* Фильтр должности (Ученое звание) */}
+          <div className="sidebar-section">
+            <label htmlFor="position-filter" className="filter-label">Ученое звание</label>
+            <select
+              id="position-filter"
+              value={filters.position}
+              onChange={(e) => handleFilterChange('position', e.target.value)}
+              className="sidebar-select"
+            >
+              <option value="all">Все</option>
+              {allPositions.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 🟢 НОВЫЙ ФИЛЬТР: МРНТИ */}
+          <div className="sidebar-section">
+              <label htmlFor="mrnti" className="filter-label">МРНТИ</label>
+              <select
+                  id="mrnti"
+                  value={filters.mrnti}
+                  onChange={(e) => handleFilterChange('mrnti', e.target.value as MRNTIType)}
+                  className="sidebar-select"
+              >
+                  <option value="all">Все коды</option>
+                  <option value="11.00.00">11.00.00 - Математика</option>
+                  <option value="27.00.00">27.00.00 - Социальные науки</option>
+                  <option value="55.00.00">55.00.00 - Технические науки</option>
+                  {/* Добавьте больше опций по мере необходимости */}
+              </select>
+          </div>
+          
+          {/* 🟢 НОВЫЙ ФИЛЬТР: КЛАССИФИКАТОР */}
+          <div className="sidebar-section">
+              <label htmlFor="classifier" className="filter-label">Классификатор</label>
+              <select
+                  id="classifier"
+                  value={filters.classifier}
+                  onChange={(e) => handleFilterChange('classifier', e.target.value as ClassifierType)}
+                  className="sidebar-select"
+              >
+                  <option value="all">Все классификаторы</option>
+                  <option value="economic">Экономический</option>
+                  <option value="social">Социальный</option>
+                  <option value="technical">Технический</option>
+              </select>
+          </div>
+          
+          {/* 🟢 НОВЫЙ ФИЛЬТР: РЕГИОН */}
+          <div className="sidebar-section">
+              <label htmlFor="regionId" className="filter-label">Регион</label>
+              <select
+                  id="regionId"
+                  value={filters.regionId}
+                  onChange={(e) => handleFilterChange('regionId', e.target.value as RegionId | 'all')}
+                  className="sidebar-select"
+              >
+                  <option value="all">Все регионы</option>
+                  {regions.map(region => (
+                      <option key={region.id} value={region.id}>
+                          {region.name}
+                      </option>
+                  ))}
+              </select>
+          </div>
           
           
           {/* СЕКЦИЯ: ГРАЖДАНСТВО */}
@@ -359,41 +435,7 @@ const EmployeesPage: React.FC = () => {
             </select>
           </div>
           
-          {/* Фильтр региона */}
-          {/* <div className="sidebar-section">
-            <label htmlFor="region-filter" className="filter-label">Фильтр по региону</label>
-            <select
-              id="region-filter"
-              value={selectedRegionId}
-              onChange={(e) => setSelectedRegionId(e.target.value as RegionId)}
-              className="sidebar-select"
-            >
-              <option value="national">Все регионы</option>
-              {regions.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
-            </select>
-          </div> */}
-          
-          {/* Фильтр должности (Академическая степень) */}
-          <div className="sidebar-section">
-            <label htmlFor="position-filter" className="filter-label">Академическая степень</label>
-            <select
-              id="position-filter"
-              value={filters.position}
-              onChange={(e) => handleFilterChange('position', e.target.value)}
-              className="sidebar-select"
-            >
-              <option value="all">Все должности</option>
-              {allPositions.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-          </div>
+
 
           {/* Фильтр Роль в проекте */}
           <div className="sidebar-section">
@@ -412,25 +454,6 @@ const EmployeesPage: React.FC = () => {
               ))}
             </select>
           </div>
-
-          
-          {/* Фильтр подразделения */}
-          {/* <div className="sidebar-section">
-            <label htmlFor="department-filter" className="filter-label">Фильтр по подразделению</label>
-            <select
-              id="department-filter"
-              value={filters.department}
-              onChange={(e) => handleFilterChange('department', e.target.value)}
-              className="sidebar-select"
-            >
-              <option value="all">Все подразделения</option>
-              {allDepartments.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </div> */}
           
 
           {/* СЕКЦИЯ: АФФИЛИРОВАННОСТЬ (Штатный/Сторонний) */}
@@ -474,11 +497,49 @@ const EmployeesPage: React.FC = () => {
             Сортировать / Применить
           </button>
           
-        </aside>
+      </aside>
         
-        {/* === ОСНОВНОЕ СОДЕРЖИМОЕ (ТАБЛИЦА) === */}
-        <main className="employees-main-content">
+      {/* 2. ОСНОВНОЕ СОДЕРЖИМОЕ (Grid Area: main) */}
+      <main className="employees-main-content">
           
+          {/* 🟢 БЛОК 1: Заголовок, Кнопка, Счетчик и Поиск — теперь ВНУТРИ <main> */}
+          <div className="employees-header-controls-combined">
+              
+              {/* Верхняя строка: Заголовок и Кнопка */}
+              <div className="employees-header-row">
+                  <h1>Сотрудники</h1>
+                  <button 
+                      type="button" 
+                      className="add-employee-button"
+                      onClick={() => handleAction('Добавление')}
+                  >
+                      <Plus size={20} />
+                      Добавить сотрудника
+                  </button>
+              </div>
+
+              {/* Нижняя строка: Счетчик и Поиск */}
+              <div className="employees-search-row">
+                  {/* Счетчик найденных сотрудников */}
+                  <div className="employee-count-indicator">
+                      Найдено сотрудников: <strong>{totalEmployeesCount}</strong>
+                  </div>
+                  
+                  {/* Поле поиска */}
+                  <div className="main-search-bar"> 
+                      <div className="search-input">
+                          <Search size={18} className="search-icon" />
+                          <input
+                              type="text"
+                              placeholder="Поиск по ФИО, регион, должность..."
+                              value={filters.searchTerm}
+                              onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
+                          />
+                      </div>
+                  </div>
+              </div>
+              
+          </div>
 
 
           <div className="employee-table-container">
@@ -490,9 +551,11 @@ const EmployeesPage: React.FC = () => {
                     ФИО <ArrowUpDown size={14} />
                   </th>
                   <th onClick={() => handleSortChange('position')} className={sort.key === 'position' ? sort.direction : ''}>
-                    Должность <ArrowUpDown size={14} />
+                    Ученое звание <ArrowUpDown size={14} />
                   </th>
-                  <th>Уч. ст.</th>
+                  <th>Ученая степень</th>
+                  <th>AUTHOR ID В SCOPUS</th>
+                  <th>RESEARCHER ID WEB OF SCIENCE</th>
                   <th onClick={() => handleSortChange('hIndex')} className={sort.key === 'hIndex' ? sort.direction : ''}>
                     H-index <ArrowUpDown size={14} />
                   </th>
@@ -512,6 +575,17 @@ const EmployeesPage: React.FC = () => {
                     <td>{employee.name} ({employee.gender === 'male' ? 'М' : 'Ж'})</td>
                     <td>{employee.position}</td>
                     <td>{employee.degree === 'none' ? '-' : employee.degree}</td>
+                    <td>{employee.scopusAuthorId}</td>
+                    <td>
+                        <a 
+                            href={employee.researcherIdWos} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{ overflowWrap: 'break-word', wordBreak: 'break-all' }} // Добавление стиля для переноса длинной ссылки
+                        >
+                            {employee.researcherIdWos}
+                        </a>
+                    </td>
                     <td>{employee.hIndex}</td>
                     <td>{regions.find(r => r.id === employee.regionId)?.shortName || 'Н/Д'}</td>
                     <td>{currentYear - employee.birthYear}</td> 
@@ -556,7 +630,6 @@ const EmployeesPage: React.FC = () => {
           </div>
         </main>
         
-      </div>
     </div>
   );
 };
