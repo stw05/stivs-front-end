@@ -1,196 +1,360 @@
-/* EmployeesPage.css */
-
-/* --- ОСНОВНАЯ СТРУКТУРА --- */
+/* Updated layout to align with Projects page styling */
 
 .employees-page {
-    /* 🟢 ИЗМЕНЕНИЕ: Используем Grid: 300px сайдбар и 1fr контент */
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    grid-template-areas: 
-        "sidebar main"; /* Сайдбар слева, весь контент справа */
+    display: flex;
+    flex-direction: column;
     gap: 2rem;
+    background: #f4f7ff;
+    padding-bottom: 3rem;
 }
 
-/* --- СТИЛИ САЙДБАРА (GRID AREA: sidebar) --- */
-.employees-sidebar {
-    grid-area: sidebar;
+.employees-header {
     display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    padding: 1.5rem;
-    background: #ffffff;
-    border-radius: 14px;
-    box-shadow: 0 10px 20px -15px rgba(15, 23, 42, 0.1);
-    border: 1px solid rgba(148, 163, 184, 0.2);
-    height: fit-content; /* Сайдбар занимает только нужную высоту */
-    position: sticky; /* Приклеиваем к верху при прокрутке */
-    top: 1rem; /* Отступ сверху */
-}
-
-/* --- СТИЛИ ОСНОВНОГО КОНТЕНТА (GRID AREA: main) --- */
-.employees-main-content {
-    grid-area: main; 
-    /* 🟢 ИЗМЕНЕНИЕ: Используем Flex для вертикального размещения элементов внутри main */
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem; /* Отступ между блоком управления и таблицей */
-    min-width: 0; /* Важно для корректной работы Flex/Grid с 1fr */
-}
-
-/* 🟢 НОВЫЙ СТИЛЬ: Контейнер для Заголовка, Кнопки, Счетчика и Поиска */
-.employees-header-controls-combined {
-    display: flex;
-    flex-direction: column; /* Располагаем ряды вертикально */
-    gap: 1.5rem; /* Отступ между строкой заголовка и строкой поиска */
-}
-
-/* 🟢 СТИЛЬ: Верхняя строка (Заголовок + Кнопка) */
-.employees-header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center; 
-}
-
-/* 🟢 СТИЛЬ: Нижняя строка (Счетчик + Поиск) */
-.employees-search-row {
-    display: flex;
-    flex-direction: column;
     justify-content: space-between;
     align-items: flex-start;
+    background: #ffffff;
+    padding: 1.75rem 2rem;
+    border-radius: 24px;
+    box-shadow: 0 24px 48px rgba(37, 99, 235, 0.14);
+    margin-top: 1rem;
 }
 
-
-/* --- ОБЩИЕ СТИЛИ ЭЛЕМЕНТОВ --- */
-.employees-page h1 {
+.employees-header h1 {
+    margin: 0;
     font-size: 2rem;
     font-weight: 700;
     color: #1e3a8a;
-    margin-bottom: 0;
 }
 
-.add-employee-button {
+.employees-header p {
+    margin: 0.5rem 0 0;
+    color: #475569;
+    font-weight: 500;
+}
+
+.employees-header-actions {
     display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.employees-header-button {
+    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
+    padding: 0.65rem 1.2rem;
     border-radius: 12px;
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-    color: #fff;
-    border: none;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    background: #f8fafc;
+    color: #1e3a8a;
     font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 8px 20px -10px rgba(37, 99, 235, 0.6);
     transition: all 0.2s ease;
 }
 
-.add-employee-button:hover {
-    box-shadow: 0 12px 30px -10px rgba(37, 99, 235, 0.7);
+.employees-header-button:hover {
+    background: #e2e8f0;
+}
+
+.employees-search-line {
+    background: linear-gradient(120deg, #f9fbff 0%, #ffffff 70%);
+    border-radius: 24px;
+    padding: 1.75rem 2rem;
+    box-shadow: 0 24px 48px rgba(37, 99, 235, 0.12);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.employees-search-toolbar {
+    display: flex;
+    align-items: stretch;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+}
+
+.employees-search {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0 1rem;
+    background: #f8fbff;
+    border-radius: 18px;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    box-shadow: inset 0 2px 6px rgba(15, 23, 42, 0.05);
+    flex: 1 1 320px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.employees-search svg {
+    color: #94a3b8;
+}
+
+.employees-search input {
+    border: none;
+    background: transparent;
+    padding: 0.65rem 0;
+    flex: 1;
+    font-weight: 600;
+}
+
+.employees-search:focus-within {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    background: #ffffff;
+}
+
+.employees-column-picker {
+    position: relative;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: stretch;
+}
+
+.employees-column-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.75rem 1.4rem;
+    border-radius: 18px;
+    border: none;
+    background: linear-gradient(135deg, #2563eb, #4338ca);
+    color: #ffffff;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 18px 32px rgba(37, 99, 235, 0.35);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    height: 100%;
+}
+
+.employees-column-button svg {
+    padding: 0.2rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.employees-column-button:hover {
     transform: translateY(-1px);
+    box-shadow: 0 24px 38px rgba(37, 99, 235, 0.4);
 }
 
-.sidebar-button {
-    width: 100%;
-    margin-top: 0.5rem;
+.employees-column-button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(248, 250, 252, 0.6), 0 0 0 6px rgba(37, 99, 235, 0.4);
 }
 
-/* --- СТИЛИ ФИЛЬТРОВ САЙДБАРА --- */
-.sidebar-section {
+.employees-column-list {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.5rem);
+    background: #ffffff;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 16px;
+    padding: 1rem;
+    box-shadow: 0 18px 30px rgba(15, 23, 42, 0.16);
+    min-width: 220px;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.6rem;
+    z-index: 5;
 }
 
-.filter-label {
-    font-size: 0.9rem;
+.employees-column-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     font-weight: 600;
-    color: #334155;
-}
-
-.sidebar-select,
-.sidebar-input {
-    padding: 0.6rem 0.8rem;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
-    background-color: #f8fafc;
-    font-size: 0.95rem;
-    color: #0f172a;
-    transition: border-color 0.2s ease;
-}
-
-.sidebar-select:focus,
-.sidebar-input:focus {
-    border-color: #3b82f6;
-    outline: none;
-}
-
-.age-range-inputs {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.age-input {
-    flex-grow: 1;
-    text-align: center;
-}
-
-.age-separator {
-    color: #64748b;
-}
-
-
-/* --- СТИЛИ ПОИСКА --- */
-
-.main-search-bar {
-    /* Удаляем margin-bottom, так как теперь он управляется через flex-gap в .employees-header-controls-combined */
-    flex-grow: 1; /* Поле поиска займет все свободное место */
-    min-width: 350px;
-}
-
-.search-input {
-    display: flex;
-    align-items: center;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 0.6rem 10px;
-    background-color: #f8fafc;
-}
-
-.search-input input {
-    border: none;
-    outline: none;
-    padding: 0 0 0 10px;
-    flex-grow: 1;
-    font-size: 0.95rem;
-    background-color: transparent;
     color: #0f172a;
 }
 
-.search-icon {
-    color: #6b7280;
+.employees-content {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
 }
 
-/* --- СТИЛИ СЧЕТЧИКА --- */
-.employee-count-indicator {
-    font-size: 1rem;
-    font-weight: 500;
-    color: #475569;
+.employees-sidebar {
+    width: 360px;
+    min-width: 320px;
+    background: radial-gradient(circle at top, rgba(59, 130, 246, 0.08), transparent 60%), #ffffff;
+    border-radius: 28px;
+    padding: 2rem 1.75rem;
+    box-shadow: 0 30px 60px rgba(15, 23, 42, 0.16);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    position: sticky;
+    top: 1.5rem;
 }
 
-.employee-count-indicator strong {
-    font-weight: 700;
+.employees-filter-block {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.employees-filter-block + .employees-filter-block {
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.employees-filter-title {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
     color: #1e3a8a;
+    font-weight: 800;
+    margin-bottom: 0.35rem;
+    position: relative;
 }
 
+.employees-filter-title::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -0.35rem;
+    width: 48px;
+    height: 3px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #2563eb, #38bdf8);
+}
 
-/* --- СТИЛИ ТАБЛИЦЫ --- */
+.employees-filters-grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.employees-filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    background: linear-gradient(120deg, rgba(248, 250, 252, 0.85), rgba(255, 255, 255, 0.95));
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 18px;
+    padding: 0.9rem 1rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    position: relative;
+}
+
+.employees-filter-item::after {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    bottom: 0.85rem;
+    width: calc(100% - 2rem);
+    height: 1px;
+    background: linear-gradient(90deg, rgba(37, 99, 235, 0.25), transparent);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.employees-filter-item:focus-within::after {
+    opacity: 1;
+}
+
+.employees-filter-item label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #7483a1;
+    font-weight: 700;
+    position: relative;
+    padding-left: 0.35rem;
+}
+
+.employees-filter-item label::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 12px;
+    border-radius: 999px;
+    background: #cbd5f5;
+}
+
+.employees-filter-item select,
+.employees-filter-item input {
+    padding: 0.75rem 1.15rem;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: #f8fafc;
+    color: #0f172a;
+    font-weight: 600;
+    outline: none;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    box-shadow: inset 0 2px 4px rgba(15, 23, 42, 0.05);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: calc(100% - 1rem) center;
+    background-size: 12px 8px;
+    padding-right: 2.4rem;
+}
+
+.employees-filter-item input[type="number"] {
+    background-image: none;
+    padding-right: 1.15rem;
+}
+
+.employees-filter-item select:focus,
+.employees-filter-item input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    background: #ffffff;
+}
+
+.employees-filter-item--vertical {
+    gap: 0.9rem;
+}
+
+.employees-age-range {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.employees-filter-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.employees-filter-actions button {
+    padding: 0.65rem 1.2rem;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    background: #f1f5f9;
+    color: #1e3a8a;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.employees-filter-actions button:hover {
+    background: #e2e8f0;
+}
+
+.employees-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    min-width: 0;
+}
+
+.employees-table-section {
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 1.5rem 1.75rem 2rem;
+    box-shadow: 0 30px 60px rgba(15, 23, 42, 0.12);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+}
 
 .employee-table-container {
-    /* Стили таблицы остались прежними, но теперь это Flex-элемент внутри main */
     overflow-x: auto;
-    background: #ffffff;
-    border-radius: 14px;
-    box-shadow: 0 10px 20px -15px rgba(15, 23, 42, 0.1);
+    border-radius: 18px;
     border: 1px solid rgba(148, 163, 184, 0.2);
 }
 
@@ -198,7 +362,7 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 0.95rem;
-    min-width: 900px; /* Минимальная ширина, чтобы таблица не сжималась */
+    min-width: 900px;
 }
 
 .employee-table thead th {
@@ -226,7 +390,6 @@
     border-bottom: none;
 }
 
-/* Стили для иконки сортировки */
 .employee-table th svg {
     margin-left: 0.3rem;
     opacity: 0.5;
@@ -239,22 +402,18 @@
     color: #334155;
 }
 
-/* Активная сортировка: ASC */
 .employee-table th.asc svg {
-    color: #1e3a8a; 
+    color: #1e3a8a;
     opacity: 1;
     transform: rotate(0deg);
 }
 
-/* Активная сортировка: DESC (переворот стрелки) */
 .employee-table th.desc svg {
-    color: #1e3a8a; 
+    color: #1e3a8a;
     opacity: 1;
     transform: rotate(180deg);
 }
 
-
-/* --- Действия в таблице --- */
 .actions-column {
     text-align: center;
     min-width: 120px;
@@ -287,34 +446,20 @@
     color: #64748b;
 }
 
+.employees-summary {
+    margin-top: 1rem;
+    color: #475569;
+    font-weight: 500;
+}
 
-/* --- АДАПТИВНОСТЬ --- */
 @media (max-width: 1024px) {
-    /* На маленьких экранах переключаемся обратно на вертикальный Flex */
-    .employees-page {
-        display: flex;
+    .employees-content {
         flex-direction: column;
-        gap: 2rem;
     }
 
     .employees-sidebar {
-        position: static; /* Отключаем sticky */
-        width: auto;
-        flex: 1 1 auto;
-    }
-
-    .employees-main-content {
-        gap: 1.5rem;
-    }
-    
-    .employees-search-row {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-    
-    .main-search-bar {
+        position: static;
         width: 100%;
-        max-width: 100%;
+        min-width: 0;
     }
 }

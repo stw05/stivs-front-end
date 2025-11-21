@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Plus, Search, Eye, Pencil, Trash2, ArrowUpDown } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Download, Search, Eye, Pencil, Trash2, ArrowUpDown, SlidersHorizontal } from 'lucide-react';
 import { useRegionContext } from '../context/RegionContext';
 import type { RegionId } from '../context/RegionContext'; 
 import './EmployeesPage.css';
@@ -52,8 +52,9 @@ const currentYear = new Date().getFullYear();
 // Устанавливаем минимальные и максимальные границы для фильтра возраста (20 - 80)
 const MIN_AGE_LIMIT = 20; 
 const MAX_AGE_LIMIT = 80;
-const allPositions = Array.from(new Set(mockEmployees.map(e => e.position))).sort();
-const allProjectRoles = Array.from(new Set(mockEmployees.map(e => e.projectRole))).sort();
+const allPositions = Array.from(new Set(mockEmployees.map((e) => e.position))).sort();
+const allProjectRoles = Array.from(new Set(mockEmployees.map((e) => e.projectRole))).sort();
+const allDepartments = Array.from(new Set(mockEmployees.map((e) => e.department))).sort();
 
 
 interface EmployeeFilters {
@@ -79,34 +80,93 @@ interface SortState {
   direction: 'asc' | 'desc' | '';
 }
 
+type EmployeeColumnKey =
+  | 'name'
+  | 'position'
+  | 'degree'
+  | 'scopusAuthorId'
+  | 'researcherIdWos'
+  | 'hIndex'
+  | 'region'
+  | 'age'
+  | 'hireDate';
+
+interface EmployeeColumnDefinition {
+  key: EmployeeColumnKey;
+  label: string;
+  sortKey?: keyof Employee | 'age';
+}
+
+const employeeColumnDefinitions: EmployeeColumnDefinition[] = [
+  { key: 'name', label: 'ФИО', sortKey: 'name' },
+  { key: 'position', label: 'Ученое звание', sortKey: 'position' },
+  { key: 'degree', label: 'Ученая степень', sortKey: 'degree' },
+  { key: 'scopusAuthorId', label: 'AUTHOR ID В SCOPUS' },
+  { key: 'researcherIdWos', label: 'RESEARCHER ID WEB OF SCIENCE' },
+  { key: 'hIndex', label: 'H-index', sortKey: 'hIndex' },
+  { key: 'region', label: 'Регион' },
+  { key: 'age', label: 'Возраст', sortKey: 'age' },
+  { key: 'hireDate', label: 'Дата приема', sortKey: 'hireDate' },
+];
+
+const defaultVisibleEmployeeColumns: Record<EmployeeColumnKey, boolean> = employeeColumnDefinitions.reduce(
+  (acc, column) => ({
+    ...acc,
+    [column.key]: true,
+  }),
+  {} as Record<EmployeeColumnKey, boolean>,
+);
+
+const createInitialFilters = (): EmployeeFilters => ({
+  searchTerm: '',
+  position: 'all',
+  department: 'all',
+  minAge: MIN_AGE_LIMIT,
+  maxAge: MAX_AGE_LIMIT,
+  affiliateType: 'all',
+  gender: 'all',
+  degree: 'all',
+  citizenship: 'all',
+  projectRole: 'all',
+  hIndexGroup: 'all',
+  mrnti: 'all',
+  classifier: 'all',
+  regionId: 'all',
+});
+
 // --- 3. Компонент страницы ---
 const EmployeesPage: React.FC = () => {
   const { selectedRegionId, regions } = useRegionContext();
   
-  const [filters, setFilters] = useState<EmployeeFilters>({
-    searchTerm: '',
-    position: 'all',
-    department: 'all',
-    minAge: MIN_AGE_LIMIT, 
-    maxAge: MAX_AGE_LIMIT, 
-    affiliateType: 'all',
-    // НОВЫЕ ФИЛЬТРЫ
-    gender: 'all',
-    degree: 'all',
-    citizenship: 'all',
-    projectRole: 'all',
-    hIndexGroup: 'all',
-    mrnti: 'all',
-  classifier: 'all',
-  regionId: 'all',
-    
-  });
+  const [filters, setFilters] = useState<EmployeeFilters>(() => createInitialFilters());
   
   const [sort, setSort] = useState<SortState>({ key: 'name', direction: 'asc' });
+  const [visibleColumns, setVisibleColumns] = useState<Record<EmployeeColumnKey, boolean>>(() => ({
+    ...defaultVisibleEmployeeColumns,
+  }));
+  const [isColumnPickerOpen, setIsColumnPickerOpen] = useState(false);
+  const columnPickerRef = useRef<HTMLDivElement | null>(null);
+
+  const regionNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    regions.forEach((region) => {
+      map[region.id] = region.shortName ?? region.name;
+    });
+    return map;
+  }, [regions]);
+
+  const activeColumns = useMemo(
+    () => employeeColumnDefinitions.filter((column) => visibleColumns[column.key]),
+    [visibleColumns],
+  );
 
   // Универсальный обработчик для текстовых и селектов
   const handleFilterChange = (name: keyof EmployeeFilters, value: string | AffiliateType | GenderType | CitizenshipType | DegreeType | HIndexGroup) => {
     setFilters(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const resetFilters = () => {
+    setFilters(createInitialFilters());
   };
   
   // Обработчик для ввода возраста
@@ -151,13 +211,73 @@ const EmployeesPage: React.FC = () => {
       });
   };
 
+  const toggleColumn = (columnKey: EmployeeColumnKey) => {
+    setVisibleColumns((prev) => {
+      const visibleCount = Object.values(prev).filter(Boolean).length;
+      const nextValue = !prev[columnKey];
+      if (!nextValue && visibleCount === 1) {
+        return prev;
+      }
+      return { ...prev, [columnKey]: nextValue };
+    });
+  };
+
+  useEffect(() => {
+    if (!isColumnPickerOpen) {
+      return;
+    }
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (columnPickerRef.current && !columnPickerRef.current.contains(event.target as Node)) {
+        setIsColumnPickerOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isColumnPickerOpen]);
+
 
   // Функция для преобразования H-index в группу
   const getHIndexGroup = (hIndex: number): HIndexGroup | '10+' => {
       if (hIndex >= 0 && hIndex <= 1) return '0-1';
       if (hIndex >= 2 && hIndex <= 5) return '2-5';
       if (hIndex >= 6 && hIndex <= 10) return '6-10';
-      return '10+';
+     return '10+';
+  };
+
+  const renderEmployeeCell = (columnKey: EmployeeColumnKey, employee: Employee): React.ReactNode => {
+    switch (columnKey) {
+      case 'name':
+        return `${employee.name} (${employee.gender === 'male' ? 'М' : 'Ж'})`;
+      case 'position':
+        return employee.position;
+      case 'degree':
+        return employee.degree === 'none' ? '-' : employee.degree;
+      case 'scopusAuthorId':
+        return employee.scopusAuthorId;
+      case 'researcherIdWos':
+        return (
+          <a
+            href={employee.researcherIdWos}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ overflowWrap: 'break-word', wordBreak: 'break-all' }}
+          >
+            {employee.researcherIdWos}
+          </a>
+        );
+      case 'hIndex':
+        return employee.hIndex;
+      case 'region':
+        return regionNameById[employee.regionId] ?? 'Н/Д';
+      case 'age':
+        return currentYear - employee.birthYear;
+      case 'hireDate':
+        return new Date(employee.hireDate).toLocaleDateString('ru-RU');
+      default:
+        return null;
+    }
   };
 
 
@@ -281,355 +401,352 @@ const EmployeesPage: React.FC = () => {
   const totalEmployeesCount = filteredEmployees.length;
 
   return (
-    // Используем Grid для всего макета
     <div className="employees-page">
-      
-      {/* 1. БОКОВАЯ ПАНЕЛЬ ФИЛЬТРОВ (Grid Area: sidebar) */}
-      <aside className="employees-sidebar">
-          
-          {/* СЕКЦИЯ: ПОЛ */}
-          <div className="sidebar-section">
-            <label htmlFor="gender-filter" className="filter-label">Пол (Гендер)</label>
-            <select
-              id="gender-filter"
-              value={filters.gender}
-              onChange={(e) => handleFilterChange('gender', e.target.value as GenderType)}
-              className="sidebar-select"
-            >
-              <option value="all">Любой</option>
-              <option value="male">Мужской</option>
-              <option value="female">Женский</option>
-            </select>
+      <header className="employees-header">
+        <div>
+          <h1>Сотрудники</h1>
+          <p>
+            В базе: {mockEmployees.length} • Найдено: {totalEmployeesCount}
+          </p>
+        </div>
+        <div className="employees-header-actions">
+          <button
+            type="button"
+            className="employees-header-button"
+            onClick={() => handleAction('Выгрузка отчета')}
+          >
+            <Download size={18} />
+            Выгрузить отчет
+          </button>
+        </div>
+      </header>
+
+      <div className="employees-search-line">
+        <div className="employees-search-toolbar">
+          <div className="employees-search">
+            <Search size={18} />
+            <input
+              type="text"
+              placeholder="Поиск по ФИО, региону или должности"
+              value={filters.searchTerm}
+              onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
+            />
           </div>
+          <div className="employees-column-picker" ref={columnPickerRef}>
+            <button
+              type="button"
+              className="employees-column-button"
+              onClick={() => setIsColumnPickerOpen((prev) => !prev)}
+            >
+              <SlidersHorizontal size={18} />
+              Настроить столбцы
+            </button>
+            {isColumnPickerOpen && (
+              <div className="employees-column-list">
+                {employeeColumnDefinitions.map((column) => (
+                  <label key={column.key} className="employees-column-option">
+                    <input
+                      type="checkbox"
+                      checked={visibleColumns[column.key]}
+                      onChange={() => toggleColumn(column.key)}
+                    />
+                    {column.label}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
-          
+      <div className="employees-content">
+        <aside className="employees-sidebar">
+          <div className="employees-filter-block">
+            <div className="employees-filter-title">Общие параметры</div>
+            <div className="employees-filters-grid">
+              <div className="employees-filter-item">
+                <label htmlFor="gender-filter">Пол</label>
+                <select
+                  id="gender-filter"
+                  value={filters.gender}
+                  onChange={(e) => handleFilterChange('gender', e.target.value as GenderType)}
+                >
+                  <option value="all">Любой</option>
+                  <option value="male">Мужской</option>
+                  <option value="female">Женский</option>
+                </select>
+              </div>
 
-          {/* СЕКЦИЯ: ВОЗРАСТ (20 - 80) */}
-          <div className="sidebar-section">
-            <label className="filter-label">Возраст (лет)</label>
-            <div className="age-range-inputs">
-                {/* Ввод минимального возраста */}
-                <input
-                    type="number"
-                    min={MIN_AGE_LIMIT}
-                    max={MAX_AGE_LIMIT}
-                    value={filters.minAge.toString()}
-                    onChange={(e) => handleAgeChange('minAge', e.target.value)}
-                    className="sidebar-input age-input"
-                    placeholder="От 20"
-                />
-                <span className="age-separator">-</span>
-                {/* Ввод максимального возраста */}
-                <input
-                    type="number"
-                    min={MIN_AGE_LIMIT}
-                    max={MAX_AGE_LIMIT}
-                    value={filters.maxAge.toString()}
-                    onChange={(e) => handleAgeChange('maxAge', e.target.value)}
-                    className="sidebar-input age-input"
-                    placeholder="До 80"
-                />
+              <div className="employees-filter-item">
+                <label htmlFor="affiliate-filter">Аффилированность</label>
+                <select
+                  id="affiliate-filter"
+                  value={filters.affiliateType}
+                  onChange={(e) => handleFilterChange('affiliateType', e.target.value as AffiliateType)}
+                >
+                  <option value="all">Все</option>
+                  <option value="staff">Штатный сотрудник</option>
+                  <option value="external">Сторонний исполнитель</option>
+                </select>
+              </div>
+
+              <div className="employees-filter-item">
+                <label htmlFor="citizenship-filter">Гражданство</label>
+                <select
+                  id="citizenship-filter"
+                  value={filters.citizenship}
+                  onChange={(e) => handleFilterChange('citizenship', e.target.value as CitizenshipType)}
+                >
+                  <option value="all">Любое</option>
+                  <option value="resident">Резидент (РК)</option>
+                  <option value="non-resident">Нерезидент</option>
+                </select>
+              </div>
+
+              <div className="employees-filter-item">
+                <label htmlFor="regionId">Регион</label>
+                <select
+                  id="regionId"
+                  value={filters.regionId}
+                  onChange={(e) => handleFilterChange('regionId', e.target.value as RegionId | 'all')}
+                >
+                  <option value="all">Все регионы</option>
+                  {regions.map((region) => (
+                    <option key={region.id} value={region.id}>
+                      {region.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
-          {/* Фильтр УЧЕНОЙ СТЕПЕНИ */}
-          <div className="sidebar-section">
-            <label htmlFor="degree-filter" className="filter-label">Ученая степень</label>
-            <select
-              id="degree-filter"
-              value={filters.degree}
-              onChange={(e) => handleFilterChange('degree', e.target.value as DegreeType)}
-              className="sidebar-select"
-            >
-              <option value="all">Все степени</option>
-              <option value="doctor">Доктор наук</option>
-              <option value="candidate">Кандидат наук</option>
-              <option value="phd">PhD</option>
-              <option value="master">Магистр</option>
-              <option value="none">Нет степени</option>
-            </select>
+          <div className="employees-filter-block">
+            <div className="employees-filter-title">Деятельность</div>
+            <div className="employees-filters-grid">
+              <div className="employees-filter-item">
+                <label htmlFor="degree-filter">Ученая степень</label>
+                <select
+                  id="degree-filter"
+                  value={filters.degree}
+                  onChange={(e) => handleFilterChange('degree', e.target.value as DegreeType)}
+                >
+                  <option value="all">Все степени</option>
+                  <option value="doctor">Доктор наук</option>
+                  <option value="candidate">Кандидат наук</option>
+                  <option value="phd">PhD</option>
+                  <option value="master">Магистр</option>
+                  <option value="none">Нет степени</option>
+                </select>
+              </div>
+
+              <div className="employees-filter-item">
+                <label htmlFor="position-filter">Ученое звание</label>
+                <select
+                  id="position-filter"
+                  value={filters.position}
+                  onChange={(e) => handleFilterChange('position', e.target.value)}
+                >
+                  <option value="all">Все</option>
+                  {allPositions.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="employees-filter-item">
+                <label htmlFor="department-filter">Подразделение</label>
+                <select
+                  id="department-filter"
+                  value={filters.department}
+                  onChange={(e) => handleFilterChange('department', e.target.value)}
+                >
+                  <option value="all">Все подразделения</option>
+                  {allDepartments.map((department) => (
+                    <option key={department} value={department}>
+                      {department}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="employees-filter-item">
+                <label htmlFor="project-role-filter">Роль в проекте</label>
+                <select
+                  id="project-role-filter"
+                  value={filters.projectRole}
+                  onChange={(e) => handleFilterChange('projectRole', e.target.value)}
+                >
+                  <option value="all">Все роли</option>
+                  {allProjectRoles.map((role) => (
+                    <option key={role} value={role}>
+                      {role}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
 
-          {/* Фильтр должности (Ученое звание) */}
-          <div className="sidebar-section">
-            <label htmlFor="position-filter" className="filter-label">Ученое звание</label>
-            <select
-              id="position-filter"
-              value={filters.position}
-              onChange={(e) => handleFilterChange('position', e.target.value)}
-              className="sidebar-select"
-            >
-              <option value="all">Все</option>
-              {allPositions.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* 🟢 НОВЫЙ ФИЛЬТР: МРНТИ */}
-          <div className="sidebar-section">
-              <label htmlFor="mrnti" className="filter-label">МРНТИ</label>
-              <select
+          <div className="employees-filter-block">
+            <div className="employees-filter-title">Исследовательские коды</div>
+            <div className="employees-filters-grid">
+              <div className="employees-filter-item">
+                <label htmlFor="mrnti">МРНТИ</label>
+                <select
                   id="mrnti"
                   value={filters.mrnti}
                   onChange={(e) => handleFilterChange('mrnti', e.target.value as MRNTIType)}
-                  className="sidebar-select"
-              >
+                >
                   <option value="all">Все коды</option>
-                  <option value="11.00.00">11.00.00 - Математика</option>
-                  <option value="27.00.00">27.00.00 - Социальные науки</option>
-                  <option value="55.00.00">55.00.00 - Технические науки</option>
-                  {/* Добавьте больше опций по мере необходимости */}
-              </select>
-          </div>
-          
-          {/* 🟢 НОВЫЙ ФИЛЬТР: КЛАССИФИКАТОР */}
-          <div className="sidebar-section">
-              <label htmlFor="classifier" className="filter-label">Классификатор</label>
-              <select
+                  <option value="11.00.00">11.00.00 — Математика</option>
+                  <option value="27.00.00">27.00.00 — Социальные науки</option>
+                  <option value="55.00.00">55.00.00 — Технические науки</option>
+                </select>
+              </div>
+
+              <div className="employees-filter-item">
+                <label htmlFor="classifier">Классификатор</label>
+                <select
                   id="classifier"
                   value={filters.classifier}
                   onChange={(e) => handleFilterChange('classifier', e.target.value as ClassifierType)}
-                  className="sidebar-select"
-              >
+                >
                   <option value="all">Все классификаторы</option>
                   <option value="economic">Экономический</option>
                   <option value="social">Социальный</option>
                   <option value="technical">Технический</option>
-              </select>
+                </select>
+              </div>
+            </div>
           </div>
-          
-          {/* 🟢 НОВЫЙ ФИЛЬТР: РЕГИОН */}
-          <div className="sidebar-section">
-              <label htmlFor="regionId" className="filter-label">Регион</label>
+
+          <div className="employees-filter-block">
+            <div className="employees-filter-title">Метрики</div>
+            <div className="employees-filter-item employees-filter-item--vertical">
+              <label>Возраст (лет)</label>
+              <div className="employees-age-range">
+                <input
+                  type="number"
+                  min={MIN_AGE_LIMIT}
+                  max={MAX_AGE_LIMIT}
+                  value={filters.minAge.toString()}
+                  onChange={(e) => handleAgeChange('minAge', e.target.value)}
+                />
+                <span>—</span>
+                <input
+                  type="number"
+                  min={MIN_AGE_LIMIT}
+                  max={MAX_AGE_LIMIT}
+                  value={filters.maxAge.toString()}
+                  onChange={(e) => handleAgeChange('maxAge', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="employees-filter-item">
+              <label htmlFor="h-index-filter">Индекс Хирша</label>
               <select
-                  id="regionId"
-                  value={filters.regionId}
-                  onChange={(e) => handleFilterChange('regionId', e.target.value as RegionId | 'all')}
-                  className="sidebar-select"
+                id="h-index-filter"
+                value={filters.hIndexGroup}
+                onChange={(e) => handleFilterChange('hIndexGroup', e.target.value as HIndexGroup)}
               >
-                  <option value="all">Все регионы</option>
-                  {regions.map(region => (
-                      <option key={region.id} value={region.id}>
-                          {region.name}
-                      </option>
-                  ))}
+                <option value="all">Все значения</option>
+                <option value="0-1">0 - 1</option>
+                <option value="2-5">2 - 5</option>
+                <option value="6-10">6 - 10</option>
+                <option value="10+">10 и выше</option>
               </select>
-          </div>
-          
-          
-          {/* СЕКЦИЯ: ГРАЖДАНСТВО */}
-          <div className="sidebar-section">
-            <label htmlFor="citizenship-filter" className="filter-label">Гражданство</label>
-            <select
-              id="citizenship-filter"
-              value={filters.citizenship}
-              onChange={(e) => handleFilterChange('citizenship', e.target.value as CitizenshipType)}
-              className="sidebar-select"
-            >
-              <option value="all">Любое</option>
-              <option value="resident">Резидент (гражданин РК)</option>
-              <option value="non-resident">Не резидент</option>
-            </select>
-          </div>
-          
-
-
-          {/* Фильтр Роль в проекте */}
-          <div className="sidebar-section">
-            <label htmlFor="project-role-filter" className="filter-label">Роль в проекте</label>
-            <select
-              id="project-role-filter"
-              value={filters.projectRole}
-              onChange={(e) => handleFilterChange('projectRole', e.target.value)}
-              className="sidebar-select"
-            >
-              <option value="all">Все роли</option>
-              {allProjectRoles.map((role) => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-
-          {/* СЕКЦИЯ: АФФИЛИРОВАННОСТЬ (Штатный/Сторонний) */}
-          <div className="sidebar-section">
-            <label htmlFor="affiliate-filter" className="filter-label">Аффилированность</label>
-            <select
-              id="affiliate-filter"
-              value={filters.affiliateType}
-              onChange={(e) => handleFilterChange('affiliateType', e.target.value as AffiliateType)}
-              className="sidebar-select"
-            >
-              <option value="all">Все</option>
-              <option value="staff">Штатный сотрудник</option>
-              <option value="external">Сторонний исполнитель</option>
-            </select>
-          </div>
-          
-          {/* СЕКЦИЯ: H-INDEX */}
-          <div className="sidebar-section">
-            <label htmlFor="h-index-filter" className="filter-label">Индекс Хирша (H-index)</label>
-            <select
-              id="h-index-filter"
-              value={filters.hIndexGroup}
-              onChange={(e) => handleFilterChange('hIndexGroup', e.target.value as HIndexGroup)}
-              className="sidebar-select"
-            >
-              <option value="all">Все</option>
-              <option value="0-1">0 - 1</option>
-              <option value="2-5">2 - 5</option>
-              <option value="6-10">6 - 10</option>
-              <option value="10+">10 и выше</option>
-            </select>
-          </div>
-          
-          <button 
-            type="button" 
-            className="add-employee-button sidebar-button"
-            onClick={() => { alert('Фильтры применены.'); }}
-          >
-            <ArrowUpDown size={20} />
-            Сортировать / Применить
-          </button>
-          
-      </aside>
-        
-      {/* 2. ОСНОВНОЕ СОДЕРЖИМОЕ (Grid Area: main) */}
-      <main className="employees-main-content">
-          
-          {/* 🟢 БЛОК 1: Заголовок, Кнопка, Счетчик и Поиск — теперь ВНУТРИ <main> */}
-          <div className="employees-header-controls-combined">
-              
-              {/* Верхняя строка: Заголовок и Кнопка */}
-              <div className="employees-header-row">
-                  <h1>Сотрудники</h1>
-                  <button 
-                      type="button" 
-                      className="add-employee-button"
-                      onClick={() => handleAction('Добавление')}
-                  >
-                      <Plus size={20} />
-                      Добавить сотрудника
-                  </button>
-              </div>
-
-              {/* Нижняя строка: Счетчик и Поиск */}
-              <div className="employees-search-row">
-                  {/* Счетчик найденных сотрудников */}
-                  <div className="employee-count-indicator">
-                      Найдено сотрудников: <strong>{totalEmployeesCount}</strong>
-                  </div>
-                  
-                  {/* Поле поиска */}
-                  <div className="main-search-bar"> 
-                      <div className="search-input">
-                          <Search size={18} className="search-icon" />
-                          <input
-                              type="text"
-                              placeholder="Поиск по ФИО, регион, должность..."
-                              value={filters.searchTerm}
-                              onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
-                          />
-                      </div>
-                  </div>
-              </div>
-              
+            </div>
           </div>
 
+          <div className="employees-filter-actions">
+            <button type="button" onClick={resetFilters}>
+              Сбросить фильтры
+            </button>
+          </div>
+        </aside>
 
-          <div className="employee-table-container">
-            <table className="employee-table">
-              <thead>
-                <tr>
-                  {/* Заголовки, которые можно сортировать */}
-                  <th onClick={() => handleSortChange('name')} className={sort.key === 'name' ? sort.direction : ''}>
-                    ФИО <ArrowUpDown size={14} />
-                  </th>
-                  <th onClick={() => handleSortChange('position')} className={sort.key === 'position' ? sort.direction : ''}>
-                    Ученое звание <ArrowUpDown size={14} />
-                  </th>
-                  <th>Ученая степень</th>
-                  <th>AUTHOR ID В SCOPUS</th>
-                  <th>RESEARCHER ID WEB OF SCIENCE</th>
-                  <th onClick={() => handleSortChange('hIndex')} className={sort.key === 'hIndex' ? sort.direction : ''}>
-                    H-index <ArrowUpDown size={14} />
-                  </th>
-                  <th>Регион</th>
-                  <th onClick={() => handleSortChange('age')} className={sort.key === 'birthYear' ? sort.direction : ''}>
-                    Возраст <ArrowUpDown size={14} />
-                  </th>
-                  <th onClick={() => handleSortChange('hireDate')} className={sort.key === 'hireDate' ? sort.direction : ''}>
-                    Дата приема <ArrowUpDown size={14} />
-                  </th>
-                  <th className="actions-column">Действия</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredEmployees.map((employee) => (
-                  <tr key={employee.id}>
-                    <td>{employee.name} ({employee.gender === 'male' ? 'М' : 'Ж'})</td>
-                    <td>{employee.position}</td>
-                    <td>{employee.degree === 'none' ? '-' : employee.degree}</td>
-                    <td>{employee.scopusAuthorId}</td>
-                    <td>
-                        <a 
-                            href={employee.researcherIdWos} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            style={{ overflowWrap: 'break-word', wordBreak: 'break-all' }} // Добавление стиля для переноса длинной ссылки
-                        >
-                            {employee.researcherIdWos}
-                        </a>
-                    </td>
-                    <td>{employee.hIndex}</td>
-                    <td>{regions.find(r => r.id === employee.regionId)?.shortName || 'Н/Д'}</td>
-                    <td>{currentYear - employee.birthYear}</td> 
-                    <td>{new Date(employee.hireDate).toLocaleDateString('ru-RU')}</td>
-                    
-                    <td className="actions-column">
-                      <div className="actions-buttons">
-                        <button 
-                          onClick={() => handleAction('Просмотр', employee)} 
-                          aria-label="Просмотр сотрудника"
-                          title="Просмотр"
-                        >
-                          <Eye size={16} />
-                        </button>
-                        <button 
-                          onClick={() => handleAction('Редактирование', employee)} 
-                          aria-label="Редактировать сотрудника"
-                          title="Редактировать"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button 
-                          onClick={() => handleAction('Удаление', employee)} 
-                          aria-label="Удалить сотрудника"
-                          title="Удалить"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
+        <main className="employees-main">
+          <section className="employees-table-section">
+            <div className="employee-table-container">
+              <table className="employee-table">
+                <thead>
+                  <tr>
+                    {activeColumns.map((column) => {
+                      if (column.sortKey) {
+                        const isAgeColumn = column.sortKey === 'age';
+                        const sortKey = isAgeColumn ? 'birthYear' : column.sortKey;
+                        const headerState = sort.key === sortKey ? sort.direction : undefined;
+                        return (
+                          <th
+                            key={column.key}
+                            onClick={() =>
+                              handleSortChange((isAgeColumn ? 'age' : column.sortKey) as keyof Employee | 'age')
+                            }
+                            className={headerState}
+                          >
+                            {column.label}
+                            <ArrowUpDown size={14} />
+                          </th>
+                        );
+                      }
+
+                      return (
+                        <th key={column.key}>{column.label}</th>
+                      );
+                    })}
+                    <th className="actions-column">Действия</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            
-            {/* Сообщение, если список сотрудников пуст */}
-            {filteredEmployees.length === 0 && (
-              <div className="no-results">
-                Сотрудники не найдены по текущим фильтрам.
-              </div>
-            )}
-          </div>
+                </thead>
+                <tbody>
+                  {filteredEmployees.map((employee) => (
+                    <tr key={employee.id}>
+                      {activeColumns.map((column) => (
+                        <td key={`${employee.id}-${column.key}`}>{renderEmployeeCell(column.key, employee)}</td>
+                      ))}
+                      <td className="actions-column">
+                        <div className="actions-buttons">
+                          <button
+                            onClick={() => handleAction('Просмотр', employee)}
+                            aria-label="Просмотр сотрудника"
+                            title="Просмотр"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleAction('Редактирование', employee)}
+                            aria-label="Редактировать сотрудника"
+                            title="Редактировать"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleAction('Удаление', employee)}
+                            aria-label="Удалить сотрудника"
+                            title="Удалить"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {filteredEmployees.length === 0 && (
+                <div className="no-results">Сотрудники не найдены по текущим фильтрам.</div>
+              )}
+            </div>
+            <p className="employees-summary">
+              Показано сотрудников: {filteredEmployees.length} из {mockEmployees.length}
+            </p>
+          </section>
         </main>
-        
+      </div>
     </div>
   );
 };

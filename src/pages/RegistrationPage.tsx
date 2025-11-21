@@ -133,7 +133,7 @@ const RegistrationPage: React.FC = () => {
     const isCheckbox = type === 'checkbox';
 
     setFormData((prev) => {
-      let newState = {
+      const newState = {
         ...prev,
         [name]: isCheckbox ? (e.target as HTMLInputElement).checked : value,
       };

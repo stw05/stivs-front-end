@@ -1,777 +1,770 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import clsx from 'clsx';
-import {
-  ChevronDown,
-  Download,
-  Eye,
-  Pencil,
-  Plus,
-  Search,
-  Trash2,
-  ArrowUpDown,
-} from 'lucide-react';
+import { Download, Search, ArrowUpDown, SlidersHorizontal } from 'lucide-react';
+import { useRegionContext } from '../context/RegionContext';
+import type { RegionId } from '../context/RegionContext';
 import './ProjectsPage.css';
 
-// --- ТИПЫ ДАННЫХ ---
-type ProjectStatus = 'completed' | 'in-progress' | 'overdue';
-type FundingType = 'government' | 'program' | 'commercial' | 'all';
-type FundingPriority =
-  | 'energy'
-  | 'production'
-  | 'natural_sciences'
-  | 'social_sciences'
-  | 'agriculture'
-  | 'health'
-  | 'security'
-  | 'commercialization'
-  | 'ecology'
-  | 'all';
-type OrganizationType = 'ovpo' | 'nii' | 'private' | 'all';
+type FinancingType = 'grant' | 'program' | 'contract';
+type PriorityDirection = 'health' | 'economy' | 'ecology' | 'energy' | 'transport' | 'ai';
+type ProjectStatus = 'active' | 'completed' | 'draft';
+type TrlLevel = 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
-interface ProjectRecord {
-  id: string;
-  order: number;
-  name: string;
-  contractNumber: string;
-  startDate: string;
-  endDate: string;
-  irnId: string;
-  nirContractNumber: string;
-  customer: string;
-  status: ProjectStatus;
-  fundingType: FundingType;
-  fundingPriority: FundingPriority;
-  organizationType: OrganizationType;
+interface Project {
+	id: string;
+	irn: string;
+	title: string;
+	applicant: string;
+	supervisor: string;
+	priority: PriorityDirection;
+	contest: string;
+	financingType: FinancingType;
+	financingTotal: number;
+	regionId: RegionId;
+	customer: string;
+	mrnti: string;
+	status: ProjectStatus;
+	trl: TrlLevel;
+	startYear: number;
+	endYear: number;
 }
 
-interface SidebarFilters {
-  fundingType: FundingType;
-  fundingPriority: FundingPriority;
-  organizationType: OrganizationType;
-}
+const YEAR_RANGE = { min: 2021, max: 2025 } as const;
 
-// --- ДАННЫЕ ПРОЕКТОВ (Обновлены для демо-фильтров) ---
-const projectsData: ProjectRecord[] = [
-  {
-    id: 'p-1', order: 1, name: 'Тест проект 1', contractNumber: '5365', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '423', nirContractNumber: '440207', customer: 'ТОО «Тест»', status: 'completed', fundingType: 'government', fundingPriority: 'energy', organizationType: 'ovpo',
-  },
-  {
-    id: 'p-2', order: 2, name: 'Тест проект 2', contractNumber: '6578', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '578', nirContractNumber: '654377', customer: 'ТОО «Нуртан»', status: 'overdue', fundingType: 'program', fundingPriority: 'production', organizationType: 'nii',
-  },
-  {
-    id: 'p-3', order: 3, name: 'Тест проект 3', contractNumber: '6578', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '578', nirContractNumber: '654377', customer: 'ТОО «Нуртан»', status: 'in-progress', fundingType: 'commercial', fundingPriority: 'natural_sciences', organizationType: 'private',
-  },
-  {
-    id: 'p-4', order: 4, name: 'Тест проект 4', contractNumber: '5365', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '423', nirContractNumber: '440207', customer: 'ТОО «Тест»', status: 'completed', fundingType: 'government', fundingPriority: 'social_sciences', organizationType: 'ovpo',
-  },
-  {
-    id: 'p-5', order: 5, name: 'Тест проект 5', contractNumber: '6578', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '578', nirContractNumber: '654377', customer: 'ТОО «Нуртан»', status: 'overdue', fundingType: 'program', fundingPriority: 'agriculture', organizationType: 'nii',
-  },
-  {
-    id: 'p-6', order: 6, name: 'Тест проект 6', contractNumber: '6578', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '578', nirContractNumber: '654377', customer: 'ТОО «Нуртан»', status: 'in-progress', fundingType: 'commercial', fundingPriority: 'health', organizationType: 'private',
-  },
-  {
-    id: 'p-7', order: 7, name: 'Тест проект 7', contractNumber: '6578', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '578', nirContractNumber: '654377', customer: 'ТОО «Нуртан»', status: 'in-progress', fundingType: 'government', fundingPriority: 'security', organizationType: 'ovpo',
-  },
-  {
-    id: 'p-8', order: 8, name: 'Тест проект 8', contractNumber: '5365', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '423', nirContractNumber: '440207', customer: 'ТОО «Тест»', status: 'completed', fundingType: 'program', fundingPriority: 'commercialization', organizationType: 'nii',
-  },
-  {
-    id: 'p-9', order: 9, name: 'Тест проект 9', contractNumber: '6578', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '578', nirContractNumber: '654377', customer: 'ТОО «Нуртан»', status: 'overdue', fundingType: 'commercial', fundingPriority: 'ecology', organizationType: 'private',
-  },
-  {
-    id: 'p-10', order: 10, name: 'Тест проект 10', contractNumber: '6578', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '578', nirContractNumber: '654377', customer: 'ТОО «Нуртан»', status: 'in-progress', fundingType: 'government', fundingPriority: 'energy', organizationType: 'ovpo',
-  },
-  {
-    id: 'p-11', order: 11, name: 'Тест проект 11', contractNumber: '6578', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '578', nirContractNumber: '654377', customer: 'ТОО «Нуртан»', status: 'overdue', fundingType: 'program', fundingPriority: 'production', organizationType: 'nii',
-  },
-  {
-    id: 'p-12', order: 12, name: 'Тест проект 12', contractNumber: '6578', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '578', nirContractNumber: '654377', customer: 'ТОО «Нуртан»', status: 'in-progress', fundingType: 'commercial', fundingPriority: 'natural_sciences', organizationType: 'private',
-  },
-  {
-    id: 'p-13', order: 13, name: 'Тест проект 13', contractNumber: '5365', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '423', nirContractNumber: '440207', customer: 'ТОО «Тест»', status: 'completed', fundingType: 'government', fundingPriority: 'social_sciences', organizationType: 'ovpo',
-  },
-  {
-    id: 'p-14', order: 14, name: 'Тест проект 14', contractNumber: '5365', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '423', nirContractNumber: '440207', customer: 'ТОО «Тест»', status: 'completed', fundingType: 'program', fundingPriority: 'agriculture', organizationType: 'nii',
-  },
-  {
-    id: 'p-15', order: 15, name: 'Тест проект 15', contractNumber: '5365', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '423', nirContractNumber: '440207', customer: 'ТОО «Тест»', status: 'completed', fundingType: 'commercial', fundingPriority: 'health', organizationType: 'private',
-  },
-  {
-    id: 'p-16', order: 16, name: 'Тест проект 16', contractNumber: '6578', startDate: '2022-08-15T02:03:00', endDate: '2022-10-20T08:00:00', irnId: '578', nirContractNumber: '654377', customer: 'ТОО «Нуртан»', status: 'overdue', fundingType: 'government', fundingPriority: 'security', organizationType: 'ovpo',
-  },
+const projects: Project[] = [
+	{
+		id: 'cp230198765',
+		irn: 'CP230198765',
+		title: 'Исследование воздействия климата на аграрные экосистемы',
+		applicant: 'КНУ',
+		supervisor: 'Кадыров Р.Р.',
+		priority: 'health',
+		contest: 'Конкурс 4',
+		financingType: 'grant',
+		financingTotal: 4_500_000,
+		regionId: 'almaty',
+		customer: 'Минсельхоз',
+		mrnti: '62.33.15',
+		status: 'active',
+		trl: 5,
+		startYear: 2021,
+		endYear: 2024,
+	},
+	{
+		id: 'bp240112233',
+		irn: 'BP240112233',
+		title: 'Разработка квантовых технологий',
+		applicant: 'КарГУ',
+		supervisor: 'Гумаров Е.Н.',
+		priority: 'economy',
+		contest: 'Конкурс 6',
+		financingType: 'program',
+		financingTotal: 2_540_000,
+		regionId: 'karaganda',
+		customer: 'Минцифра',
+		mrnti: '12.45.01',
+		status: 'active',
+		trl: 4,
+		startYear: 2022,
+		endYear: 2025,
+	},
+	{
+		id: 'ap130123456',
+		irn: 'AP130123456',
+		title: 'Исследование новых методов лечения рака',
+		applicant: 'КАЗНУ',
+		supervisor: 'Жоламанов А.С.',
+		priority: 'health',
+		contest: 'Конкурс 1',
+		financingType: 'grant',
+		financingTotal: 5_000_000,
+		regionId: 'almaty-city',
+		customer: 'Минздрав',
+		mrnti: '11.22.31',
+		status: 'completed',
+		trl: 6,
+		startYear: 2020,
+		endYear: 2023,
+	},
+	{
+		id: 'bp240987654',
+		irn: 'BP240987654',
+		title: 'Разработка новой технологии переработки отходов',
+		applicant: 'ЕНУ',
+		supervisor: 'Темиргалиев П.Р.',
+		priority: 'ecology',
+		contest: 'Конкурс 2',
+		financingType: 'contract',
+		financingTotal: 2_000_222,
+		regionId: 'astana-city',
+		customer: 'Акимат Астаны',
+		mrnti: '28.91.05',
+		status: 'active',
+		trl: 7,
+		startYear: 2023,
+		endYear: 2025,
+	},
+	{
+		id: 'ap210567890',
+		irn: 'AP210567890',
+		title: 'Исследования',
+		applicant: 'Асфен',
+		supervisor: 'Оспанбеков Ж.',
+		priority: 'energy',
+		contest: 'Конкурс 5',
+		financingType: 'contract',
+		financingTotal: 384_564_000,
+		regionId: 'atyrau',
+		customer: 'АО "КазМунайГаз"',
+		mrnti: '21.54.12',
+		status: 'active',
+		trl: 8,
+		startYear: 2021,
+		endYear: 2024,
+	},
+	{
+		id: 'ap230456789',
+		irn: 'AP230456789',
+		title: 'Создание энергоэффективного транспорта',
+		applicant: 'Аль-Фараби',
+		supervisor: 'Хусаинов А.Г.',
+		priority: 'transport',
+		contest: 'Конкурс 3',
+		financingType: 'program',
+		financingTotal: 7_500_000,
+		regionId: 'almaty-city',
+		customer: 'Минтранс',
+		mrnti: '45.10.07',
+		status: 'completed',
+		trl: 6,
+		startYear: 2020,
+		endYear: 2022,
+	},
+	{
+		id: 'ap250334455',
+		irn: 'AP250334455',
+		title: 'Искусственный интеллект в медицине',
+		applicant: 'Nazarbayev Uni',
+		supervisor: 'Мехди Х.',
+		priority: 'ai',
+		contest: 'Конкурс 7',
+		financingType: 'grant',
+		financingTotal: 1_000_000,
+		regionId: 'astana-city',
+		customer: 'Минздрав',
+		mrnti: '62.45.10',
+		status: 'draft',
+		trl: 3,
+		startYear: 2024,
+		endYear: 2026,
+	},
 ];
 
-// --- ДАННЫЕ ДЛЯ ФИЛЬТРОВ ---
-
-const statusLabels: Record<ProjectStatus, string> = {
-  completed: 'Завершён',
-  'in-progress': 'В работе',
-  overdue: 'Просрочен',
+const priorityLabels: Record<PriorityDirection, string> = {
+	health: 'Здравоохранение',
+	economy: 'Экономика',
+	ecology: 'Экология',
+	energy: 'Энергетика',
+	transport: 'Транспорт',
+	ai: 'Искусственный интеллект',
 };
 
-type StatusFilter = ProjectStatus | 'all';
+const financingLabels: Record<FinancingType, string> = {
+	grant: 'Грантовое',
+	program: 'Программно-целевое',
+	contract: 'По договорам',
+};
 
-const statusFilterOptions: { value: StatusFilter; label: string }[] = [
-  { value: 'all', label: 'Все проекты' },
-  { value: 'in-progress', label: 'В работе' },
-  { value: 'overdue', label: 'Просроченные' },
-  { value: 'completed', label: 'Завершённые' },
+const statusLabels: Record<ProjectStatus, string> = {
+	active: 'В работе',
+	completed: 'Завершен',
+	draft: 'Подготовка',
+};
+
+type ColumnKey =
+	| 'irn'
+	| 'title'
+	| 'applicant'
+	| 'priority'
+	| 'financingType'
+	| 'financingTotal'
+	| 'region'
+	| 'status'
+	| 'period';
+
+interface ColumnDefinition {
+	key: ColumnKey;
+	label: string;
+	sortKey?: keyof Project;
+}
+
+const columnDefinitions: ColumnDefinition[] = [
+	{ key: 'irn', label: 'IRN', sortKey: 'irn' },
+	{ key: 'title', label: 'Название', sortKey: 'title' },
+	{ key: 'applicant', label: 'Заявитель', sortKey: 'applicant' },
+	{ key: 'priority', label: 'Приоритет' },
+	{ key: 'financingType', label: 'Финансирование' },
+	{ key: 'financingTotal', label: 'Сумма', sortKey: 'financingTotal' },
+	{ key: 'region', label: 'Регион' },
+	{ key: 'status', label: 'Статус' },
+	{ key: 'period', label: 'Период' },
 ];
 
-const fundingTypeOptions: { value: FundingType; label: string }[] = [
-  { value: 'all', label: 'Все типы' },
-  { value: 'government', label: 'ГФ (Грантовое финансирование)' },
-  { value: 'program', label: 'ПЦФ (Программно-целевое финансирование)' },
-  { value: 'commercial', label: 'Коммерциализация' },
-];
+const defaultVisibleColumns: Record<ColumnKey, boolean> = columnDefinitions.reduce(
+	(acc, column) => ({
+		...acc,
+		[column.key]: true,
+	}),
+	{} as Record<ColumnKey, boolean>,
+);
 
-const fundingPriorityOptions: { value: FundingPriority; label: string }[] = [
-  { value: 'all', label: 'Все приоритеты' },
-  {
-    value: 'energy',
-    label: 'Энергия, передовые материалы и транспорт',
-  },
-  {
-    value: 'production',
-    label: 'Передовое производство, цифровые и космические технологии',
-  },
-  {
-    value: 'natural_sciences',
-    label:
-      'Интеллектуальный потенциал страны (Естественные науки)',
-  },
-  {
-    value: 'social_sciences',
-    label:
-      'Интеллектуальный потенциал страны (Социальные, гуманитарные науки и искусство)',
-  },
-  { value: 'agriculture', label: 'Устойчивое развитие агропромышленного комплекса' },
-  { value: 'health', label: 'Наука о жизни и здоровье' },
-  {
-    value: 'security',
-    label:
-      'Национальная безопасность и оборона, биологическая безопасность',
-  },
-  {
-    value: 'commercialization',
-    label:
-      'Коммерциализация результатов научной и (или) научно-технической деятельности',
-  },
-  {
-    value: 'ecology',
-    label: 'Экология, окружающая среда и рациональное природопользование',
-  },
-];
+interface FilterState {
+	search: string;
+	startYear: number;
+	endYear: number;
+	irn: string;
+	financingType: FinancingType | 'all';
+	priority: PriorityDirection | 'all';
+	contest: string;
+	applicant: string;
+	customer: string;
+	mrnti: string;
+	status: ProjectStatus | 'all';
+	trl: TrlLevel | 'all';
+}
 
-const organizationTypeOptions: { value: OrganizationType; label: string }[] = [
-  { value: 'all', label: 'Все типы организаций' },
-  { value: 'ovpo', label: 'ОВПО' },
-  { value: 'nii', label: 'НИИ' },
-  { value: 'private', label: 'Частные организации' },
-];
+interface SortState {
+	key: keyof Project | '';
+	direction: 'asc' | 'desc' | '';
+}
 
-// --- КОНСТАНТЫ И ФУНКЦИИ ФОРМАТИРОВАНИЯ ---
-
-const ITEMS_PER_PAGE = 10;
-
-const formatDate = (value: string) =>
-  new Intl.DateTimeFormat('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value));
-
-// --- ГЛАВНЫЙ КОМПОНЕНТ ---
+const formatCurrency = (value: number): string =>
+	new Intl.NumberFormat('ru-RU', {
+		style: 'currency',
+		currency: 'KZT',
+		maximumFractionDigits: 0,
+	}).format(value);
 
 const ProjectsPage: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [sidebarFilters, setSidebarFilters] = useState<SidebarFilters>({
-    fundingType: 'all',
-    fundingPriority: 'all',
-    organizationType: 'all',
-  });
-  const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
-  const [exportStatuses, setExportStatuses] = useState<ProjectStatus[]>([
-    'in-progress',
-    'overdue',
-    'completed',
-  ]);
+	const { selectedRegionId, setSelectedRegionId, regions } = useRegionContext();
+	const [filters, setFilters] = useState<FilterState>({
+		search: '',
+		startYear: YEAR_RANGE.min,
+		endYear: YEAR_RANGE.max,
+		irn: 'all',
+		financingType: 'all',
+		priority: 'all',
+		contest: 'all',
+		applicant: 'all',
+		customer: 'all',
+		mrnti: 'all',
+		status: 'all',
+		trl: 'all',
+	});
+	const [sort, setSort] = useState<SortState>({ key: '', direction: '' });
+	const [visibleColumns, setVisibleColumns] = useState<Record<ColumnKey, boolean>>(() => ({
+		...defaultVisibleColumns,
+	}));
+	const [isColumnPickerOpen, setIsColumnPickerOpen] = useState(false);
+	const columnPickerRef = useRef<HTMLDivElement | null>(null);
 
-  const exportMenuRef = useRef<HTMLDivElement | null>(null);
-  const notify = (message: string) => console.info(message);
+	const irnOptions = useMemo(() => ['all', ...new Set(projects.map((item) => item.irn))], []);
+	const contestOptions = useMemo(() => ['all', ...new Set(projects.map((item) => item.contest))], []);
+	const applicantOptions = useMemo(() => ['all', ...new Set(projects.map((item) => item.applicant))], []);
+	const customerOptions = useMemo(() => ['all', ...new Set(projects.map((item) => item.customer))], []);
+	const mrntiOptions = useMemo(() => ['all', ...new Set(projects.map((item) => item.mrnti))], []);
+	const trlOptions = useMemo<(TrlLevel | 'all')[]>(() => ['all', ...new Set(projects.map((item) => item.trl))], []);
 
-  // --- МЕТОДЫ ОБНОВЛЕНИЯ СОСТОЯНИЯ ---
+	const regionNameById = useMemo(() => {
+		const map: Record<string, string> = {};
+		regions.forEach((region) => {
+			map[region.id] = region.name;
+		});
+		return map;
+	}, [regions]);
 
-  const handleSidebarFilterChange = <
-    K extends keyof SidebarFilters,
-    V extends SidebarFilters[K],
-  >(
-    key: K,
-    value: V,
-  ) => {
-    setSidebarFilters((prev) => ({ ...prev, [key]: value }));
-    setCurrentPage(1); // Сбросить страницу при изменении фильтров
-  };
+	const activeColumns = useMemo(
+		() => columnDefinitions.filter((column) => visibleColumns[column.key]),
+		[visibleColumns],
+	);
 
-  const handleStatusFilterChange = (value: StatusFilter) => {
-    setStatusFilter(value);
-    setCurrentPage(1);
-  };
+	const handleSort = (key: keyof Project) => {
+		setSort((prev) => {
+			if (prev.key === key) {
+				const direction = prev.direction === 'asc' ? 'desc' : 'asc';
+				return { key, direction };
+			}
+			return { key, direction: 'asc' };
+		});
+	};
 
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
-    setCurrentPage(1);
-  };
+	const toggleColumn = (columnKey: ColumnKey) => {
+		setVisibleColumns((prev) => {
+			const currentlyVisible = Object.values(prev).filter(Boolean).length;
+			const nextValue = !prev[columnKey];
+			if (!nextValue && currentlyVisible === 1) {
+				return prev;
+			}
+			return { ...prev, [columnKey]: nextValue };
+		});
+	};
 
-  // --- МЕТОДЫ ВЫЧИСЛЕНИЯ (useMemo) ---
+	useEffect(() => {
+		if (!isColumnPickerOpen) {
+			return;
+		}
 
-  const totals = useMemo(() => {
-    return projectsData.reduce(
-      (acc, project) => {
-        acc.total += 1;
-        acc[project.status] += 1;
-        return acc;
-      },
-      {
-        total: 0,
-        completed: 0,
-        'in-progress': 0,
-        overdue: 0,
-      } as Record<'total' | ProjectStatus, number>,
-    );
-  }, []);
+		const handleClick = (event: MouseEvent) => {
+			if (columnPickerRef.current && !columnPickerRef.current.contains(event.target as Node)) {
+				setIsColumnPickerOpen(false);
+			}
+		};
 
-  const filteredProjects = useMemo(() => {
-    const normalizedQuery = searchTerm.trim().toLowerCase();
-    const { fundingType, fundingPriority, organizationType } = sidebarFilters;
+		document.addEventListener('mousedown', handleClick);
+		return () => document.removeEventListener('mousedown', handleClick);
+	}, [isColumnPickerOpen]);
 
-    return projectsData.filter((project) => {
-      // 1. Фильтр по статусу (Чипсы)
-      const matchesStatus =
-        statusFilter === 'all' ? true : project.status === statusFilter;
+	const percentage = (value: number) =>
+		((value - YEAR_RANGE.min) / (YEAR_RANGE.max - YEAR_RANGE.min)) * 100;
 
-      // 2. Поиск по тексту
-      const matchesSearch =
-        normalizedQuery.length === 0
-          ? true
-          : [
-              project.name,
-              project.contractNumber,
-              project.irnId,
-              project.nirContractNumber,
-              project.customer,
-            ]
-              .join(' ')
-              .toLowerCase()
-              .includes(normalizedQuery);
+	const rangeBackgroundStyle = useMemo<React.CSSProperties>(
+		() =>
+			({
+				'--range-start': `${percentage(filters.startYear)}%`,
+				'--range-end': `${percentage(filters.endYear)}%`,
+			} as React.CSSProperties),
+		[filters.endYear, filters.startYear],
+	);
 
-      // 3. Фильтр Боковой панели: Тип финансирования
-      const matchesFundingType =
-        fundingType === 'all' ? true : project.fundingType === fundingType;
+	const renderCellContent = (columnKey: ColumnKey, project: Project): React.ReactNode => {
+		switch (columnKey) {
+			case 'irn':
+				return project.irn;
+			case 'title':
+				return (
+					<button type="button" className="projects-link-button">
+						{project.title}
+					</button>
+				);
+			case 'applicant':
+				return project.applicant;
+			case 'priority':
+				return priorityLabels[project.priority];
+			case 'financingType':
+				return financingLabels[project.financingType];
+			case 'financingTotal':
+				return formatCurrency(project.financingTotal);
+			case 'region':
+				return regionNameById[project.regionId] ?? '—';
+			case 'status':
+				return statusLabels[project.status];
+			case 'period':
+				return `${project.startYear}-${project.endYear}`;
+			default:
+				return null;
+		}
+	};
 
-      // 4. Фильтр Боковой панели: Приоритет финансирования
-      const matchesFundingPriority =
-        fundingPriority === 'all'
-          ? true
-          : project.fundingPriority === fundingPriority;
+	const handleYearChange = (key: 'startYear' | 'endYear', value: number) => {
+		setFilters((prev) => {
+			const next = { ...prev, [key]: value };
+			if (next.startYear > next.endYear) {
+				if (key === 'startYear') {
+					next.endYear = next.startYear;
+				} else {
+					next.startYear = next.endYear;
+				}
+			}
+			return next;
+		});
+	};
 
-      // 5. Фильтр Боковой панели: Тип организации
-      const matchesOrganizationType =
-        organizationType === 'all'
-          ? true
-          : project.organizationType === organizationType;
+	const handleFilterChange = <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
+		setFilters((prev) => ({ ...prev, [key]: value }));
+	};
 
-      return (
-        matchesStatus &&
-        matchesSearch &&
-        matchesFundingType &&
-        matchesFundingPriority &&
-        matchesOrganizationType
-      );
-    });
-  }, [searchTerm, statusFilter, sidebarFilters]);
+	const resetFilters = () => {
+		setFilters({
+			search: '',
+			startYear: YEAR_RANGE.min,
+			endYear: YEAR_RANGE.max,
+			irn: 'all',
+			financingType: 'all',
+			priority: 'all',
+			contest: 'all',
+			applicant: 'all',
+			customer: 'all',
+			mrnti: 'all',
+			status: 'all',
+			trl: 'all',
+		});
+		setSelectedRegionId('national');
+	};
 
-  // --- МЕТОДЫ ПАГИНАЦИИ И ВЫБОРА ---
+	const filteredProjects = useMemo(() => {
+		let list = projects.filter((project) => {
+			const matchesSearch = filters.search
+				? project.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+					project.irn.toLowerCase().includes(filters.search.toLowerCase())
+				: true;
+			const matchesYears = project.startYear >= filters.startYear && project.endYear <= filters.endYear;
+			const matchesRegion = selectedRegionId === 'national' || project.regionId === selectedRegionId;
+			const matchesIrn = filters.irn === 'all' || project.irn === filters.irn;
+			const matchesFinancing = filters.financingType === 'all' || project.financingType === filters.financingType;
+			const matchesPriority = filters.priority === 'all' || project.priority === filters.priority;
+			const matchesContest = filters.contest === 'all' || project.contest === filters.contest;
+			const matchesApplicant = filters.applicant === 'all' || project.applicant === filters.applicant;
+			const matchesCustomer = filters.customer === 'all' || project.customer === filters.customer;
+			const matchesMrnti = filters.mrnti === 'all' || project.mrnti === filters.mrnti;
+			const matchesStatus = filters.status === 'all' || project.status === filters.status;
+			const matchesTrl = filters.trl === 'all' || project.trl === filters.trl;
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredProjects.length / ITEMS_PER_PAGE),
-  );
+			return (
+				matchesSearch &&
+				matchesYears &&
+				matchesRegion &&
+				matchesIrn &&
+				matchesFinancing &&
+				matchesPriority &&
+				matchesContest &&
+				matchesApplicant &&
+				matchesCustomer &&
+				matchesMrnti &&
+				matchesStatus &&
+				matchesTrl
+			);
+		});
 
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
+		if (sort.key && sort.direction) {
+			const key = sort.key;
+			list = [...list].sort((a, b) => {
+				const aValue = a[key];
+				const bValue = b[key];
 
-  const paginatedProjects = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredProjects.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredProjects, currentPage]);
+				if (typeof aValue === 'number' && typeof bValue === 'number') {
+					return sort.direction === 'asc' ? aValue - bValue : bValue - aValue;
+				}
 
-  const isAllCurrentPageSelected = useMemo(() => {
-    return (
-      paginatedProjects.length > 0 &&
-      paginatedProjects.every((project) => selectedProjects.has(project.id))
-    );
-  }, [paginatedProjects, selectedProjects]);
+				return sort.direction === 'asc'
+					? String(aValue).localeCompare(String(bValue))
+					: String(bValue).localeCompare(String(aValue));
+			});
+		}
 
-  // --- МЕТОДЫ ВЫБОРА ---
+		return list;
+	}, [filters, sort, selectedRegionId]);
 
-  const toggleProjectSelection = (projectId: string) => {
-    setSelectedProjects((prev) => {
-      const next = new Set(prev);
-      if (next.has(projectId)) {
-        next.delete(projectId);
-      } else {
-        next.add(projectId);
-      }
-      return next;
-    });
-  };
+	return (
+		<div className="projects-page">
+			<header className="projects-header">
+				<div>
+					<h1>Проекты</h1>
+					<p>Найдено проектов: {filteredProjects.length}</p>
+				</div>
+				<div className="projects-header-actions">
+					<button type="button" className="projects-header-button">
+						<Download size={18} />
+						Выгрузить отчёт
+					</button>
+				</div>
+			</header>
 
-  const toggleSelectAllCurrentPage = (checked: boolean) => {
-    setSelectedProjects((prev) => {
-      const next = new Set(prev);
-      paginatedProjects.forEach((project) => {
-        if (checked) {
-          next.add(project.id);
-        } else {
-          next.delete(project.id);
-        }
-      });
-      return next;
-    });
-  };
+			<div className="projects-search-line">
+				<div className="projects-search-toolbar">
+					<div className="projects-search">
+						<Search size={18} />
+						<input
+							type="text"
+							placeholder="Поиск по названию или IRN"
+							value={filters.search}
+							onChange={(event) => handleFilterChange('search', event.target.value)}
+						/>
+					</div>
+					<div className="projects-column-picker" ref={columnPickerRef}>
+						<button
+							type="button"
+							className="projects-column-button"
+							onClick={() => setIsColumnPickerOpen((prev) => !prev)}
+						>
+							<SlidersHorizontal size={16} />
+							<span>Выбрать колонки</span>
+						</button>
+						{isColumnPickerOpen && (
+							<div className="projects-column-list">
+								{columnDefinitions.map((column) => (
+									<label key={column.key} className="projects-column-option">
+										<input
+											type="checkbox"
+											checked={visibleColumns[column.key]}
+											onChange={() => toggleColumn(column.key)}
+										/>
+										<span>{column.label}</span>
+									</label>
+								))}
+							</div>
+						)}
+					</div>
+				</div>
+			</div>
 
-  const selectedCount = selectedProjects.size;
+			<div className="projects-content">
+				<aside className="projects-sidebar">
+					<div className="projects-filter-block">
+						<div className="projects-filter-title">Регион</div>
+						<div className="projects-filter-item">
+							<label htmlFor="projects-region">Выберите регион</label>
+							<select
+								id="projects-region"
+								value={selectedRegionId}
+								onChange={(event) => setSelectedRegionId(event.target.value as RegionId)}
+							>
+								<option value="national">Вся страна</option>
+								{regions.map((region) => (
+									<option key={region.id} value={region.id}>
+										{region.name}
+									</option>
+								))}
+							</select>
+						</div>
+					</div>
 
-  const summaryText = `Отфильтровано: ${filteredProjects.length} из ${projectsData.length}`;
+					<div className="projects-filter-block">
+						<div className="projects-filter-title">Период</div>
+						<div className="projects-range-slider" style={rangeBackgroundStyle}>
+							<div className="projects-range-values">
+								<span>{filters.startYear}</span>
+								<span>{filters.endYear}</span>
+							</div>
+							<div className="projects-range-track" />
+							<div className="projects-range-inputs">
+								<input
+									type="range"
+									min={YEAR_RANGE.min}
+									max={YEAR_RANGE.max}
+									value={filters.startYear}
+									onChange={(event) => handleYearChange('startYear', Number(event.target.value))}
+									className="projects-range-thumb"
+								/>
+								<input
+									type="range"
+									min={YEAR_RANGE.min}
+									max={YEAR_RANGE.max}
+									value={filters.endYear}
+									onChange={(event) => handleYearChange('endYear', Number(event.target.value))}
+									className="projects-range-thumb projects-range-thumb--upper"
+								/>
+							</div>
+						</div>
+					</div>
 
-  const handlePlaceholderAction = (action: string, project: ProjectRecord) => {
-    notify(`${action} — ${project.name}`);
-  };
+					<div className="projects-filter-block">
+						<div className="projects-filter-title">Фильтры</div>
+						<div className="projects-filters-grid">
+							<div className="projects-filter-item">
+								<label htmlFor="filter-irn">IRN</label>
+								<select
+									id="filter-irn"
+									value={filters.irn}
+									onChange={(event) => handleFilterChange('irn', event.target.value)}
+								>
+									{irnOptions.map((option) => (
+										<option key={option} value={option}>
+											{option === 'all' ? 'Все IRN' : option}
+										</option>
+									))}
+								</select>
+							</div>
 
-  // --- МЕТОДЫ ЭКСПОРТА ---
+							<div className="projects-filter-item">
+								<label htmlFor="filter-financing">Тип финансирования</label>
+								<select
+									id="filter-financing"
+									value={filters.financingType}
+									onChange={(event) =>
+										handleFilterChange('financingType', event.target.value as FilterState['financingType'])
+									}
+								>
+									<option value="all">Все типы</option>
+									{(Object.keys(financingLabels) as FinancingType[]).map((type) => (
+										<option key={type} value={type}>
+											{financingLabels[type]}
+										</option>
+									))}
+								</select>
+							</div>
 
-  const exportAllSelected = exportStatuses.length === 3;
+							<div className="projects-filter-item">
+								<label htmlFor="filter-priority">Приоритет</label>
+								<select
+									id="filter-priority"
+									value={filters.priority}
+									onChange={(event) =>
+										handleFilterChange('priority', event.target.value as FilterState['priority'])
+									}
+								>
+									<option value="all">Все направления</option>
+									{(Object.keys(priorityLabels) as PriorityDirection[]).map((priority) => (
+										<option key={priority} value={priority}>
+											{priorityLabels[priority]}
+										</option>
+									))}
+								</select>
+							</div>
 
-  const toggleExportStatus = (status: ProjectStatus) => {
-    setExportStatuses((prev) =>
-      prev.includes(status)
-        ? prev.filter((item) => item !== status)
-        : [...prev, status],
-    );
-  };
+							<div className="projects-filter-item">
+								<label htmlFor="filter-contest">Конкурс</label>
+								<select
+									id="filter-contest"
+									value={filters.contest}
+									onChange={(event) => handleFilterChange('contest', event.target.value)}
+								>
+									{contestOptions.map((option) => (
+										<option key={option} value={option}>
+											{option === 'all' ? 'Все конкурсы' : option}
+										</option>
+									))}
+								</select>
+							</div>
 
-  const handleToggleExportAll = (checked: boolean) => {
-    setExportStatuses(
-      checked ? ['in-progress', 'overdue', 'completed'] : [],
-    );
-  };
+							<div className="projects-filter-item">
+								<label htmlFor="filter-applicant">Заявитель</label>
+								<select
+									id="filter-applicant"
+									value={filters.applicant}
+									onChange={(event) => handleFilterChange('applicant', event.target.value)}
+								>
+									{applicantOptions.map((option) => (
+										<option key={option} value={option}>
+											{option === 'all' ? 'Все заявители' : option}
+										</option>
+									))}
+								</select>
+							</div>
 
-  const handleExport = (mode: 'preview' | 'download') => {
-    notify(
-      `${mode === 'preview' ? 'Предпросмотр' : 'Скачивание'} — выбрано ${selectedCount} проектов, статусы: ${exportStatuses
-        .map((status) => statusLabels[status])
-        .join(', ') || 'ничего не выбрано'}.`,
-    );
-    setIsExportMenuOpen(false);
-  };
+							<div className="projects-filter-item">
+								<label htmlFor="filter-customer">Заказчик</label>
+								<select
+									id="filter-customer"
+									value={filters.customer}
+									onChange={(event) => handleFilterChange('customer', event.target.value)}
+								>
+									{customerOptions.map((option) => (
+										<option key={option} value={option}>
+											{option === 'all' ? 'Все заказчики' : option}
+										</option>
+									))}
+								</select>
+							</div>
 
-  // --- useEffect для закрытия экспорта по клику вне элемента ---
+							<div className="projects-filter-item">
+								<label htmlFor="filter-mrnti">МРНТИ</label>
+								<select
+									id="filter-mrnti"
+									value={filters.mrnti}
+									onChange={(event) => handleFilterChange('mrnti', event.target.value)}
+								>
+									{mrntiOptions.map((option) => (
+										<option key={option} value={option}>
+											{option === 'all' ? 'Все МРНТИ' : option}
+										</option>
+									))}
+								</select>
+							</div>
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (!isExportMenuOpen) {
-        return;
-      }
-      if (
-        exportMenuRef.current &&
-        event.target instanceof Node &&
-        !exportMenuRef.current.contains(event.target)
-      ) {
-        setIsExportMenuOpen(false);
-      }
-    };
+							<div className="projects-filter-item">
+								<label htmlFor="filter-status">Статус</label>
+								<select
+									id="filter-status"
+									value={filters.status}
+									onChange={(event) =>
+										handleFilterChange('status', event.target.value as FilterState['status'])
+									}
+								>
+									<option value="all">Все статусы</option>
+									{(Object.keys(statusLabels) as ProjectStatus[]).map((status) => (
+										<option key={status} value={status}>
+											{statusLabels[status]}
+										</option>
+									))}
+								</select>
+							</div>
 
-    window.addEventListener('mousedown', handleClickOutside);
-    return () => window.removeEventListener('mousedown', handleClickOutside);
-  }, [isExportMenuOpen]);
+							<div className="projects-filter-item">
+								<label htmlFor="filter-trl">TRL</label>
+								<select
+									id="filter-trl"
+									value={filters.trl}
+									onChange={(event) => {
+										const value = event.target.value === 'all'
+											? 'all'
+											: (Number(event.target.value) as TrlLevel);
+										handleFilterChange('trl', value);
+									}}
+								>
+									{trlOptions.map((option) => (
+										<option key={option} value={option}>
+											{option === 'all' ? 'Все уровни' : `TRL ${option}`}
+										</option>
+									))}
+								</select>
+							</div>
+						</div>
+					</div>
 
-  // --- РЕНДЕР КОМПОНЕНТА ---
+					<div className="projects-filter-actions">
+						<button type="button" onClick={resetFilters}>
+							Сбросить фильтры
+						</button>
+					</div>
+				</aside>
 
-  return (
-    <div className="projects-page">
-      {/* 1. Секция Фильтров (ГОРИЗОНТАЛЬНАЯ ПАНЕЛЬ) */}
-      <section className="projects-card projects-filter-panel">
-        <aside className="projects-sidebar projects-sidebar--inline">
-          {/* СЕКЦИЯ: Типы финансирования */}
-          <div className="sidebar-section">
-            <label htmlFor="funding-type-filter" className="filter-label">
-              ТИПЫ ФИНАНСИРОВАНИЯ
-            </label>
-            <select
-              id="funding-type-filter"
-              value={sidebarFilters.fundingType}
-              onChange={(e) =>
-                handleSidebarFilterChange(
-                  'fundingType',
-                  e.target.value as FundingType,
-                )
-              }
-              className="sidebar-select"
-            >
-              {fundingTypeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* СЕКЦИЯ: Приоритеты финансирования */}
-          <div className="sidebar-section">
-            <label htmlFor="priority-filter" className="filter-label">
-              ПРИОРИТЕТЫ ФИНАНСИРОВАНИЯ
-            </label>
-            <select
-              id="priority-filter"
-              value={sidebarFilters.fundingPriority}
-              onChange={(e) =>
-                handleSidebarFilterChange(
-                  'fundingPriority',
-                  e.target.value as FundingPriority,
-                )
-              }
-              className="sidebar-select"
-            >
-              {fundingPriorityOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* СЕКЦИЯ: Типы организаций */}
-          <div className="sidebar-section">
-            <label htmlFor="organization-filter" className="filter-label">
-              ТИПЫ ОРГАНИЗАЦИЙ
-            </label>
-            <select
-              id="organization-filter"
-              value={sidebarFilters.organizationType}
-              onChange={(e) =>
-                handleSidebarFilterChange(
-                  'organizationType',
-                  e.target.value as OrganizationType,
-                )
-              }
-              className="sidebar-select"
-            >
-              {organizationTypeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            type="button"
-            className="projects-button projects-button--default sidebar-button"
-            onClick={() => {
-              notify(
-                'Фильтры применены. (Логика уже работает через select onChange)',
-              );
-            }}
-          >
-            <ArrowUpDown size={20} />
-            Сортировать / Применить
-          </button>
-        </aside>
-      </section>
-
-      {/* 2. Секция Заголовка и Кнопок */}
-      <section className="projects-card projects-header-panel">
-        <div className="projects-page__headline">
-          <div className="projects-page__title-block">
-            <h1 className="projects-page__title">Проекты</h1>
-            <p className="projects-page__subtitle">
-              Найдено проектов: <span className="projects-tag">{filteredProjects.length}</span>
-            </p>
-            <div className="projects-page__stats">
-              <span className="projects-stat-pill">
-                Всего
-                <strong>{totals.total}</strong>
-              </span>
-              <span
-                className="projects-stat-pill"
-                style={{ background: 'rgba(37, 99, 235, 0.08)', color: '#2563eb' }}
-              >
-                В работе
-                <strong>{totals['in-progress']}</strong>
-              </span>
-              <span
-                className="projects-stat-pill"
-                style={{ background: 'rgba(244, 63, 94, 0.12)', color: '#dc2626' }}
-              >
-                Просрочено
-                <strong>{totals.overdue}</strong>
-              </span>
-              <span
-                className="projects-stat-pill"
-                style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#047857' }}
-              >
-                Завершено
-                <strong>{totals.completed}</strong>
-              </span>
-            </div>
-          </div>
-          <div className="projects-page__actions">
-            <button
-              type="button"
-              className="projects-button projects-button--outline"
-              onClick={() => notify('Импорт из Excel (заглушка)')}
-            >
-              <Download size={18} />
-              Импорт Excel
-            </button>
-            <div className="projects-page__export" ref={exportMenuRef}>
-              <button
-                type="button"
-                className="projects-button"
-                onClick={() => setIsExportMenuOpen((prev) => !prev)}
-              >
-                <Download size={18} />
-                Экспорт данных
-                <span className="projects-tag">{selectedCount || '0'}</span>
-                <ChevronDown size={18} />
-              </button>
-              {isExportMenuOpen && (
-                <div className="projects-export-menu">
-                  <h4>Что выгружаем?</h4>
-                  <div className="projects-export-menu__option">
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={exportAllSelected}
-                        onChange={(event) =>
-                          handleToggleExportAll(event.target.checked)
-                        }
-                      />
-                      Все проекты
-                    </label>
-                    <span>{totals.total}</span>
-                  </div>
-                  {(
-                    ['in-progress', 'overdue', 'completed'] as ProjectStatus[]
-                  ).map((status) => (
-                    <div className="projects-export-menu__option" key={status}>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={exportStatuses.includes(status)}
-                          onChange={() => toggleExportStatus(status)}
-                        />
-                        {statusLabels[status]}
-                      </label>
-                      <span>{totals[status]}</span>
-                    </div>
-                  ))}
-                  <div className="projects-export-menu__footer">
-                    <button
-                      type="button"
-                      onClick={() => handleExport('preview')}
-                      disabled={exportStatuses.length === 0}
-                    >
-                      Показать
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleExport('download')}
-                      disabled={exportStatuses.length === 0}
-                    >
-                      Скачать
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-            <button
-              type="button"
-              className="projects-button projects-button--primary"
-              onClick={() => notify('Создание проекта (заглушка)')}
-            >
-              <Plus size={18} />
-              Создать проект
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* 3. Секция Поиска и Чипсов */}
-      <section className="projects-card projects-toolbar-panel">
-        <div className="projects-page__toolbar">
-          <div className="projects-search">
-            <Search size={18} />
-            <input
-              type="search"
-              placeholder="Поиск по названию, заказчику или номеру договора"
-              value={searchTerm}
-              onChange={handleSearchChange}
-            />
-          </div>
-          <div className="projects-page__filters">
-            {statusFilterOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className={clsx('projects-chip', {
-                  'projects-chip--active': statusFilter === option.value,
-                })}
-                onClick={() => handleStatusFilterChange(option.value)}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 4. Секция Таблицы */}
-      <section className="projects-card projects-table-card">
-        <div className="projects-page__summary-bar">
-          <span className="projects-page__summary-text">{summaryText}</span>
-          <span className="projects-page__summary-text">
-            Выбрано для действий: <strong>{selectedCount}</strong>
-          </span>
-        </div>
-        <div className="projects-table-wrapper">
-          <table className="projects-table">
-            <thead>
-              <tr>
-                <th>
-                  <input
-                    type="checkbox"
-                    className="projects-checkbox"
-                    checked={isAllCurrentPageSelected}
-                    onChange={(event) =>
-                      toggleSelectAllCurrentPage(event.target.checked)
-                    }
-                  />
-                </th>
-                <th>#</th>
-                <th>Название проекта</th>
-                <th>№ договора</th>
-                <th>Начало договора</th>
-                <th>Завершение</th>
-                <th>ИРН ID</th>
-                <th>№ договора НИР</th>
-                <th>Заказчик</th>
-                <th>Статус</th>
-                <th className="actions-cell">Действия</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedProjects.map((project, index) => {
-                const isSelected = selectedProjects.has(project.id);
-                const rowNumber =
-                  (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
-                return (
-                  <tr
-                    key={project.id}
-                    className={clsx(
-                      'projects-row',
-                      `projects-row--${project.status}`,
-                      {
-                        'projects-row--selected': isSelected,
-                      },
-                    )}
-                  >
-                    <td>
-                      <input
-                        type="checkbox"
-                        className="projects-checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleProjectSelection(project.id)}
-                      />
-                    </td>
-                    <td>{rowNumber}</td>
-                    <td>{project.name}</td>
-                    <td>{project.contractNumber}</td>
-                    <td>{formatDate(project.startDate)}</td>
-                    <td>{formatDate(project.endDate)}</td>
-                    <td>{project.irnId}</td>
-                    <td>{project.nirContractNumber}</td>
-                    <td>{project.customer}</td>
-                    <td>
-                      <span className="projects-status">
-                        <span className="projects-status-dot" />
-                        {statusLabels[project.status]}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="projects-actions">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handlePlaceholderAction('Карточка проекта', project)
-                          }
-                          aria-label="Просмотреть проект"
-                        >
-                          <Eye size={18} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handlePlaceholderAction('Редактирование', project)
-                          }
-                          aria-label="Редактировать проект"
-                        >
-                          <Pencil size={18} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handlePlaceholderAction('Удаление', project)
-                          }
-                          aria-label="Удалить проект"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <div className="projects-page__pagination">
-          {Array.from({ length: totalPages }, (_, pageIndex) => pageIndex + 1).map(
-            (page) => (
-              <button
-                key={page}
-                type="button"
-                className={clsx({ active: currentPage === page })}
-                onClick={() => setCurrentPage(page)}
-              >
-                {page}
-              </button>
-            ),
-          )}
-        </div>
-      </section>
-    </div>
-  );
+				<main className="projects-main">
+					<section className="projects-table-section">
+						<div className="projects-table-wrapper">
+							<table className="projects-table">
+								<thead>
+									<tr>
+										{activeColumns.map((column) => {
+											if (column.sortKey) {
+												const headerState = sort.key === column.sortKey ? sort.direction : undefined;
+												return (
+													<th
+														key={column.key}
+														onClick={() => handleSort(column.sortKey!)}
+														className={headerState}
+													>
+														{column.label}
+														<ArrowUpDown size={14} />
+													</th>
+												);
+											}
+											return <th key={column.key}>{column.label}</th>;
+										})}
+									</tr>
+								</thead>
+								<tbody>
+									{filteredProjects.map((project) => (
+										<tr key={project.id}>
+											{activeColumns.map((column) => (
+												<td key={`${project.id}-${column.key}`}>
+													{renderCellContent(column.key, project)}
+												</td>
+											))}
+										</tr>
+									))}
+								</tbody>
+							</table>
+							{filteredProjects.length === 0 && (
+								<div className="no-results">Проекты не найдены, уточните фильтры.</div>
+							)}
+						</div>
+						<p className="projects-summary">
+							Показано проектов: {filteredProjects.length} из {projects.length}
+						</p>
+					</section>
+				</main>
+			</div>
+		</div>
+	);
 };
 
 export default ProjectsPage;
