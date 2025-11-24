@@ -178,12 +178,12 @@
     min-width: 320px;
     background: radial-gradient(circle at top, rgba(59, 130, 246, 0.08), transparent 60%), #ffffff;
     border-radius: 28px;
-    padding: 2rem 1.75rem;
+    padding: 1.5rem 1.5rem;
     box-shadow: 0 30px 60px rgba(15, 23, 42, 0.16);
     border: 1px solid rgba(148, 163, 184, 0.2);
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.6rem;
     position: sticky;
     top: 1.5rem;
 }
@@ -191,11 +191,11 @@
 .employees-filter-block {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 0.9rem;
 }
 
 .employees-filter-block + .employees-filter-block {
-    padding-top: 1.5rem;
+    padding-top: 1.2rem;
     border-top: 1px solid rgba(226, 232, 240, 0.8);
 }
 
@@ -221,18 +221,19 @@
 }
 
 .employees-filters-grid {
-    display: grid;
-    gap: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
 }
 
 .employees-filter-item {
     display: flex;
     flex-direction: column;
-    gap: 0.65rem;
+    gap: 0.5rem;
     background: linear-gradient(120deg, rgba(248, 250, 252, 0.85), rgba(255, 255, 255, 0.95));
     border: 1px solid rgba(148, 163, 184, 0.2);
-    border-radius: 18px;
-    padding: 0.9rem 1rem;
+    border-radius: 16px;
+    padding: 0.75rem 0.85rem;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
     position: relative;
 }
@@ -254,13 +255,13 @@
 }
 
 .employees-filter-item label {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.05em;
     color: #7483a1;
     font-weight: 700;
     position: relative;
-    padding-left: 0.35rem;
+    padding-left: 0.25rem;
 }
 
 .employees-filter-item label::before {
@@ -277,8 +278,8 @@
 
 .employees-filter-item select,
 .employees-filter-item input {
-    padding: 0.75rem 1.15rem;
-    border-radius: 16px;
+    padding: 0.6rem 0.9rem;
+    border-radius: 14px;
     border: 1px solid rgba(148, 163, 184, 0.35);
     background: #f8fafc;
     color: #0f172a;

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Download, Search, ArrowUpDown, SlidersHorizontal } from 'lucide-react';
+import { Download, Search, ArrowUpDown, SlidersHorizontal, ChevronDown } from 'lucide-react';
 import { useRegionContext } from '../context/RegionContext';
 import type { RegionId } from '../context/RegionContext';
 import './ProjectsPage.css';
@@ -8,6 +8,7 @@ type FinancingType = 'grant' | 'program' | 'contract';
 type PriorityDirection = 'health' | 'economy' | 'ecology' | 'energy' | 'transport' | 'ai';
 type ProjectStatus = 'active' | 'completed' | 'draft';
 type TrlLevel = 3 | 4 | 5 | 6 | 7 | 8 | 9;
+type DropdownFilterKey = 'irn' | 'financingType' | 'applicant' | 'customer' | 'mrnti';
 
 interface Project {
 	id: string;
@@ -174,6 +175,8 @@ const financingLabels: Record<FinancingType, string> = {
 	contract: 'По договорам',
 };
 
+const financingTypeOptionValues: (FinancingType | 'all')[] = ['all', 'grant', 'program', 'contract'];
+
 const statusLabels: Record<ProjectStatus, string> = {
 	active: 'В работе',
 	completed: 'Завершен',
@@ -197,6 +200,25 @@ interface ColumnDefinition {
 	sortKey?: keyof Project;
 }
 
+interface OptionItem {
+	value: string;
+	label: string;
+}
+
+interface SearchableSelectProps {
+	id: string;
+	label: string;
+	placeholder: string;
+	options: OptionItem[];
+	value: string;
+	isOpen: boolean;
+	searchValue: string;
+	onToggle: () => void;
+	onSelect: (value: string) => void;
+	onSearchChange: (value: string) => void;
+	setRef: (node: HTMLDivElement | null) => void;
+}
+
 const columnDefinitions: ColumnDefinition[] = [
 	{ key: 'irn', label: 'IRN', sortKey: 'irn' },
 	{ key: 'title', label: 'Название', sortKey: 'title' },
@@ -216,6 +238,78 @@ const defaultVisibleColumns: Record<ColumnKey, boolean> = columnDefinitions.redu
 	}),
 	{} as Record<ColumnKey, boolean>,
 );
+
+const dropdownKeys: DropdownFilterKey[] = ['irn', 'financingType', 'applicant', 'customer', 'mrnti'];
+
+const SearchableSelect: React.FC<SearchableSelectProps> = ({
+	id,
+	label,
+	placeholder,
+	options,
+	value,
+	isOpen,
+	searchValue,
+	onToggle,
+	onSelect,
+	onSearchChange,
+	setRef,
+}) => {
+	const normalizedSearch = searchValue.trim().toLowerCase();
+	const filteredOptions = options.filter((option) =>
+		normalizedSearch.length === 0
+			? true
+			: option.label.toLowerCase().includes(normalizedSearch),
+	);
+	const activeOption = options.find((option) => option.value === value);
+	const selectClassName = `projects-select${isOpen ? ' projects-select--open' : ''}`;
+	const valueClassName = `projects-select-value${value === 'all' ? ' projects-select-value--placeholder' : ''}`;
+
+	return (
+		<div className={selectClassName} ref={setRef}>
+			<button
+				type="button"
+				className="projects-select-trigger"
+				onClick={onToggle}
+				aria-haspopup="listbox"
+				aria-expanded={isOpen}
+				id={id}
+			>
+				<span className={valueClassName}>{activeOption?.label ?? placeholder}</span>
+				<ChevronDown size={16} />
+			</button>
+				{isOpen && (
+					<div className="projects-select-dropdown" role="listbox" aria-labelledby={id}>
+					<div className="projects-select-search">
+						<Search size={14} />
+						<input
+							type="text"
+							value={searchValue}
+							onChange={(event) => onSearchChange(event.target.value)}
+							placeholder={`Поиск по ${label.toLowerCase()}`}
+						/>
+					</div>
+					<ul className="projects-select-options">
+						{filteredOptions.length === 0 ? (
+							<li className="projects-select-empty">Ничего не найдено</li>
+						) : (
+							filteredOptions.map((option) => (
+								<li key={option.value}>
+									<button
+										type="button"
+										className={`projects-select-option${option.value === value ? ' projects-select-option--active' : ''}`}
+										onClick={() => onSelect(option.value)}
+									>
+										{option.label}
+									</button>
+								</li>
+							))
+						)}
+					</ul>
+				</div>
+			)}
+		</div>
+	);
+};
 
 interface FilterState {
 	search: string;
@@ -266,6 +360,14 @@ const ProjectsPage: React.FC = () => {
 	}));
 	const [isColumnPickerOpen, setIsColumnPickerOpen] = useState(false);
 	const columnPickerRef = useRef<HTMLDivElement | null>(null);
+	const [openDropdown, setOpenDropdown] = useState<DropdownFilterKey | null>(null);
+	const [dropdownSearch, setDropdownSearch] = useState<Record<DropdownFilterKey, string>>(() =>
+		dropdownKeys.reduce((acc, key) => {
+			acc[key] = '';
+			return acc;
+		}, {} as Record<DropdownFilterKey, string>),
+	);
+	const dropdownRefs = useRef<Partial<Record<DropdownFilterKey, HTMLDivElement | null>>>({});
 
 	const irnOptions = useMemo(() => ['all', ...new Set(projects.map((item) => item.irn))], []);
 	const contestOptions = useMemo(() => ['all', ...new Set(projects.map((item) => item.contest))], []);
@@ -273,6 +375,24 @@ const ProjectsPage: React.FC = () => {
 	const customerOptions = useMemo(() => ['all', ...new Set(projects.map((item) => item.customer))], []);
 	const mrntiOptions = useMemo(() => ['all', ...new Set(projects.map((item) => item.mrnti))], []);
 	const trlOptions = useMemo<(TrlLevel | 'all')[]>(() => ['all', ...new Set(projects.map((item) => item.trl))], []);
+	const dropdownOptions = useMemo<Record<DropdownFilterKey, OptionItem[]>>(() => {
+		const buildOptions = (options: string[], allLabel: string): OptionItem[] =>
+			options.map((value) => ({
+				value,
+				label: value === 'all' ? allLabel : value,
+			}));
+
+		return {
+			irn: buildOptions(irnOptions, 'Все IRN'),
+			applicant: buildOptions(applicantOptions, 'Все заявители'),
+			customer: buildOptions(customerOptions, 'Все заказчики'),
+			mrnti: buildOptions(mrntiOptions, 'Все МРНТИ'),
+			financingType: financingTypeOptionValues.map((value) => ({
+				value,
+				label: value === 'all' ? 'Все типы финансирования' : financingLabels[value as FinancingType],
+			})),
+		};
+	}, [applicantOptions, customerOptions, irnOptions, mrntiOptions]);
 
 	const regionNameById = useMemo(() => {
 		const map: Record<string, string> = {};
@@ -322,6 +442,33 @@ const ProjectsPage: React.FC = () => {
 		document.addEventListener('mousedown', handleClick);
 		return () => document.removeEventListener('mousedown', handleClick);
 	}, [isColumnPickerOpen]);
+
+	useEffect(() => {
+		if (!openDropdown) {
+			return;
+		}
+
+		const handleClickOutside = (event: MouseEvent) => {
+			const dropdownNode = dropdownRefs.current[openDropdown];
+			if (dropdownNode && !dropdownNode.contains(event.target as Node)) {
+				setOpenDropdown(null);
+			}
+		};
+
+		document.addEventListener('mousedown', handleClickOutside);
+		return () => document.removeEventListener('mousedown', handleClickOutside);
+	}, [openDropdown]);
+
+	useEffect(() => {
+		const handleEscape = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') {
+				setOpenDropdown(null);
+			}
+		};
+
+		window.addEventListener('keydown', handleEscape);
+		return () => window.removeEventListener('keydown', handleEscape);
+	}, []);
 
 	const percentage = (value: number) =>
 		((value - YEAR_RANGE.min) / (YEAR_RANGE.max - YEAR_RANGE.min)) * 100;
@@ -380,6 +527,50 @@ const ProjectsPage: React.FC = () => {
 
 	const handleFilterChange = <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
 		setFilters((prev) => ({ ...prev, [key]: value }));
+	};
+
+	const setDropdownRef = (key: DropdownFilterKey, node: HTMLDivElement | null) => {
+		if (node) {
+			dropdownRefs.current[key] = node;
+		} else {
+			delete dropdownRefs.current[key];
+		}
+	};
+
+	const handleDropdownToggle = (key: DropdownFilterKey) => {
+		setOpenDropdown((prev) => {
+			const next = prev === key ? null : key;
+			if (next) {
+				setDropdownSearch((prevSearch) => ({ ...prevSearch, [key]: '' }));
+			}
+			return next;
+		});
+	};
+
+	const handleDropdownSelect = (key: DropdownFilterKey, value: string) => {
+		switch (key) {
+			case 'financingType':
+				handleFilterChange('financingType', value as FilterState['financingType']);
+				break;
+			case 'irn':
+				handleFilterChange('irn', value);
+				break;
+			case 'applicant':
+				handleFilterChange('applicant', value);
+				break;
+			case 'customer':
+				handleFilterChange('customer', value);
+				break;
+			case 'mrnti':
+			default:
+				handleFilterChange('mrnti', value);
+				break;
+		}
+		setOpenDropdown(null);
+	};
+
+	const handleDropdownSearchChange = (key: DropdownFilterKey, value: string) => {
+		setDropdownSearch((prev) => ({ ...prev, [key]: value }));
 	};
 
 	const resetFilters = () => {
@@ -531,8 +722,8 @@ const ProjectsPage: React.FC = () => {
 						<div className="projects-filter-title">Период</div>
 						<div className="projects-range-slider" style={rangeBackgroundStyle}>
 							<div className="projects-range-values">
-								<span>{filters.startYear}</span>
-								<span>{filters.endYear}</span>
+								<span className="projects-range-value">{filters.startYear}</span>
+								<span className="projects-range-value">{filters.endYear}</span>
 							</div>
 							<div className="projects-range-track" />
 							<div className="projects-range-inputs">
@@ -561,35 +752,36 @@ const ProjectsPage: React.FC = () => {
 						<div className="projects-filters-grid">
 							<div className="projects-filter-item">
 								<label htmlFor="filter-irn">IRN</label>
-								<select
+								<SearchableSelect
 									id="filter-irn"
+									label="IRN"
+									placeholder="Выберите IRN"
+									options={dropdownOptions.irn}
 									value={filters.irn}
-									onChange={(event) => handleFilterChange('irn', event.target.value)}
-								>
-									{irnOptions.map((option) => (
-										<option key={option} value={option}>
-											{option === 'all' ? 'Все IRN' : option}
-										</option>
-									))}
-								</select>
+									isOpen={openDropdown === 'irn'}
+									searchValue={dropdownSearch.irn}
+									onToggle={() => handleDropdownToggle('irn')}
+									onSelect={(value) => handleDropdownSelect('irn', value)}
+									onSearchChange={(value) => handleDropdownSearchChange('irn', value)}
+									setRef={(node) => setDropdownRef('irn', node)}
+								/>
 							</div>
 
 							<div className="projects-filter-item">
 								<label htmlFor="filter-financing">Тип финансирования</label>
-								<select
+								<SearchableSelect
 									id="filter-financing"
+									label="Тип финансирования"
+									placeholder="Выберите тип финансирования"
+									options={dropdownOptions.financingType}
 									value={filters.financingType}
-									onChange={(event) =>
-										handleFilterChange('financingType', event.target.value as FilterState['financingType'])
-									}
-								>
-									<option value="all">Все типы</option>
-									{(Object.keys(financingLabels) as FinancingType[]).map((type) => (
-										<option key={type} value={type}>
-											{financingLabels[type]}
-										</option>
-									))}
-								</select>
+									isOpen={openDropdown === 'financingType'}
+									searchValue={dropdownSearch.financingType}
+									onToggle={() => handleDropdownToggle('financingType')}
+									onSelect={(value) => handleDropdownSelect('financingType', value)}
+									onSearchChange={(value) => handleDropdownSearchChange('financingType', value)}
+									setRef={(node) => setDropdownRef('financingType', node)}
+								/>
 							</div>
 
 							<div className="projects-filter-item">
@@ -627,47 +819,53 @@ const ProjectsPage: React.FC = () => {
 
 							<div className="projects-filter-item">
 								<label htmlFor="filter-applicant">Заявитель</label>
-								<select
+								<SearchableSelect
 									id="filter-applicant"
+									label="Заявитель"
+									placeholder="Выберите заявителя"
+									options={dropdownOptions.applicant}
 									value={filters.applicant}
-									onChange={(event) => handleFilterChange('applicant', event.target.value)}
-								>
-									{applicantOptions.map((option) => (
-										<option key={option} value={option}>
-											{option === 'all' ? 'Все заявители' : option}
-										</option>
-									))}
-								</select>
+									isOpen={openDropdown === 'applicant'}
+									searchValue={dropdownSearch.applicant}
+									onToggle={() => handleDropdownToggle('applicant')}
+									onSelect={(value) => handleDropdownSelect('applicant', value)}
+									onSearchChange={(value) => handleDropdownSearchChange('applicant', value)}
+									setRef={(node) => setDropdownRef('applicant', node)}
+								/>
 							</div>
 
 							<div className="projects-filter-item">
 								<label htmlFor="filter-customer">Заказчик</label>
-								<select
+								<SearchableSelect
 									id="filter-customer"
+									label="Заказчик"
+									placeholder="Выберите заказчика"
+									options={dropdownOptions.customer}
 									value={filters.customer}
-									onChange={(event) => handleFilterChange('customer', event.target.value)}
-								>
-									{customerOptions.map((option) => (
-										<option key={option} value={option}>
-											{option === 'all' ? 'Все заказчики' : option}
-										</option>
-									))}
-								</select>
+									isOpen={openDropdown === 'customer'}
+									searchValue={dropdownSearch.customer}
+									onToggle={() => handleDropdownToggle('customer')}
+									onSelect={(value) => handleDropdownSelect('customer', value)}
+									onSearchChange={(value) => handleDropdownSearchChange('customer', value)}
+									setRef={(node) => setDropdownRef('customer', node)}
+								/>
 							</div>
 
 							<div className="projects-filter-item">
 								<label htmlFor="filter-mrnti">МРНТИ</label>
-								<select
+								<SearchableSelect
 									id="filter-mrnti"
+									label="МРНТИ"
+									placeholder="Выберите код МРНТИ"
+									options={dropdownOptions.mrnti}
 									value={filters.mrnti}
-									onChange={(event) => handleFilterChange('mrnti', event.target.value)}
-								>
-									{mrntiOptions.map((option) => (
-										<option key={option} value={option}>
-											{option === 'all' ? 'Все МРНТИ' : option}
-										</option>
-									))}
-								</select>
+									isOpen={openDropdown === 'mrnti'}
+									searchValue={dropdownSearch.mrnti}
+									onToggle={() => handleDropdownToggle('mrnti')}
+									onSelect={(value) => handleDropdownSelect('mrnti', value)}
+									onSearchChange={(value) => handleDropdownSearchChange('mrnti', value)}
+									setRef={(node) => setDropdownRef('mrnti', node)}
+								/>
 							</div>
 
 							<div className="projects-filter-item">
