@@ -9,6 +9,7 @@ import {
   Legend,
   LinearScale,
   LineElement,
+  LineController,
   PointElement,
   Tooltip,
   type ChartOptions,
@@ -29,6 +30,7 @@ ChartJS.register(
   Legend,
   PointElement,
   LineElement,
+  LineController,
 );
 
 const YEAR_RANGE = { min: 2020, max: 2025 } as const;

@@ -14,6 +14,7 @@ import {
   LinearScale,
   Tooltip,
   type ChartOptions,
+  LineController,
 } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import './FinancesPage.css';
@@ -25,6 +26,7 @@ ChartJS.register(
   ArcElement,
   Tooltip,
   Legend,
+  LineController,
 );
 
 type FinancingType = 'gf' | 'pcf' | 'commercial';
