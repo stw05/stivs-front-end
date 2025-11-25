@@ -1,343 +1,219 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { Download, ArrowUpDown } from 'lucide-react';
-import { useRegionContext } from '../context/RegionContext';
-import type { RegionId } from '../context/RegionContext';
-import KazakhstanMap from '../components/Home/KazakhstanMap';
+import React, { useCallback, useMemo, useState, useRef, type CSSProperties } from 'react';
+import { Download } from 'lucide-react';
+import { Bar, Doughnut, Chart as ChartComponent } from 'react-chartjs-2';
 import {
-  buildPublicationTimeline,
-  buildPublicationTypeDistribution,
-  calculateNationalMetrics,
-  formatNumber,
-} from '../utils/metrics';
-import {
-  Chart as ChartJS,
   ArcElement,
   BarElement,
   CategoryScale,
+  Chart as ChartJS,
   Legend,
   LinearScale,
+  LineElement,
+  PointElement,
   Tooltip,
   type ChartOptions,
+  type ChartData,
 } from 'chart.js';
-import { Bar, Doughnut } from 'react-chartjs-2';
-// !!! Обязательный импорт стилей !!!
+import KazakhstanMap from '../components/Home/KazakhstanMap';
+import { useRegionContext } from '../context/RegionContext';
+import type { RegionId } from '../context/RegionContext';
+import { formatNumber } from '../utils/metrics';
 import './PublicationsPage.css';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  Tooltip,
+  Legend,
+  PointElement,
+  LineElement,
+);
 
-// --- 1. Типы данных и мок-данные ---
-type PublicationIndex = 'wos' | 'scopus' | 'kazinc' | 'kokmvo';
-type PatentRegistry = 'kazPatent' | 'derwent' | 'none';
+const YEAR_RANGE = { min: 2020, max: 2025 } as const;
 
-interface Publication {
-  id: string;
-  authorName: string;
-  totalPublications: number;
-  hIndex: number;
-  latestPublicationTitle: string;
-  latestPublicationDate: string; // Формат YYYY-MM-DD
-  regionId: RegionId;
-  publicationIndex: PublicationIndex;
-  patentRegistry: PatentRegistry;
-  hasImplementationAct: boolean;
+interface FilterState {
+  startYear: number;
+  endYear: number;
+  irn: string;
+  financingType: string;
+  priority: string;
+  contest: string;
+  applicant: string;
+  customer: string;
+  mrnti: string;
+  status: string;
+  trl: string;
 }
 
-// УВЕЛИЧЕННОЕ КОЛИЧЕСТВО ЗАПИСЕЙ (10)
-const mockPublications: Publication[] = [
-  {
-    id: 'p1',
-    authorName: 'Иванов И.И.',
-    totalPublications: 45,
-    hIndex: 12,
-    latestPublicationTitle: 'Квантовые алгоритмы',
-    latestPublicationDate: '2023-11-01',
-    regionId: 'almaty-city',
-    publicationIndex: 'wos',
-    patentRegistry: 'kazPatent',
-    hasImplementationAct: true,
-  },
-  {
-    id: 'p2',
-    authorName: 'Петрова А.К.',
-    totalPublications: 88,
-    hIndex: 21,
-    latestPublicationTitle: 'Методы социологии',
-    latestPublicationDate: '2024-03-15',
-    regionId: 'west-kazakhstan',
-    publicationIndex: 'scopus',
-    patentRegistry: 'derwent',
-    hasImplementationAct: true,
-  },
-  {
-    id: 'p3',
-    authorName: 'Сидоров Н.В.',
-    totalPublications: 15,
-    hIndex: 5,
-    latestPublicationTitle: 'История Казахстана',
-    latestPublicationDate: '2022-09-20',
-    regionId: 'shymkent-city',
-    publicationIndex: 'kazinc',
-    patentRegistry: 'kazPatent',
-    hasImplementationAct: false,
-  },
-  {
-    id: 'p4',
-    authorName: 'Касымов Р.Ж.',
-    totalPublications: 120,
-    hIndex: 35,
-    latestPublicationTitle: 'Новые материалы',
-    latestPublicationDate: '2023-05-10',
-    regionId: 'almaty-city',
-    publicationIndex: 'kokmvo',
-    patentRegistry: 'derwent',
-    hasImplementationAct: true,
-  },
-  {
-    id: 'p5',
-    authorName: 'Ахметова З.М.',
-    totalPublications: 8,
-    hIndex: 3,
-    latestPublicationTitle: 'Педагогические основы',
-    latestPublicationDate: '2024-01-25',
-    regionId: 'west-kazakhstan',
-    publicationIndex: 'kazinc',
-    patentRegistry: 'kazPatent',
-    hasImplementationAct: false,
-  },
-  {
-    id: 'p6',
-    authorName: 'Нурланов Б.К.',
-    totalPublications: 3,
-    hIndex: 1,
-    latestPublicationTitle: 'Блокчейн в финансах',
-    latestPublicationDate: '2024-04-05',
-    regionId: 'astana-city',
-    publicationIndex: 'scopus',
-    patentRegistry: 'none',
-    hasImplementationAct: false,
-  },
-  {
-    id: 'p7',
-    authorName: 'Султанова Г.Р.',
-    totalPublications: 60,
-    hIndex: 18,
-    latestPublicationTitle: 'Моделирование систем',
-    latestPublicationDate: '2023-10-10',
-    regionId: 'almaty-city',
-    publicationIndex: 'wos',
-    patentRegistry: 'kazPatent',
-    hasImplementationAct: true,
-  },
-  {
-    id: 'p8',
-    authorName: 'Абишев К.Т.',
-    totalPublications: 22,
-    hIndex: 7,
-    latestPublicationTitle: 'Экономический рост',
-    latestPublicationDate: '2024-02-01',
-    regionId: 'astana-city',
-    publicationIndex: 'scopus',
-    patentRegistry: 'derwent',
-    hasImplementationAct: true,
-  },
-  {
-    id: 'p9',
-    authorName: 'Мұсаев Е.А.',
-    totalPublications: 155,
-    hIndex: 40,
-    latestPublicationTitle: 'Передовая физика',
-    latestPublicationDate: '2023-07-28',
-    regionId: 'shymkent-city',
-    publicationIndex: 'wos',
-    patentRegistry: 'kazPatent',
-    hasImplementationAct: true,
-  },
-  {
-    id: 'p10',
-    authorName: 'Тұрар Г.Ж.',
-    totalPublications: 5,
-    hIndex: 2,
-    latestPublicationTitle: 'Современная литература',
-    latestPublicationDate: '2024-05-01',
-    regionId: 'west-kazakhstan',
-    publicationIndex: 'kokmvo',
-    patentRegistry: 'none',
-    hasImplementationAct: false,
-  },
+const defaultFilters: FilterState = {
+  startYear: YEAR_RANGE.min,
+  endYear: YEAR_RANGE.max,
+  irn: 'all',
+  financingType: 'all',
+  priority: 'all',
+  contest: 'all',
+  applicant: 'all',
+  customer: 'all',
+  mrnti: 'all',
+  status: 'all',
+  trl: 'all',
+};
+
+const irnOptions = ['all', 'IRN-001', 'IRN-045', 'IRN-512', 'IRN-970'];
+const contests = ['all', 'Национальный конкурс', 'Конкурс грантов', 'Конкурс программ'];
+const applicants = ['all', 'КазНУ', 'ЕНУ', 'Назарбаев Университет', 'КазАТК'];
+const customers = ['all', 'Минобрнауки', 'Минздрав', 'Минцифра'];
+const mrntiOptions = ['all', '11.00.00', '21.45.10', '27.00.00'];
+const statusOptions = ['all', 'В работе', 'Завершен', 'Ожидает публикации'];
+const trlOptions = ['all', 'TRL 3', 'TRL 4', 'TRL 5', 'TRL 6', 'TRL 7', 'TRL 8', 'TRL 9'];
+
+type CSSVars = CSSProperties & { '--accent'?: string };
+
+const highlightCards = [
+  { id: 'total', label: 'Всего публикаций', value: '17 130', accent: '#1d4ed8' },
+  { id: 'domestic', label: 'Отечественные публикации', value: '6 092', accent: '#16a34a' },
+  { id: 'foreign', label: 'Зарубежные публикации', value: '11 038', accent: '#7c3aed' },
+  { id: 'scopus', label: 'Публикации в Scopus', value: '1 498', accent: '#4338ca' },
+  { id: 'wos', label: 'Публикации в Web of Science', value: '5 282', accent: '#0ea5e9' },
+  { id: 'patents', label: 'Патенты', value: '2 792', accent: '#ea580c' },
+  { id: 'implementations', label: 'Количество внедрений', value: '414', accent: '#db2777' },
+  { id: 'projects', label: 'Проекты с внедрением', value: '127', accent: '#059669' },
 ];
 
-// --- 2. Определение значений фильтров и типов ---
-type PublicationIndexFilter = 'all' | PublicationIndex;
-type PatentRegistryFilter = 'all' | 'kazPatent' | 'derwent';
-type ImplementationActFilter = 'all' | 'yes' | 'no';
+const publicationYears = ['2020', '2021', '2022', '2023', '2024', '2025'];
+const domesticPublications = [536, 1095, 1194, 1190, 976, 553];
+const foreignPublications = [858, 1719, 1698, 1799, 1347, 810];
 
-const PUBLICATION_INDEX_OPTIONS: Array<{ value: PublicationIndexFilter; label: string }> = [
-  { value: 'all', label: 'Все публикации' },
-  { value: 'wos', label: 'Web of Science (WoS)' },
-  { value: 'scopus', label: 'Scopus' },
-  { value: 'kazinc', label: 'КазИНЦ' },
-  { value: 'kokmvo', label: 'КОКМВО' },
+const scopusSiteScore = [5000, 5000, 2000, 2000];
+const wosQuartiles = [10000, 8000, 8000, 5000];
+
+const priorityPerformance = [
+  { label: 'Исследования в области цифровизации', value: 3279 },
+  { label: 'Исследования в области ИИ', value: 1005 },
+  { label: 'Научные исследования в медицине', value: 674 },
+  { label: 'Геология, добыча и переработка', value: 577 },
+  { label: 'Науки о жизни и здоровье', value: 404 },
+  { label: 'Интеллектуальный потенциал', value: 386 },
+  { label: 'Рациональное использование ресурсов', value: 378 },
+  { label: 'Информационные и коммуникационные технологии', value: 377 },
+  { label: 'Энергетика и машиностроение', value: 331 },
+  { label: 'Устойчивое развитие', value: 224 },
+  { label: 'Национальная безопасность', value: 121 },
+  { label: 'Передовое производство', value: 58 },
+  { label: 'Экология и окружающая среда', value: 44 },
+  { label: 'Исследования в области культуры', value: 11 },
+  { label: 'Интеллектуальный потенциал молодежи', value: 4 },
 ];
 
-const PATENT_REGISTRY_OPTIONS: Array<{ value: PatentRegistryFilter; label: string }> = [
-  { value: 'all', label: 'Все реестры' },
-  { value: 'kazPatent', label: 'КазПатент' },
-  { value: 'derwent', label: 'Derwent Innovations' },
+const implementationTrend = {
+  implementation: [319, 634, 657, 617, 633, 305],
+  trl: [97, 219, 151, 129, 105, 58],
+};
+
+const patentTrend = {
+  patents: [58, 123, 126, 105, 95, 70],
+  deployments: [97, 219, 151, 129, 105, 58],
+};
+
+const topApplicants = [
+  { id: 'kaznu', name: 'КазНУ им. аль-Фараби', value: 826 },
+  { id: 'enu', name: 'Евразийский НУ им. Л.Н. Гумилева', value: 765 },
+  { id: 'kaznpu', name: 'КазНПУ им. Абая', value: 372 },
+  { id: 'karu', name: 'Карагандинский университет им. Е.А. Букетова', value: 360 },
+  { id: 'kit', name: 'КазНИТУ им. К.И. Сатпаева', value: 252 },
 ];
 
-const IMPLEMENTATION_ACT_OPTIONS: Array<{ value: ImplementationActFilter; label: string }> = [
-  { value: 'all', label: 'Все' },
-  { value: 'yes', label: 'Есть' },
-  { value: 'no', label: 'Нет' },
-];
+const filterSelect = (
+  id: string,
+  label: string,
+  value: string,
+  options: Array<{ value: string; label: string }>,
+  onChange: (next: string) => void,
+) => (
+  <label className="publications-filter-item" htmlFor={id} key={id}>
+    <span>{label}</span>
+    <select id={id} value={value} onChange={(event) => onChange(event.target.value)}>
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  </label>
+);
 
-interface PublicationFilters {
-  publicationIndex: PublicationIndexFilter;
-  patentRegistry: PatentRegistryFilter;
-  implementationAct: ImplementationActFilter;
-}
-
-interface SortState {
-  key: keyof Publication | '';
-  direction: 'asc' | 'desc' | '';
-}
-
-// --- 3. Компонент страницы ---
 const PublicationsPage: React.FC = () => {
-  const { selectedRegion, selectedRegionId, regions, setSelectedRegionId } = useRegionContext();
-  
-  const [filters, setFilters] = useState<PublicationFilters>({
-    publicationIndex: 'all',
-    patentRegistry: 'all',
-    implementationAct: 'all',
-  });
-  const [sort, setSort] = useState<SortState>({ key: 'totalPublications', direction: 'desc' });
+  const { selectedRegion, selectedRegionId, setSelectedRegionId, regions } = useRegionContext();
+  const [filters, setFilters] = useState<FilterState>(defaultFilters);
+  const statsScrollRef = useRef<HTMLDivElement | null>(null);
+  const statsDragRef = useRef<{ pointerId: number | null; startX: number; scrollLeft: number }>(
+    { pointerId: null, startX: 0, scrollLeft: 0 },
+  );
+  const [isDraggingStats, setIsDraggingStats] = useState(false);
 
-  const nationalMetrics = useMemo(() => calculateNationalMetrics(), []);
-  const metrics = selectedRegion?.stats ?? nationalMetrics;
-  const timelinePoints = useMemo(
-    () => buildPublicationTimeline(metrics.publications),
-    [metrics.publications],
-  );
-  const typeDistribution = useMemo(
-    () => buildPublicationTypeDistribution(metrics.publications),
-    [metrics.publications],
-  );
-  const { journals, conferences, books, other } = typeDistribution;
-  const totalPublications = metrics.publications.total;
-  const timelineChartData = useMemo(() => {
-    return {
-      labels: timelinePoints.map((point) => point.label),
-      datasets: [
-        {
-          label: 'Количество публикаций',
-          data: timelinePoints.map((point) => point.value),
-          backgroundColor: '#2563eb',
-          hoverBackgroundColor: '#1e3a8a',
-          borderRadius: 12,
-          maxBarThickness: 56,
-        },
-      ],
+  const handleRangeChange = (key: 'startYear' | 'endYear', value: number) => {
+    setFilters((prev) => {
+      if (key === 'startYear') {
+        const nextStart = Math.min(value, prev.endYear);
+        return { ...prev, startYear: nextStart };
+      }
+      const nextEnd = Math.max(value, prev.startYear);
+      return { ...prev, endYear: nextEnd };
+    });
+  };
+
+  const handleSelectChange = (key: keyof FilterState, value: string) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleResetFilters = () => {
+    setFilters(defaultFilters);
+    setSelectedRegionId('national');
+  };
+  const handleStatsPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    const container = statsScrollRef.current;
+    if (!container) {
+      return;
+    }
+    statsDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      scrollLeft: container.scrollLeft,
     };
-  }, [timelinePoints]);
+    container.setPointerCapture(event.pointerId);
+    setIsDraggingStats(true);
+  };
 
-  const timelineChartOptions = useMemo<ChartOptions<'bar'>>(
-    () => ({
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#0f172a',
-          titleFont: { weight: 600 },
-          bodyFont: { weight: 500 },
-          callbacks: {
-            label: (context) => {
-              const value = context.raw as number;
-              return `${formatNumber(value)} публикаций`;
-            },
-          },
-        },
-      },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: {
-            color: '#475569',
-            font: { weight: 600 },
-          },
-          border: { display: false },
-        },
-        y: {
-          beginAtZero: true,
-          grid: { color: 'rgba(148, 163, 184, 0.2)', drawBorder: false },
-          ticks: {
-            color: '#475569',
-            callback: (value) => formatNumber(Number(value)),
-          },
-        },
-      },
-    }),
-    [],
-  );
+  const handleStatsPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingStats) {
+      return;
+    }
+    const container = statsScrollRef.current;
+    if (!container) {
+      return;
+    }
+    const delta = event.clientX - statsDragRef.current.startX;
+    container.scrollLeft = statsDragRef.current.scrollLeft - delta;
+  };
 
-  const distributionChartData = useMemo(
-    () => ({
-      labels: ['Журналы', 'Конференции', 'Книги', 'Прочее'],
-      datasets: [
-        {
-          data: [journals, conferences, books, other],
-          backgroundColor: ['#1e3a8a', '#2563eb', '#38bdf8', '#81d4fa'],
-          hoverBackgroundColor: ['#172554', '#1d4ed8', '#0ea5e9', '#4fc3f7'],
-          borderWidth: 0,
-        },
-      ],
-    }),
-    [journals, conferences, books, other],
-  );
-
-  const distributionChartOptions = useMemo<ChartOptions<'doughnut'>>(
-    () => ({
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '68%',
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            color: '#475569',
-            usePointStyle: true,
-            pointStyle: 'circle',
-            padding: 16,
-          },
-        },
-        tooltip: {
-          backgroundColor: '#0f172a',
-          titleFont: { weight: 600 },
-          bodyFont: { weight: 500 },
-          callbacks: {
-            label: (context) => {
-              const label = context.label ?? '';
-              const value = context.raw as number;
-              const share = totalPublications ? ((value / totalPublications) * 100).toFixed(1) : '0.0';
-              return `${label}: ${formatNumber(value)} (${share}%)`;
-            },
-          },
-        },
-      },
-    }),
-    [totalPublications],
-  );
-
-  const mapHighlights = useMemo(
-    () => [
-      { label: 'Всего публикаций', value: formatNumber(totalPublications) },
-      { label: 'Журнальные статьи', value: formatNumber(journals) },
-      { label: 'Конференции', value: formatNumber(conferences) },
-      { label: 'Книги и прочее', value: formatNumber(books + other) },
-    ],
-    [totalPublications, journals, conferences, books, other],
-  );
+  const stopStatsDragging = () => {
+    if (!isDraggingStats) {
+      return;
+    }
+    const container = statsScrollRef.current;
+    const pointerId = statsDragRef.current.pointerId;
+    if (container && pointerId !== null) {
+      try {
+        container.releasePointerCapture(pointerId);
+      } catch {
+        /* ignore cleanup errors */
+      }
+    }
+    statsDragRef.current.pointerId = null;
+    setIsDraggingStats(false);
+  };
 
   const handleMapSelect = useCallback(
     (regionId: string) => {
@@ -348,295 +224,526 @@ const PublicationsPage: React.FC = () => {
     [selectedRegionId, setSelectedRegionId],
   );
 
-  const handleResetFilters = useCallback(() => {
-    setFilters({
-      publicationIndex: 'all',
-      patentRegistry: 'all',
-      implementationAct: 'all',
-    });
-    setSelectedRegionId('national');
-  }, [setSelectedRegionId]);
+  const rangeBackgroundStyle = useMemo(() => {
+    const total = YEAR_RANGE.max - YEAR_RANGE.min;
+    const startPercent = ((filters.startYear - YEAR_RANGE.min) / total) * 100;
+    const endPercent = ((filters.endYear - YEAR_RANGE.min) / total) * 100;
+    return {
+      '--range-start': `${startPercent}%`,
+      '--range-end': `${endPercent}%`,
+    } as CSSProperties;
+  }, [filters.startYear, filters.endYear]);
 
-  // Функция для изменения сортировки
-  const handleSortChange = (key: keyof Publication) => {
-    setSort(prev => {
-      let direction: SortState['direction'] = 'asc';
-      if (prev.key === key) {
-        direction = prev.direction === 'asc' ? 'desc' : 'asc';
-      }
-      return { key, direction };
-    });
-  };
+  const publicationDynamicsData = useMemo(
+    () => ({
+      labels: publicationYears,
+      datasets: [
+        {
+          label: 'Отечественные публикации',
+          data: domesticPublications,
+          backgroundColor: '#1d4ed8',
+          borderRadius: 10,
+          stack: 'publications',
+        },
+        {
+          label: 'Зарубежные публикации',
+          data: foreignPublications,
+          backgroundColor: '#60a5fa',
+          borderRadius: 10,
+          stack: 'publications',
+        },
+      ],
+    }),
+    [],
+  );
 
-  // --- ЛОГИКА ФИЛЬТРАЦИИ И СОРТИРОВКИ ---
-  const filteredPublications = useMemo(() => {
-    let list = mockPublications;
-    const { publicationIndex, patentRegistry, implementationAct } = filters;
+  const publicationDynamicsOptions = useMemo<ChartOptions<'bar'>>(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: {
+          callbacks: {
+            label: (context) => `${context.dataset.label}: ${formatNumber(Number(context.raw))}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          stacked: true,
+          grid: { display: false },
+        },
+        y: {
+          stacked: true,
+          beginAtZero: true,
+          grid: { color: 'rgba(226,232,240,0.6)', drawBorder: false },
+          ticks: {
+            callback: (value) => formatNumber(Number(value)),
+          },
+        },
+      },
+    }),
+    [],
+  );
 
-    if (selectedRegionId !== 'national') {
-      list = list.filter((p) => p.regionId === selectedRegionId);
-    }
+  const scopusChartData = useMemo(
+    () => ({
+      labels: ['90%', '80%', '70%', '60%'],
+      datasets: [
+        {
+          data: scopusSiteScore,
+          backgroundColor: ['#0ea5e9', '#1d4ed8', '#ea580c', '#6d28d9'],
+          borderWidth: 0,
+        },
+      ],
+    }),
+    [],
+  );
 
-    if (publicationIndex !== 'all') {
-      list = list.filter((p) => p.publicationIndex === publicationIndex);
-    }
+  const doughnutOptions = useMemo<ChartOptions<'doughnut'>>(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { usePointStyle: true, pointStyle: 'circle' },
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => `${context.label}: ${formatNumber(Number(context.raw))}`,
+          },
+        },
+      },
+    }),
+    [],
+  );
 
-    if (patentRegistry !== 'all') {
-      list = list.filter((p) => p.patentRegistry === patentRegistry);
-    }
+  const wosChartData = useMemo(
+    () => ({
+      labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+      datasets: [
+        {
+          data: wosQuartiles,
+          backgroundColor: ['#0ea5e9', '#1d4ed8', '#ea580c', '#6d28d9'],
+          borderWidth: 0,
+        },
+      ],
+    }),
+    [],
+  );
 
-    if (implementationAct === 'yes') {
-      list = list.filter((p) => p.hasImplementationAct);
-    }
+  const priorityChartData = useMemo(
+    () => ({
+      labels: priorityPerformance.map((item) => item.label),
+      datasets: [
+        {
+          data: priorityPerformance.map((item) => item.value),
+          backgroundColor: '#2563eb',
+          borderRadius: 12,
+          barThickness: 18,
+        },
+      ],
+    }),
+    []);
 
-    if (implementationAct === 'no') {
-      list = list.filter((p) => !p.hasImplementationAct);
-    }
+  const priorityChartOptions = useMemo<ChartOptions<'bar'>>(
+    () => ({
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (context) => `${formatNumber(Number(context.raw))} публикаций`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          grid: { color: 'rgba(226,232,240,0.5)', drawBorder: false },
+          ticks: {
+            callback: (value) => `${formatNumber(Number(value))}`,
+          },
+        },
+        y: {
+          grid: { display: false },
+        },
+      },
+    }),
+    [],
+  );
 
-    if (sort.key && sort.direction) {
-      list = [...list].sort((a, b) => {
-        const aValue = a[sort.key as keyof Publication];
-        const bValue = b[sort.key as keyof Publication];
-        
-        let comparison = 0;
+  const implementationChartData = useMemo<ChartData<'bar' | 'line'>>(
+    () => ({
+      labels: publicationYears,
+      datasets: [
+        {
+          type: 'bar' as const,
+          label: 'Количество проектов с внедрением',
+          data: implementationTrend.implementation,
+          backgroundColor: '#38bdf8',
+          borderRadius: 12,
+          maxBarThickness: 36,
+          yAxisID: 'y',
+        },
+        {
+          type: 'line' as const,
+          label: 'Количество проектов с TRL',
+          data: implementationTrend.trl,
+          borderColor: '#0f172a',
+          backgroundColor: '#0f172a',
+          borderWidth: 3,
+          tension: 0.35,
+          pointRadius: 4,
+          yAxisID: 'y1',
+        },
+      ],
+    }),
+    [],
+  );
 
-        // Обработка числовых (кол-во, h-индекс)
-        if (typeof aValue === 'number' && typeof bValue === 'number') {
-          comparison = aValue - bValue;
-        } 
-        // Обработка строковых (имя, дата)
-        else if (aValue && bValue) {
-          comparison = String(aValue).localeCompare(String(bValue));
-        }
+  const implementationChartOptions = useMemo<ChartOptions<'bar' | 'line'>>(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(226,232,240,0.6)', drawBorder: false },
+        },
+        y1: {
+          beginAtZero: true,
+          position: 'right',
+          grid: { drawOnChartArea: false },
+        },
+        x: {
+          grid: { display: false },
+        },
+      },
+    }),
+    [],
+  );
 
-        return sort.direction === 'asc' ? comparison : -comparison;
-      });
-    }
+  const patentsChartData = useMemo(
+    () => ({
+      labels: publicationYears,
+      datasets: [
+        {
+          label: 'Патенты',
+          data: patentTrend.patents,
+          backgroundColor: '#1d4ed8',
+          borderRadius: 12,
+          maxBarThickness: 32,
+        },
+        {
+          label: 'Количество внедрений',
+          data: patentTrend.deployments,
+          backgroundColor: '#0ea5e9',
+          borderRadius: 12,
+          maxBarThickness: 32,
+        },
+      ],
+    }),
+    [],
+  );
 
-    return list;
-  }, [selectedRegionId, filters, sort]);
+  const patentsChartOptions = useMemo<ChartOptions<'bar'>>(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' },
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: { beginAtZero: true, grid: { color: 'rgba(226,232,240,0.6)', drawBorder: false } },
+      },
+    }),
+    [],
+  );
 
-  // Заглушка для действий
-  const handleAction = (action: string) => {
-    alert(action);
-  };
+  const totalApplicantPublications = topApplicants.reduce((sum, applicant) => sum + applicant.value, 0);
 
   return (
     <div className="publications-page">
-      
-      {/* --- ШАПКА СТРАНИЦЫ (Заголовок, Экспорт, Создать) --- */}
-      <div className="page-header-controls">
-        <h1>Результаты</h1>
-        <div className="header-actions">
-           <button 
-              type="button" 
-              className="action-button export-button"
-              onClick={() => handleAction('Экспорт данных')}
-            >
-              <Download size={20} />
-              Экспорт данных
-            </button>
+      <header className="publications-page-header">
+        <div>
+          <h1>Результаты</h1>
+          <p>Сводная аналитика публикаций, патентов и внедрений</p>
         </div>
-      </div>
-      
-      <div className="publications-content-wrapper">
-        
-        {/* === БОКОВАЯ ПАНЕЛЬ ФИЛЬТРОВ === */}
-        <aside className="publications-sidebar">
-          <div className="sidebar-section">
-            <label htmlFor="publication-index-filter" className="filter-label">Публикации</label>
-            <select
-              id="publication-index-filter"
-              value={filters.publicationIndex}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  publicationIndex: e.target.value as PublicationIndexFilter,
-                }))
-              }
-              className="sidebar-select"
-            >
-              {PUBLICATION_INDEX_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="sidebar-section">
-            <label htmlFor="patent-registry-filter" className="filter-label">Патенты</label>
-            <select
-              id="patent-registry-filter"
-              value={filters.patentRegistry}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  patentRegistry: e.target.value as PatentRegistryFilter,
-                }))
-              }
-              className="sidebar-select"
-            >
-              {PATENT_REGISTRY_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="sidebar-section">
-            <label htmlFor="implementation-act-filter" className="filter-label">Акты внедрения</label>
-            <select
-              id="implementation-act-filter"
-              value={filters.implementationAct}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  implementationAct: e.target.value as ImplementationActFilter,
-                }))
-              }
-              className="sidebar-select"
-            >
-              {IMPLEMENTATION_ACT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="sidebar-section">
-            <label htmlFor="region-filter" className="filter-label">Регионы</label>
-            <select
-              id="region-filter"
-              value={selectedRegionId}
-              onChange={(e) => setSelectedRegionId(e.target.value as RegionId)}
-              className="sidebar-select"
-            >
-              <option value="national">Все регионы</option>
-              {regions.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            type="button"
-            className="action-button apply-button"
-            style={{ color: '#fff', backgroundColor: '#2563eb', border: 'none', marginTop: '20px' }}
-            onClick={handleResetFilters}
-          >
-            <ArrowUpDown size={20} />
-            Сбросить фильтры
+        <div className="publications-header-actions">
+          <button type="button" className="publications-export-button">
+            <Download size={18} />
+            Экспортировать отчёт
           </button>
-        </aside>
-        
-        {/* === ОСНОВНОЕ СОДЕРЖИМОЕ === */}
-        <main className="publications-main-content">
-          <section className="publications-visuals" aria-label="Аналитика публикаций">
-            <article className="publications-map-card">
-              <header className="publications-map-header">
-                <div>
-                  <span className="publications-map-tag">Публикации по регионам</span>
-                  <h2>{selectedRegion?.name ?? 'Республика Казахстан'}</h2>
-                </div>
-                <span className="publications-map-hint">Нажмите на карту для фильтрации</span>
-              </header>
+        </div>
+      </header>
 
-              <div className="publications-map-frame">
-                <KazakhstanMap selectedRegionId={selectedRegionId} onRegionSelect={handleMapSelect} />
-              </div>
-
-              <div className="publications-map-stats">
-                {mapHighlights.map((item) => (
-                  <div key={item.label} className="publications-map-stat">
-                    <span className="publications-map-stat-label">{item.label}</span>
-                    <span className="publications-map-stat-value">{item.value}</span>
-                  </div>
-                ))}
-              </div>
+      <section className="publications-stats-row" aria-label="Ключевые показатели">
+        <div
+          className={`publications-stats-scroll${isDraggingStats ? ' is-dragging' : ''}`}
+          ref={statsScrollRef}
+          onPointerDown={handleStatsPointerDown}
+          onPointerMove={handleStatsPointerMove}
+          onPointerUp={stopStatsDragging}
+          onPointerCancel={stopStatsDragging}
+          onPointerLeave={stopStatsDragging}
+        >
+          {highlightCards.map((card) => (
+            <article
+              key={card.id}
+              className="publications-stat-card"
+              style={{ '--accent': card.accent } as CSSVars}
+            >
+              <span>{card.label}</span>
+              <strong>{card.value}</strong>
             </article>
+          ))}
+        </div>
+      </section>
 
-            <article className="publications-chart-card" aria-label="Динамика публикаций">
-              <header className="publications-chart-header">
-                <h2>Публикации по годам</h2>
-                <span>Количество работ в UISKS</span>
-              </header>
-              <div className="publications-chart">
-                <Bar data={timelineChartData} options={timelineChartOptions} updateMode="resize" />
-              </div>
-            </article>
+      <section className="publications-map-and-filter">
+        <article className="publications-map-panel">
+          <header>
+            <div>
+              <p>Публикации по регионам</p>
+              <h2>{selectedRegion?.name ?? 'Республика Казахстан'}</h2>
+            </div>
+            <small>Нажмите на регион, чтобы зафиксировать выбор</small>
+          </header>
+          <div className="publications-map-wrapper">
+            <KazakhstanMap selectedRegionId={selectedRegionId} onRegionSelect={handleMapSelect} />
+          </div>
+        </article>
 
-            <article className="publications-chart-card" aria-label="Структура публикаций">
-              <header className="publications-chart-header">
-                <h2>Структура по типам</h2>
-                <span>Журналы, конференции, книги, прочее</span>
-              </header>
-              <div className="publications-doughnut-wrapper">
-                <Doughnut data={distributionChartData} options={distributionChartOptions} updateMode="resize" />
-                <div className="publications-doughnut-center">
-                  <span className="value">{formatNumber(totalPublications)}</span>
-                  <span className="label">всего</span>
-                </div>
+        <article className="publications-filters-panel">
+          <header>
+            <h2>Фильтры</h2>
+          </header>
+
+          <section className="publications-filter-group" aria-label="Диапазон годов">
+            <div className="publications-filter-title">Годы</div>
+            <div className="period-range-slider" style={rangeBackgroundStyle}>
+              <div className="period-range-values">
+                <span className="period-range-value">{filters.startYear}</span>
+                <span className="period-range-value">{filters.endYear}</span>
               </div>
-            </article>
+              <div className="period-range-track" />
+              <div className="period-range-inputs">
+                <input
+                  type="range"
+                  min={YEAR_RANGE.min}
+                  max={YEAR_RANGE.max}
+                  value={filters.startYear}
+                  onChange={(event) => handleRangeChange('startYear', Number(event.target.value))}
+                  className="period-range-thumb"
+                />
+                <input
+                  type="range"
+                  min={YEAR_RANGE.min}
+                  max={YEAR_RANGE.max}
+                  value={filters.endYear}
+                  onChange={(event) => handleRangeChange('endYear', Number(event.target.value))}
+                  className="period-range-thumb period-range-thumb--upper"
+                />
+              </div>
+            </div>
           </section>
 
-          <div className="publication-table-container">
-            <table className="publication-table">
-              <thead>
-                <tr>
-                  <th>№</th>
-                  <th onClick={() => handleSortChange('authorName')} className={sort.key === 'authorName' ? sort.direction : ''}>
-                    ФИО <ArrowUpDown size={14} />
-                  </th>
-                  <th onClick={() => handleSortChange('totalPublications')} className={sort.key === 'totalPublications' ? sort.direction : ''}>
-                    Кол-во публ. <ArrowUpDown size={14} />
-                  </th>
-                  <th onClick={() => handleSortChange('hIndex')} className={sort.key === 'hIndex' ? sort.direction : ''}>
-                    Индекс Хирша <ArrowUpDown size={14} />
-                  </th>
-                  <th>Название последней публикации</th>
-                  <th onClick={() => handleSortChange('latestPublicationDate')} className={sort.key === 'latestPublicationDate' ? sort.direction : ''}>
-                    Дата последней публ. <ArrowUpDown size={14} />
-                  </th>
-                  <th className="actions-column">Действия</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredPublications.map((pub, index) => (
-                  <tr key={pub.id}>
-                    <td>{index + 1}</td>
-                    <td className="name-cell">{pub.authorName}</td>
-                    <td className="center-cell">{pub.totalPublications}</td>
-                    <td className="center-cell">{pub.hIndex}</td>
-                    <td>{pub.latestPublicationTitle}</td>
-                    <td>{new Date(pub.latestPublicationDate).toLocaleDateString('ru-RU')}</td>
-                    <td className="actions-column">
-                      <div className="actions-buttons">
-                        <button onClick={() => handleAction(`Просмотр ${pub.id}`)} title="Просмотр">
-                           Просмотр
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+          <div className="publications-filter-grid">
+            {filterSelect(
+              'filter-irn',
+              'IRN',
+              filters.irn,
+              irnOptions.map((value) => ({ value, label: value === 'all' ? 'Все IRN' : value })),
+              (value) => handleSelectChange('irn', value),
+            )}
+            {filterSelect(
+              'filter-financing',
+              'Тип финансирования',
+              filters.financingType,
+              [
+                { value: 'all', label: 'Все типы финансирования' },
+                { value: 'grant', label: 'Грантовое' },
+                { value: 'program', label: 'Программно-целевое' },
+                { value: 'contract', label: 'По договорам' },
+              ],
+              (value) => handleSelectChange('financingType', value),
+            )}
+            {filterSelect(
+              'filter-priority',
+              'Приоритетное направление',
+              filters.priority,
+              [
+                { value: 'all', label: 'Все направления' },
+                { value: 'health', label: 'Здравоохранение' },
+                { value: 'economy', label: 'Экономика' },
+                { value: 'energy', label: 'Энергетика' },
+                { value: 'ai', label: 'Искусственный интеллект' },
+              ],
+              (value) => handleSelectChange('priority', value),
+            )}
+            {filterSelect(
+              'filter-contest',
+              'Наименование конкурса',
+              filters.contest,
+              contests.map((value) => ({ value, label: value === 'all' ? 'Все конкурсы' : value })),
+              (value) => handleSelectChange('contest', value),
+            )}
+            {filterSelect(
+              'filter-applicant',
+              'Заявитель',
+              filters.applicant,
+              applicants.map((value) => ({ value, label: value === 'all' ? 'Все заявители' : value })),
+              (value) => handleSelectChange('applicant', value),
+            )}
+            {filterSelect(
+              'filter-customer',
+              'Заказчик',
+              filters.customer,
+              customers.map((value) => ({ value, label: value === 'all' ? 'Все заказчики' : value })),
+              (value) => handleSelectChange('customer', value),
+            )}
+            {filterSelect(
+              'filter-mrnti',
+              'МРНТИ',
+              filters.mrnti,
+              mrntiOptions.map((value) => ({ value, label: value === 'all' ? 'Все коды МРНТИ' : value })),
+              (value) => handleSelectChange('mrnti', value),
+            )}
+            {filterSelect(
+              'filter-status',
+              'Статус',
+              filters.status,
+              statusOptions.map((value) => ({ value, label: value === 'all' ? 'Все статусы' : value })),
+              (value) => handleSelectChange('status', value),
+            )}
+            <label className="publications-filter-item" htmlFor="filter-region">
+              <span>Регион</span>
+              <select
+                id="filter-region"
+                value={selectedRegionId}
+                onChange={(event) => setSelectedRegionId(event.target.value as RegionId)}
+              >
+                <option value="national">Все регионы</option>
+                {regions.map((region) => (
+                  <option key={region.id} value={region.id}>
+                    {region.name}
+                  </option>
                 ))}
-              </tbody>
-            </table>
-            
-            {/* Сообщение, если список пуст */}
-            {filteredPublications.length === 0 && (
-              <div className="no-results">
-                Публикации не найдены по текущим фильтрам.
-              </div>
+              </select>
+            </label>
+            {filterSelect(
+              'filter-trl',
+              'TRL',
+              filters.trl,
+              trlOptions.map((value) => ({ value, label: value === 'all' ? 'Все уровни' : value })),
+              (value) => handleSelectChange('trl', value),
             )}
           </div>
-        </main>
-        
-      </div>
+
+          <div className="publications-filter-actions">
+            <button type="button" onClick={handleResetFilters}>Сбросить фильтры</button>
+          </div>
+        </article>
+      </section>
+
+      <section className="publications-chart-grid">
+        <article className="publications-chart-card chart-span-2">
+          <header>
+            <h3>Динамика публикаций</h3>
+            <p>Сравнение отечественных и зарубежных работ</p>
+          </header>
+          <div className="chart-body">
+            <Bar data={publicationDynamicsData} options={publicationDynamicsOptions} />
+          </div>
+        </article>
+
+        <article className="publications-chart-card">
+          <header>
+            <h3>Публикации Scopus по SiteScore</h3>
+          </header>
+          <div className="chart-body">
+            <Doughnut data={scopusChartData} options={doughnutOptions} />
+          </div>
+        </article>
+
+        <article className="publications-chart-card">
+          <header>
+            <h3>Публикации Web of Science по квартилям</h3>
+          </header>
+          <div className="chart-body">
+            <Doughnut data={wosChartData} options={doughnutOptions} />
+          </div>
+        </article>
+      </section>
+
+      <section className="publications-chart-grid">
+        <article className="publications-chart-card chart-span-2">
+          <header>
+            <h3>Результативность по приоритетным направлениям</h3>
+            <p>Количество публикаций по ключевым кластерам</p>
+          </header>
+          <div className="chart-body">
+            <Bar data={priorityChartData} options={priorityChartOptions} />
+          </div>
+        </article>
+
+        <article className="publications-chart-card chart-span-2">
+          <header>
+            <h3>Динамика проектов с внедрением и количеством TRL</h3>
+          </header>
+          <div className="chart-body">
+            <ChartComponent type="bar" data={implementationChartData} options={implementationChartOptions} />
+          </div>
+        </article>
+      </section>
+
+      <section className="publications-chart-grid">
+        <article className="publications-chart-card chart-span-2">
+          <header>
+            <h3>Топ-5 заявителей</h3>
+            <p>Отечественные публикации</p>
+          </header>
+          <div className="top-applicants-list">
+            {topApplicants.map((applicant) => {
+              const share = (applicant.value / totalApplicantPublications) * 100;
+              return (
+                <div key={applicant.id} className="top-applicant-row">
+                  <div>
+                    <strong>{applicant.name}</strong>
+                    <span>{formatNumber(applicant.value)}</span>
+                  </div>
+                  <div className="top-applicant-bar">
+                    <span style={{ width: `${share}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+            <div className="top-applicant-total">
+              <span>Всего</span>
+              <strong>{formatNumber(totalApplicantPublications)}</strong>
+            </div>
+          </div>
+        </article>
+
+        <article className="publications-chart-card chart-span-2">
+          <header>
+            <h3>Динамика патентов и внедрений</h3>
+            <p>Сравнение выданных патентов и актов внедрения</p>
+          </header>
+          <div className="chart-body">
+            <Bar data={patentsChartData} options={patentsChartOptions} />
+          </div>
+        </article>
+      </section>
     </div>
   );
 };

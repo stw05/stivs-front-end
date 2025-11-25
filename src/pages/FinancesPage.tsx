@@ -119,6 +119,8 @@ const STATUS_OPTIONS: Array<{ value: ProjectStatus; label: string }> = [
   { value: 'pipeline', label: 'На рассмотрении' },
 ];
 
+const FINANCES_PERIOD_RANGE = { min: 2020, max: 2040 } as const;
+
 const DEFAULT_CHART_FILTERS: ChartFilterState = {
   cofinancing: COFINANCING_OPTIONS.map((option) => option.value),
   expenses: EXPENSE_OPTIONS.map((option) => option.value),
@@ -830,6 +832,15 @@ const FinancesPage: React.FC = () => {
     [setFilters],
   );
 
+  const periodRangeStyle = useMemo(() => {
+    const total = FINANCES_PERIOD_RANGE.max - FINANCES_PERIOD_RANGE.min;
+    const progress = ((filters.period - FINANCES_PERIOD_RANGE.min) / total) * 100;
+    return {
+      '--range-start': '0%',
+      '--range-end': `${progress}%`,
+    } as CSSProperties;
+  }, [filters.period]);
+
   const handleMapSelect = useCallback(
     (regionId: string) => {
       const typedId = regionId as RegionId;
@@ -890,19 +901,24 @@ const FinancesPage: React.FC = () => {
             <label htmlFor="filter-period">Период</label>
             <span className="finances-filter-value">{filters.period} г.</span>
           </div>
-          <input
-            id="filter-period"
-            type="range"
-            min={2020}
-            max={2040}
-            step={1}
-            value={filters.period}
-            onChange={handlePeriodChange}
-            className="finances-filter-range"
-          />
-          <div className="finances-filter-scale">
-            <span>2020</span>
-            <span>2040</span>
+          <div className="period-range-slider" style={periodRangeStyle}>
+            <div className="period-range-values">
+              <span className="period-range-value">{FINANCES_PERIOD_RANGE.min}</span>
+              <span className="period-range-value">{filters.period}</span>
+            </div>
+            <div className="period-range-track" />
+            <div className="period-range-inputs">
+              <input
+                id="filter-period"
+                type="range"
+                min={FINANCES_PERIOD_RANGE.min}
+                max={FINANCES_PERIOD_RANGE.max}
+                step={1}
+                value={filters.period}
+                onChange={handlePeriodChange}
+                className="period-range-thumb period-range-thumb--upper"
+              />
+            </div>
           </div>
         </div>
 

@@ -720,20 +720,20 @@ const ProjectsPage: React.FC = () => {
 
 					<div className="projects-filter-block">
 						<div className="projects-filter-title">Период</div>
-						<div className="projects-range-slider" style={rangeBackgroundStyle}>
-							<div className="projects-range-values">
-								<span className="projects-range-value">{filters.startYear}</span>
-								<span className="projects-range-value">{filters.endYear}</span>
+						<div className="period-range-slider" style={rangeBackgroundStyle}>
+							<div className="period-range-values">
+								<span className="period-range-value">{filters.startYear}</span>
+								<span className="period-range-value">{filters.endYear}</span>
 							</div>
-							<div className="projects-range-track" />
-							<div className="projects-range-inputs">
+							<div className="period-range-track" />
+							<div className="period-range-inputs">
 								<input
 									type="range"
 									min={YEAR_RANGE.min}
 									max={YEAR_RANGE.max}
 									value={filters.startYear}
 									onChange={(event) => handleYearChange('startYear', Number(event.target.value))}
-									className="projects-range-thumb"
+									className="period-range-thumb"
 								/>
 								<input
 									type="range"
@@ -741,7 +741,7 @@ const ProjectsPage: React.FC = () => {
 									max={YEAR_RANGE.max}
 									value={filters.endYear}
 									onChange={(event) => handleYearChange('endYear', Number(event.target.value))}
-									className="projects-range-thumb projects-range-thumb--upper"
+									className="period-range-thumb period-range-thumb--upper"
 								/>
 							</div>
 						</div>

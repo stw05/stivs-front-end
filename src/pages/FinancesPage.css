@@ -10,30 +10,43 @@
 
 .finances-header {
   display: flex;
-  flex-wrap: wrap;
   justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
   gap: 1.5rem;
-  align-items: flex-end;
+  background: #ffffff;
+  padding: 1.75rem 2rem;
+  border-radius: 24px;
+  box-shadow: 0 24px 48px rgba(37, 99, 235, 0.14);
+  margin-top: 1rem;
   width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .finances-header h1 {
   margin: 0;
   font-size: 2rem;
   font-weight: 700;
-  color: var(--color-primary-dark);
+  color: #1e3a8a;
 }
 
 .finances-header p {
   margin: 0.5rem 0 0;
-  color: var(--color-text-medium);
+  color: #475569;
   max-width: 600px;
 }
 
 .finances-controls {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  flex: 1 1 220px;
+  max-width: 360px;
+  width: 100%;
+  margin-left: auto;
 }
 
 /*
@@ -88,10 +101,12 @@
 
 /* Специальные стили для выбора региона (если нужно шире) */
 .finances-region-select {
-  min-width: 260px;
-  border-radius: var(--radius-xs);
+  width: 100%;
+  min-width: 0;
+  border-radius: 999px;
   border: 1px solid var(--color-border-light);
-  background-color: #eff6ff; /* Более насыщенный светлый фон */
+  background-color: #eff6ff;
+  padding: 0.75rem 1.25rem;
 }
 
 
@@ -115,45 +130,6 @@
 }
 
 /* Слайдер Диапазона (Range Slider) */
-.finances-filter-range {
-  width: 100%;
-  appearance: none;
-  height: 6px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--color-primary-base), var(--color-primary-light));
-  outline: none;
-  transition: opacity 0.2s ease;
-}
-
-.finances-filter-range::-webkit-slider-thumb {
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #fff;
-  border: 2px solid var(--color-primary-base);
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
-}
-
-.finances-filter-range::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #fff;
-  border: 2px solid var(--color-primary-base);
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
-}
-
-.finances-filter-scale {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-  margin-top: 0.25rem;
-}
-
 /* Скрытый текст для доступности */
 .sr-only {
   position: absolute;
@@ -845,7 +821,15 @@
 /* Мобильные устройства (Ландшафт и Планшеты маленького размера) */
 @media (max-width: 768px) {
   .finances-header {
+    flex-direction: column;
     align-items: flex-start;
+  }
+
+  .finances-controls {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
   }
 
   .finances-filter-bar {
