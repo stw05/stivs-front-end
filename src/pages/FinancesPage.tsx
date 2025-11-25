@@ -1,8 +1,10 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { useRegionContext } from '../context/RegionContext';
 import type { RegionId } from '../context/RegionContext';
 import KazakhstanMap from '../components/Home/KazakhstanMap';
 import { calculateNationalMetrics, formatNumber } from '../utils/metrics';
+import { DollarSign, TrendingUp } from 'lucide-react';
 import {
   Chart as ChartJS,
   ArcElement,
@@ -28,6 +30,11 @@ ChartJS.register(
 type FinancingType = 'gf' | 'pcf' | 'commercial';
 type CofinancingType = 'contract' | 'actual';
 type ExpenseCategory = 'salary' | 'travel' | 'support' | 'materials' | 'rent' | 'protocol';
+type PriorityDirection = 'all' | 'digital' | 'education' | 'biotech' | 'energy';
+type CompetitionName = 'all' | 'innovation' | 'grant2025' | 'pilot';
+type ApplicantType = 'all' | 'universities' | 'companies' | 'research';
+type CustomerType = 'all' | 'ministry' | 'state-companies' | 'private';
+type ProjectStatus = 'all' | 'active' | 'completed' | 'pipeline';
 
 interface FilterState {
   irn: string;
@@ -35,6 +42,11 @@ interface FilterState {
   financingType: FinancingType;
   cofinancing: CofinancingType;
   expense: ExpenseCategory;
+  priority: PriorityDirection;
+  competition: CompetitionName;
+  applicant: ApplicantType;
+  customer: CustomerType;
+  status: ProjectStatus;
 }
 
 interface ChartFilterState {
@@ -69,6 +81,42 @@ const EXPENSE_OPTIONS: Array<{ value: ExpenseCategory; label: string }> = [
   { value: 'materials', label: 'Приобретение материалов' },
   { value: 'rent', label: 'Расходы на аренду' },
   { value: 'protocol', label: 'Протокол ННС' },
+];
+
+const PRIORITY_OPTIONS: Array<{ value: PriorityDirection; label: string }> = [
+  { value: 'all', label: 'Все направления' },
+  { value: 'digital', label: 'Цифровизация и ИИ' },
+  { value: 'education', label: 'Образование и кадры' },
+  { value: 'biotech', label: 'Биотех и медицина' },
+  { value: 'energy', label: 'Энергетика и климат' },
+];
+
+const COMPETITION_OPTIONS: Array<{ value: CompetitionName; label: string }> = [
+  { value: 'all', label: 'Все конкурсы' },
+  { value: 'innovation', label: 'Инновационный драйвер' },
+  { value: 'grant2025', label: 'Гранты 2025' },
+  { value: 'pilot', label: 'Пилотные программы' },
+];
+
+const APPLICANT_OPTIONS: Array<{ value: ApplicantType; label: string }> = [
+  { value: 'all', label: 'Все заявители' },
+  { value: 'universities', label: 'Университеты' },
+  { value: 'companies', label: 'Компании' },
+  { value: 'research', label: 'НИИ и центры' },
+];
+
+const CUSTOMER_OPTIONS: Array<{ value: CustomerType; label: string }> = [
+  { value: 'all', label: 'Все заказчики' },
+  { value: 'ministry', label: 'Министерства' },
+  { value: 'state-companies', label: 'Госкомпании' },
+  { value: 'private', label: 'Частные заказчики' },
+];
+
+const STATUS_OPTIONS: Array<{ value: ProjectStatus; label: string }> = [
+  { value: 'all', label: 'Все статусы' },
+  { value: 'active', label: 'В реализации' },
+  { value: 'completed', label: 'Завершены' },
+  { value: 'pipeline', label: 'На рассмотрении' },
 ];
 
 const DEFAULT_CHART_FILTERS: ChartFilterState = {
@@ -187,6 +235,11 @@ const FinancesPage: React.FC = () => {
     financingType: 'gf',
     cofinancing: 'contract',
     expense: 'salary',
+    priority: 'all',
+    competition: 'all',
+    applicant: 'all',
+    customer: 'all',
+    status: 'all',
   });
   const [chartFilters, setChartFilters] = useState<ChartFilterState>({
     cofinancing: [],
@@ -644,28 +697,22 @@ const FinancesPage: React.FC = () => {
     ];
   }, [adjustedMetrics, nationalMetrics, selectedRegion]);
 
-  const summaryCards = [
+  const highlightCards = [
     {
-      title: 'Общий бюджет',
-      value: `${formatNumber(adjustedMetrics.finances.total, { maximumFractionDigits: 1 })} млрд. тг`,
-      description: isNational
-        ? 'Суммарный объем финансирования по Республике Казахстан'
-        : 'Финансирование по выбранному региону',
+      title: 'Общая сумма финансирования',
+      value: `${formatNumber(adjustedMetrics.finances.total, { maximumFractionDigits: 1 })} млрд ₸`,
+      icon: DollarSign,
+      iconBg: 'rgba(59, 130, 246, 0.15)',
+      iconColor: '#2563eb',
+      accent: 'rgba(59, 130, 246, 0.35)',
     },
     {
-      title: 'Последний финансовый год',
-      value: `${formatNumber(adjustedMetrics.finances.lastYear, { maximumFractionDigits: 1 })} млрд. тг`,
-      description: 'Фактически освоенные средства за прошлый год',
-    },
-    {
-      title: 'Средняя статья расходов',
-      value: `${formatNumber(adjustedMetrics.finances.avgExpense)} тыс. тг`,
-      description: 'Средний объем финансирования на одну категорию расходов',
-    },
-    {
-      title: 'Освоение бюджета',
-      value: `${formatNumber(adjustedMetrics.finances.budgetUsage, { maximumFractionDigits: 1 })}%`,
-      description: 'Доля освоенных средств от утвержденного бюджета',
+      title: 'Сумма финансирования на текущий год',
+      value: `${formatNumber(adjustedMetrics.finances.lastYear, { maximumFractionDigits: 1 })} млрд ₸`,
+      icon: TrendingUp,
+      iconBg: 'rgba(16, 185, 129, 0.15)',
+      iconColor: '#059669',
+      accent: 'rgba(16, 185, 129, 0.28)',
     },
   ];
 
@@ -694,33 +741,30 @@ const FinancesPage: React.FC = () => {
     [handleFinancingTypeSelect],
   );
 
-  const handleCofinancingSelect = useCallback(
-    (value: CofinancingType) => {
-      setFilters((prev) => ({ ...prev, cofinancing: value }));
-    },
-    [setFilters],
-  );
+  const handlePriorityChange = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = event.target.value as PriorityDirection;
+    setFilters((prev) => ({ ...prev, priority: value }));
+  }, []);
 
-  const handleCofinancingChange = useCallback(
-    (event: React.ChangeEvent<HTMLSelectElement>) => {
-      handleCofinancingSelect(event.target.value as CofinancingType);
-    },
-    [handleCofinancingSelect],
-  );
+  const handleCompetitionChange = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = event.target.value as CompetitionName;
+    setFilters((prev) => ({ ...prev, competition: value }));
+  }, []);
 
-  const handleExpenseSelect = useCallback(
-    (value: ExpenseCategory) => {
-      setFilters((prev) => ({ ...prev, expense: value }));
-    },
-    [setFilters],
-  );
+  const handleApplicantChange = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = event.target.value as ApplicantType;
+    setFilters((prev) => ({ ...prev, applicant: value }));
+  }, []);
 
-  const handleExpenseChange = useCallback(
-    (event: React.ChangeEvent<HTMLSelectElement>) => {
-      handleExpenseSelect(event.target.value as ExpenseCategory);
-    },
-    [handleExpenseSelect],
-  );
+  const handleCustomerChange = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = event.target.value as CustomerType;
+    setFilters((prev) => ({ ...prev, customer: value }));
+  }, []);
+
+  const handleStatusChange = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = event.target.value as ProjectStatus;
+    setFilters((prev) => ({ ...prev, status: value }));
+  }, []);
 
   const handleCofinancingChartSelect = useCallback(
     (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -879,14 +923,14 @@ const FinancesPage: React.FC = () => {
         </div>
 
         <div className="finances-filter-group">
-          <label htmlFor="filter-cofinancing">Софинансирование</label>
+          <label htmlFor="filter-priority">Приоритетные направления</label>
           <select
-            id="filter-cofinancing"
+            id="filter-priority"
             className="finances-filter-select"
-            value={filters.cofinancing}
-            onChange={handleCofinancingChange}
+            value={filters.priority}
+            onChange={handlePriorityChange}
           >
-            {COFINANCING_OPTIONS.map((option) => (
+            {PRIORITY_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -895,14 +939,62 @@ const FinancesPage: React.FC = () => {
         </div>
 
         <div className="finances-filter-group">
-          <label htmlFor="filter-expense">Статьи расходов</label>
+          <label htmlFor="filter-competition">Наименование конкурса</label>
           <select
-            id="filter-expense"
+            id="filter-competition"
             className="finances-filter-select"
-            value={filters.expense}
-            onChange={handleExpenseChange}
+            value={filters.competition}
+            onChange={handleCompetitionChange}
           >
-            {EXPENSE_OPTIONS.map((option) => (
+            {COMPETITION_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="finances-filter-group">
+          <label htmlFor="filter-applicant">Заявитель</label>
+          <select
+            id="filter-applicant"
+            className="finances-filter-select"
+            value={filters.applicant}
+            onChange={handleApplicantChange}
+          >
+            {APPLICANT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="finances-filter-group">
+          <label htmlFor="filter-customer">Заказчик</label>
+          <select
+            id="filter-customer"
+            className="finances-filter-select"
+            value={filters.customer}
+            onChange={handleCustomerChange}
+          >
+            {CUSTOMER_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="finances-filter-group">
+          <label htmlFor="filter-status">Статус</label>
+          <select
+            id="filter-status"
+            className="finances-filter-select"
+            value={filters.status}
+            onChange={handleStatusChange}
+          >
+            {STATUS_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -1208,14 +1300,25 @@ const FinancesPage: React.FC = () => {
         </div>
       </section>
 
-      <section className="finances-summary" aria-label="Ключевые показатели">
-        {summaryCards.map((card) => (
-          <article key={card.title} className="finances-summary-card">
-            <span className="finances-summary-title">{card.title}</span>
-            <span className="finances-summary-value">{card.value}</span>
-            <p>{card.description}</p>
-          </article>
-        ))}
+      <section className="finances-highlight" aria-label="Ключевые показатели">
+        {highlightCards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <article
+              key={card.title}
+              className="finances-highlight-card"
+              style={{ '--highlight-accent': card.accent } as CSSProperties}
+            >
+              <span className="finances-highlight-icon" style={{ backgroundColor: card.iconBg, color: card.iconColor }}>
+                <Icon size={20} aria-hidden="true" />
+              </span>
+              <div className="finances-highlight-content">
+                <span className="finances-highlight-label">{card.title}</span>
+                <span className="finances-highlight-value">{card.value}</span>
+              </div>
+            </article>
+          );
+        })}
       </section>
 
       <div className="finances-grid">
