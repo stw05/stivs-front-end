@@ -151,7 +151,7 @@ export const regionsData: RegionShape[] = [
     name: 'Восточно-Казахстанская область',
     shortName: 'ВКО',
     type: 'region',
-  labelOffset: { x: 2, y: -40.4 },
+  labelOffset: { x: 0, y: -10.4 },
     stats: {
       projects: { total: 600, grants: 210, programs: 165, contracts: 130, commercialization: 95, avgDuration: 26 },
       publications: { total: 1120, journals: 380, conferences: 260, books: 140, other: 340 },
@@ -164,7 +164,7 @@ export const regionsData: RegionShape[] = [
     name: 'Абайская область',
     shortName: 'АБАЙ',
     type: 'region',
-  labelOffset: { x: 5, y: -29.2 },
+  labelOffset: { x: 0, y: -29.2 },
     stats: {
       projects: { total: 350, grants: 120, programs: 95, contracts: 68, commercialization: 67, avgDuration: 23 },
       publications: { total: 640, journals: 220, conferences: 150, books: 72, other: 198 },
