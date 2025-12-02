@@ -19,7 +19,7 @@ const Header: React.FC = () => {
       <div className="header-content">
         <div className="header-left">
           <div className="logo">
-            <h1>UISKS</h1>
+            <Link to="/" className="app-logo-link"> <h1>UISKS</h1></Link>
             <span className="logo-subtitle">Unified information system "Kazakhstan Science"</span>
           </div>
         </div>
@@ -41,6 +41,7 @@ const Header: React.FC = () => {
 
         <div className="header-right">
           <div className="language-selector">
+            <span className="lang-option">KZ</span>
             <span className="lang-option active">RU</span>
             <span className="lang-option">EN</span>
           </div>
