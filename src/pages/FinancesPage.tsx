@@ -18,6 +18,7 @@ import {
 } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import './FinancesPage.css';
+import { useTranslation } from 'react-i18next';
 
 ChartJS.register(
   CategoryScale,
@@ -191,6 +192,8 @@ const adjustFinancesByFilters = (
     'irn-204': 1.1,
   };
 
+  
+
   const typeFactor = typeFactors[filters.financingType];
   const cofinFactor = cofinancingFactors[filters.cofinancing];
   const expenseFactor = expenseAdjustments[filters.expense];
@@ -228,6 +231,7 @@ const adjustFinancesByFilters = (
 };
 
 const FinancesPage: React.FC = () => {
+  const { t } = useTranslation();
   const { selectedRegion, selectedRegionId, setSelectedRegionId, regions, isNational } =
     useRegionContext();
 
@@ -658,6 +662,30 @@ const FinancesPage: React.FC = () => {
     [regions],
   );
 
+  const handleRegionSelect = (regionId: string) => {
+    const nextRegionId: RegionId = selectedRegionId === regionId ? 'national' : (regionId as RegionId);
+    setSelectedRegionId(nextRegionId);
+  };
+
+  const fundingTypeOptions: { value: FinancingType; label: string }[] = useMemo(
+    () => [
+      { value: 'gf', label: t('filter_gf') }, // 🟢 ПЕРЕВОД
+      { value: 'pcf', label: t('filter_pcf') }, // 🟢 ПЕРЕВОД
+      { value: 'commercial', label: t('filter_commercial') }, // 🟢 ПЕРЕВОД
+    ],
+    [t],
+  );
+
+  const competitionOptions: { value: CompetitionName; label: string }[] = useMemo(
+    () => [
+      { value: 'all', label: t('filter_all_contests') }, // 🟢 ПЕРЕВОД
+      { value: 'innovation', label: t('filter_innovation') }, // 🟢 ПЕРЕВОД
+      { value: 'grant2025', label: t('filter_grant2025') }, // 🟢 ПЕРЕВОД
+      { value: 'pilot', label: t('filter_pilot') }, // 🟢 ПЕРЕВОД
+    ],
+    [t],
+  );
+
   const comparisonRows = useMemo(() => {
     if (!selectedRegion) {
       return [];
@@ -667,13 +695,15 @@ const FinancesPage: React.FC = () => {
 
     return [
       {
-        label: 'Финансирование, млрд. тг',
+        label: t('comparison_projects_count'), // 🟢 ПЕРЕВОД
+        // label: 'Финансирование, млрд. тг',
         regionValue: `${formatNumber(adjustedMetrics.finances.total, { maximumFractionDigits: 1 })}`,
         nationalValue: `${formatNumber(nationalMetrics.finances.total, { maximumFractionDigits: 1 })}`,
         delta: `${share.toFixed(1)}% доля`,
       },
       {
-        label: 'Финансирование за прошлый год, млрд. тг',
+        label: t('comparison_total_finances'), // 🟢 ПЕРЕВОД
+        // label: 'Финансирование за прошлый год, млрд. тг',
         regionValue: `${formatNumber(adjustedMetrics.finances.lastYear, { maximumFractionDigits: 1 })}`,
         nationalValue: `${formatNumber(nationalMetrics.finances.lastYear, { maximumFractionDigits: 1 })}`,
         delta: `${((adjustedMetrics.finances.lastYear / nationalMetrics.finances.lastYear) * 100).toFixed(1)}% доля`,

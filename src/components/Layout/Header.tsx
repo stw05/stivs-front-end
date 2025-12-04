@@ -1,26 +1,35 @@
-import React from 'react';
+import React, { useMemo } from 'react'; // 🟢 useMemo добавлен для навигации
 import { Link, useLocation } from 'react-router-dom';
 import { User, Settings, LogOut } from 'lucide-react';
+import { useTranslation } from 'react-i18next'; // 🟢 ИМПОРТ
 import './Header.css';
 
 const Header: React.FC = () => {
   const location = useLocation();
+  const { t, i18n } = useTranslation();
 
-  const navigationItems = [
-    { path: '/', label: 'Главная' },
-    { path: '/projects', label: 'Проекты' },
-    { path: '/employees', label: 'Сотрудники' },
-    { path: '/finances', label: 'Финансы' },
-    { path: '/publications', label: 'Результаты' },
-  ];
+  const navigationItems = useMemo(() => [
+    { path: '/', label: t('home_page_title') }, // 🟢 ПЕРЕВОД
+    { path: '/projects', label: t('projects_page_title') }, // 🟢 ПЕРЕВОД
+    { path: '/employees', label: t('employees_page_title') }, // 🟢 ПЕРЕВОД
+    { path: '/finances', label: t('finances_page_title') }, // 🟢 ПЕРЕВОД
+    { path: '/publications', label: t('publications_page_title') }, // 🟢 ПЕРЕВОД
+  ], [t]);
+
+  // 🟢 ФУНКЦИЯ ДЛЯ СМЕНЫ ЯЗЫКА
+  const changeLanguage = (lng: string) => {
+    i18n.changeLanguage(lng);
+  };
 
   return (
     <header className="header">
       <div className="header-content">
         <div className="header-left">
           <div className="logo">
-            <Link to="/" className="app-logo-link"> <h1>UISKS</h1></Link>
-            <span className="logo-subtitle">Unified information system "Kazakhstan Science"</span>
+            <Link to="/" className="app-logo-link"> 
+              <h1>{t('app_name')}</h1> {/* 🟢 ПЕРЕВОД */}
+            </Link>
+            <span className="logo-subtitle">{t('app_title_full')}</span> {/* 🟢 ПЕРЕВОД */}
           </div>
         </div>
 
@@ -39,11 +48,23 @@ const Header: React.FC = () => {
           })}
         </nav>
 
-        <div className="header-right">
+      <div className="header-right">
           <div className="language-selector">
-            <span className="lang-option">KZ</span>
-            <span className="lang-option active">RU</span>
-            <span className="lang-option">EN</span>
+            {/* 🟢 КНОПКА ДЛЯ КАЗАХСКОГО ЯЗЫКА */}
+            <span 
+              className={`lang-option ${i18n.language === 'kk' ? 'active' : ''}`}
+              onClick={() => changeLanguage('kk')}
+            >
+              {t('kaz_label')}
+            </span>
+            {/* 🟢 КНОПКА ДЛЯ РУССКОГО ЯЗЫКА */}
+            <span 
+              className={`lang-option ${i18n.language === 'ru' ? 'active' : ''}`}
+              onClick={() => changeLanguage('ru')}
+            >
+              {t('rus_label')}
+            </span>
+            {/* Удалил 'EN', так как в i18n.tsx нет английского словаря. Если он нужен, добавьте его. */}
           </div>
           
           <div className="user-menu">
