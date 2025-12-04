@@ -3,6 +3,7 @@ import { Download, Search, Eye, Pencil, Trash2, ArrowUpDown, SlidersHorizontal }
 import { useRegionContext } from '../context/RegionContext';
 import type { RegionId } from '../context/RegionContext'; 
 import './EmployeesPage.css';
+import { useTranslation } from 'react-i18next';
 
 // --- 1. Типы данных и мок-данные ---
 export type AffiliateType = 'staff' | 'external' | 'all'; // Штатный/Сторонний/Все
@@ -137,6 +138,7 @@ const createInitialFilters = (): EmployeeFilters => ({
 // --- 3. Компонент страницы ---
 const EmployeesPage: React.FC = () => {
   const { selectedRegionId, regions } = useRegionContext();
+  const { t } = useTranslation(); 
   
   const [filters, setFilters] = useState<EmployeeFilters>(() => createInitialFilters());
   
@@ -249,7 +251,7 @@ const EmployeesPage: React.FC = () => {
   const renderEmployeeCell = (columnKey: EmployeeColumnKey, employee: Employee): React.ReactNode => {
     switch (columnKey) {
       case 'name':
-        return `${employee.name} (${employee.gender === 'male' ? 'М' : 'Ж'})`;
+        return `${employee.name} (${employee.gender === 'male' ? t('gender_short_male') : t('gender_short_female')})`;
       case 'position':
         return employee.position;
       case 'degree':
@@ -270,7 +272,7 @@ const EmployeesPage: React.FC = () => {
       case 'hIndex':
         return employee.hIndex;
       case 'region':
-        return regionNameById[employee.regionId] ?? 'Н/Д';
+        return regionNameById[employee.regionId] ?? t('not_available_short');
       case 'age':
         return currentYear - employee.birthYear;
       case 'hireDate':
@@ -394,7 +396,7 @@ const EmployeesPage: React.FC = () => {
 
   // Заглушка для действий с сотрудниками
   const handleAction = (action: string, employee?: Employee) => {
-    const employeeName = employee ? employee.name : 'новый сотрудник';
+    const employeeName = employee ? employee.name : t('new_employee');
     alert(`${action}: ${employeeName}`);
   };
   
@@ -404,9 +406,9 @@ const EmployeesPage: React.FC = () => {
     <div className="employees-page">
       <header className="employees-header">
         <div>
-          <h1>Сотрудники</h1>
+          <h1>{t('employees_page_title')}</h1>
           <p>
-            В базе: {mockEmployees.length} • Найдено: {totalEmployeesCount}
+            {t('in_database')}{mockEmployees.length} {t('found_count')}{totalEmployeesCount}
           </p>
         </div>
         <div className="employees-header-actions">
@@ -416,7 +418,7 @@ const EmployeesPage: React.FC = () => {
             onClick={() => handleAction('Выгрузка отчета')}
           >
             <Download size={18} />
-            Выгрузить отчет
+            {t('button_export_report')}
           </button>
         </div>
       </header>
@@ -427,7 +429,7 @@ const EmployeesPage: React.FC = () => {
             <Search size={18} />
             <input
               type="text"
-              placeholder="Поиск по ФИО, региону или должности"
+              placeholder={t('search_placeholder_employees')}
               value={filters.searchTerm}
               onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
             />
@@ -439,7 +441,7 @@ const EmployeesPage: React.FC = () => {
               onClick={() => setIsColumnPickerOpen((prev) => !prev)}
             >
               <SlidersHorizontal size={18} />
-              Настроить столбцы
+              {t('button_customize_columns')}
             </button>
             {isColumnPickerOpen && (
               <div className="employees-column-list">
@@ -462,55 +464,55 @@ const EmployeesPage: React.FC = () => {
       <div className="employees-content">
         <aside className="employees-sidebar">
           <div className="employees-filter-block">
-            <div className="employees-filter-title">Общие параметры</div>
+            <div className="employees-filter-title">{t('filter_section_general')}</div>
             <div className="employees-filters-grid">
               <div className="employees-filter-item">
-                <label htmlFor="gender-filter">Пол</label>
+                <label htmlFor="gender-filter">{t('filter_label_gender')}</label>
                 <select
                   id="gender-filter"
                   value={filters.gender}
                   onChange={(e) => handleFilterChange('gender', e.target.value as GenderType)}
                 >
-                  <option value="all">Любой</option>
-                  <option value="male">Мужской</option>
-                  <option value="female">Женский</option>
+                  <option value="all">{t('filter_option_any')}</option>
+                  <option value="male">{t('gender_male')}</option>
+                  <option value="female">{t('gender_female')}</option>
                 </select>
               </div>
 
               <div className="employees-filter-item">
-                <label htmlFor="affiliate-filter">Аффилированность</label>
+                <label htmlFor="affiliate-filter">{t('filter_label_affiliate')}</label>
                 <select
                   id="affiliate-filter"
                   value={filters.affiliateType}
                   onChange={(e) => handleFilterChange('affiliateType', e.target.value as AffiliateType)}
                 >
-                  <option value="all">Все</option>
-                  <option value="staff">Штатный сотрудник</option>
-                  <option value="external">Сторонний исполнитель</option>
+                  <option value="all">{t('filter_option_all')}</option>
+                  <option value="staff">{t('affiliate_staff')}</option>
+                  <option value="external">{t('affiliate_external')}</option>
                 </select>
               </div>
 
               <div className="employees-filter-item">
-                <label htmlFor="citizenship-filter">Гражданство</label>
+                <label htmlFor="citizenship-filter">{t('filter_label_citizenship')}</label>
                 <select
                   id="citizenship-filter"
                   value={filters.citizenship}
                   onChange={(e) => handleFilterChange('citizenship', e.target.value as CitizenshipType)}
                 >
-                  <option value="all">Любое</option>
-                  <option value="resident">Резидент (РК)</option>
-                  <option value="non-resident">Нерезидент</option>
+                  <option value="all">{t('filter_option_any')}</option>
+                  <option value="resident">{t('citizenship_resident')}</option>
+                  <option value="non-resident">{t('citizenship_nonresident')}</option>
                 </select>
               </div>
 
               <div className="employees-filter-item">
-                <label htmlFor="regionId">Регион</label>
+                <label htmlFor="regionId">{t('employee_col_region')}</label>
                 <select
                   id="regionId"
                   value={filters.regionId}
                   onChange={(e) => handleFilterChange('regionId', e.target.value as RegionId | 'all')}
                 >
-                  <option value="all">Все регионы</option>
+                  <option value="all">{t('filter_option_all_regions')}</option>
                   {regions.map((region) => (
                     <option key={region.id} value={region.id}>
                       {region.name}
@@ -522,32 +524,32 @@ const EmployeesPage: React.FC = () => {
           </div>
 
           <div className="employees-filter-block">
-            <div className="employees-filter-title">Деятельность</div>
+            <div className="employees-filter-title">{t('filter_section_activity')}</div>
             <div className="employees-filters-grid">
               <div className="employees-filter-item">
-                <label htmlFor="degree-filter">Ученая степень</label>
+                <label htmlFor="degree-filter">{t('filter_label_degree')}</label>
                 <select
                   id="degree-filter"
                   value={filters.degree}
                   onChange={(e) => handleFilterChange('degree', e.target.value as DegreeType)}
                 >
-                  <option value="all">Все степени</option>
-                  <option value="doctor">Доктор наук</option>
-                  <option value="candidate">Кандидат наук</option>
-                  <option value="phd">PhD</option>
-                  <option value="master">Магистр</option>
-                  <option value="none">Нет степени</option>
+                  <option value="all">{t('filter_option_all_degrees')}</option>
+                  <option value="doctor">{t('degree_doctor')}</option>
+                  <option value="candidate">{t('degree_candidate')}</option>
+                  <option value="phd">{t('degree_phd')}</option>
+                  <option value="master">{t('degree_master')}</option>
+                  <option value="none">{t('degree_none')}</option>
                 </select>
               </div>
 
               <div className="employees-filter-item">
-                <label htmlFor="position-filter">Ученое звание</label>
+                <label htmlFor="position-filter">{t('filter_label_position')}</label>
                 <select
                   id="position-filter"
                   value={filters.position}
                   onChange={(e) => handleFilterChange('position', e.target.value)}
                 >
-                  <option value="all">Все</option>
+                  <option value="all">{t('filter_option_all')}</option>
                   {allPositions.map((p) => (
                     <option key={p} value={p}>
                       {p}
@@ -557,13 +559,13 @@ const EmployeesPage: React.FC = () => {
               </div>
 
               <div className="employees-filter-item">
-                <label htmlFor="department-filter">Подразделение</label>
+                <label htmlFor="department-filter">{t('filter_label_department')}</label>
                 <select
                   id="department-filter"
                   value={filters.department}
                   onChange={(e) => handleFilterChange('department', e.target.value)}
                 >
-                  <option value="all">Все подразделения</option>
+                  <option value="all">{t('filter_option_all_departments')}</option>
                   {allDepartments.map((department) => (
                     <option key={department} value={department}>
                       {department}
@@ -573,13 +575,13 @@ const EmployeesPage: React.FC = () => {
               </div>
 
               <div className="employees-filter-item">
-                <label htmlFor="project-role-filter">Роль в проекте</label>
+                <label htmlFor="project-role-filter">{t('filter_label_project_role')}</label>
                 <select
                   id="project-role-filter"
                   value={filters.projectRole}
                   onChange={(e) => handleFilterChange('projectRole', e.target.value)}
                 >
-                  <option value="all">Все роли</option>
+                  <option value="all">{t('filter_option_all_roles')}</option>
                   {allProjectRoles.map((role) => (
                     <option key={role} value={role}>
                       {role}
@@ -591,42 +593,47 @@ const EmployeesPage: React.FC = () => {
           </div>
 
           <div className="employees-filter-block">
-            <div className="employees-filter-title">Исследовательские коды</div>
+            {/* 🟢 ЗАГОЛОВОК СЕКЦИИ */}
+            <div className="employees-filter-title">{t('filter_section_research_codes')}</div>
             <div className="employees-filters-grid">
               <div className="employees-filter-item">
-                <label htmlFor="mrnti">МРНТИ</label>
+                {/* 🟢 ФИЛЬТР: МРНТИ */}
+                <label htmlFor="mrnti">{t('filter_label_mrnti')}</label>
                 <select
                   id="mrnti"
                   value={filters.mrnti}
                   onChange={(e) => handleFilterChange('mrnti', e.target.value as MRNTIType)}
                 >
-                  <option value="all">Все коды</option>
-                  <option value="11.00.00">11.00.00 — Математика</option>
-                  <option value="27.00.00">27.00.00 — Социальные науки</option>
-                  <option value="55.00.00">55.00.00 — Технические науки</option>
+                  <option value="all">{t('filter_option_all_codes')}</option>
+                  <option value="11.00.00">11.00.00 — {t('mrnti_11_desc')}</option>
+                  <option value="27.00.00">27.00.00 — {t('mrnti_27_desc')}</option>
+                  <option value="55.00.00">55.00.00 — {t('mrnti_55_desc')}</option>
                 </select>
-              </div>
+            </div>
 
-              <div className="employees-filter-item">
-                <label htmlFor="classifier">Классификатор</label>
+            <div className="employees-filter-item">
+                {/* 🟢 ФИЛЬТР: КЛАССИФИКАТОР */}
+                <label htmlFor="classifier">{t('filter_label_classifier')}</label>
                 <select
                   id="classifier"
                   value={filters.classifier}
                   onChange={(e) => handleFilterChange('classifier', e.target.value as ClassifierType)}
                 >
-                  <option value="all">Все классификаторы</option>
-                  <option value="economic">Экономический</option>
-                  <option value="social">Социальный</option>
-                  <option value="technical">Технический</option>
+                  <option value="all">{t('filter_option_all_classifiers')}</option>
+                  <option value="economic">{t('classifier_economic')}</option>
+                  <option value="social">{t('classifier_social')}</option>
+                  <option value="technical">{t('classifier_technical')}</option>
                 </select>
               </div>
             </div>
           </div>
 
-          <div className="employees-filter-block">
-            <div className="employees-filter-title">Метрики</div>
+         <div className="employees-filter-block">
+            {/* 🟢 ЗАГОЛОВОК СЕКЦИИ */}
+            <div className="employees-filter-title">{t('filter_section_metrics')}</div>
             <div className="employees-filter-item employees-filter-item--vertical">
-              <label>Возраст (лет)</label>
+              {/* 🟢 ФИЛЬТР: ВОЗРАСТ */}
+              <label>{t('filter_label_age_years')}</label>
               <div className="employees-age-range">
                 <input
                   type="number"
@@ -647,29 +654,30 @@ const EmployeesPage: React.FC = () => {
             </div>
 
             <div className="employees-filter-item">
-              <label htmlFor="h-index-filter">Индекс Хирша</label>
+              {/* 🟢 ФИЛЬТР: H-INDEX */}
+              <label htmlFor="h-index-filter">{t('filter_label_hindex')}</label>
               <select
                 id="h-index-filter"
                 value={filters.hIndexGroup}
                 onChange={(e) => handleFilterChange('hIndexGroup', e.target.value as HIndexGroup)}
               >
-                <option value="all">Все значения</option>
+                <option value="all">{t('filter_option_all_values')}</option>
                 <option value="0-1">0 - 1</option>
                 <option value="2-5">2 - 5</option>
                 <option value="6-10">6 - 10</option>
-                <option value="10+">10 и выше</option>
+                <option value="10+">{t('hindex_10_plus')}</option>
               </select>
             </div>
           </div>
 
           <div className="employees-filter-actions">
+            {/* 🟢 КНОПКА СБРОСА ФИЛЬТРОВ */}
             <button type="button" onClick={resetFilters}>
-              Сбросить фильтры
+              {t('button_reset_filters')}
             </button>
           </div>
         </aside>
-
-        <main className="employees-main">
+<main className="employees-main">
           <section className="employees-table-section">
             <div className="employee-table-container">
               <table className="employee-table">
@@ -698,7 +706,8 @@ const EmployeesPage: React.FC = () => {
                         <th key={column.key}>{column.label}</th>
                       );
                     })}
-                    <th className="actions-column">Действия</th>
+                    {/* 🟢 ЗАГОЛОВОК СТОЛБЦА ДЕЙСТВИЙ */}
+                    <th className="actions-column">{t('table_header_actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -710,23 +719,26 @@ const EmployeesPage: React.FC = () => {
                       <td className="actions-column">
                         <div className="actions-buttons">
                           <button
-                            onClick={() => handleAction('Просмотр', employee)}
-                            aria-label="Просмотр сотрудника"
-                            title="Просмотр"
+                            // 🟢 ДЕЙСТВИЕ: ПРОСМОТР
+                            onClick={() => handleAction(t('action_view'), employee)}
+                            aria-label={t('aria_view_employee')}
+                            title={t('action_view')}
                           >
                             <Eye size={16} />
                           </button>
                           <button
-                            onClick={() => handleAction('Редактирование', employee)}
-                            aria-label="Редактировать сотрудника"
-                            title="Редактировать"
+                            // 🟢 ДЕЙСТВИЕ: РЕДАКТИРОВАНИЕ
+                            onClick={() => handleAction(t('action_edit'), employee)}
+                            aria-label={t('aria_edit_employee')}
+                            title={t('action_edit')}
                           >
                             <Pencil size={16} />
                           </button>
                           <button
-                            onClick={() => handleAction('Удаление', employee)}
-                            aria-label="Удалить сотрудника"
-                            title="Удалить"
+                            // 🟢 ДЕЙСТВИЕ: УДАЛЕНИЕ
+                            onClick={() => handleAction(t('action_delete'), employee)}
+                            aria-label={t('aria_delete_employee')}
+                            title={t('action_delete')}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -738,11 +750,11 @@ const EmployeesPage: React.FC = () => {
               </table>
 
               {filteredEmployees.length === 0 && (
-                <div className="no-results">Сотрудники не найдены по текущим фильтрам.</div>
+                <div className="no-results">{t('employees_not_found')}</div>
               )}
             </div>
             <p className="employees-summary">
-              Показано сотрудников: {filteredEmployees.length} из {mockEmployees.length}
+              {t('show_employees_summary')}{filteredEmployees.length} {t('from_total_summary')}{mockEmployees.length}
             </p>
           </section>
         </main>
