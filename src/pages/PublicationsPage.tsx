@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState, useRef, type CSSProperties } from 'react';
 import { Download } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Bar, Doughnut, Chart as ChartComponent } from 'react-chartjs-2';
 import {
   ArcElement,
@@ -64,50 +65,45 @@ const defaultFilters: FilterState = {
 };
 
 const irnOptions = ['all', 'IRN-001', 'IRN-045', 'IRN-512', 'IRN-970'];
-const contests = ['all', 'Национальный конкурс', 'Конкурс грантов', 'Конкурс программ'];
-const applicants = ['all', 'КазНУ', 'ЕНУ', 'Назарбаев Университет', 'КазАТК'];
-const customers = ['all', 'Минобрнауки', 'Минздрав', 'Минцифра'];
 const mrntiOptions = ['all', '11.00.00', '21.45.10', '27.00.00'];
-const statusOptions = ['all', 'В работе', 'Завершен', 'Ожидает публикации'];
 const trlOptions = ['all', 'TRL 3', 'TRL 4', 'TRL 5', 'TRL 6', 'TRL 7', 'TRL 8', 'TRL 9'];
 
-type CSSVars = CSSProperties & { '--accent'?: string };
+// Helper function to get translated publication filter options
+const getPublicationFilterOptions = (t: (key: string) => string) => ({
+  contests: [
+    { value: 'all', label: t('pub_contests_all') },
+    { value: 'national', label: t('pub_contests_national') },
+    { value: 'grants', label: t('pub_contests_grants') },
+    { value: 'programs', label: t('pub_contests_programs') },
+  ],
+  applicants: [
+    { value: 'all', label: t('pub_applicants_all') },
+    { value: 'kaznu', label: t('pub_applicants_kaznu') },
+    { value: 'enu', label: t('pub_applicants_enu') },
+    { value: 'nazarbayev', label: t('pub_applicants_nazarbayev') },
+    { value: 'kaztk', label: t('pub_applicants_kaztk') },
+  ],
+  customers: [
+    { value: 'all', label: t('pub_customers_all') },
+    { value: 'minedu', label: t('pub_customers_minedu') },
+    { value: 'minhealth', label: t('pub_customers_minhealth') },
+    { value: 'mindigital', label: t('pub_customers_mindigital') },
+  ],
+  statusOptions: [
+    { value: 'all', label: t('pub_status_all') },
+    { value: 'inprogress', label: t('pub_status_inprogress') },
+    { value: 'completed', label: t('pub_status_completed') },
+    { value: 'pending', label: t('pub_status_pending') },
+  ],
+});
 
-const highlightCards = [
-  { id: 'total', label: 'Всего публикаций', value: '17 130', accent: '#1d4ed8' },
-  { id: 'domestic', label: 'Отечественные публикации', value: '6 092', accent: '#16a34a' },
-  { id: 'foreign', label: 'Зарубежные публикации', value: '11 038', accent: '#7c3aed' },
-  { id: 'scopus', label: 'Публикации в Scopus', value: '1 498', accent: '#4338ca' },
-  { id: 'wos', label: 'Публикации в Web of Science', value: '5 282', accent: '#0ea5e9' },
-  { id: 'patents', label: 'Патенты', value: '2 792', accent: '#ea580c' },
-  { id: 'implementations', label: 'Количество внедрений', value: '414', accent: '#db2777' },
-  { id: 'projects', label: 'Проекты с внедрением', value: '127', accent: '#059669' },
-];
-
+// Данные для графиков и карточек
 const publicationYears = ['2020', '2021', '2022', '2023', '2024', '2025'];
 const domesticPublications = [536, 1095, 1194, 1190, 976, 553];
 const foreignPublications = [858, 1719, 1698, 1799, 1347, 810];
 
 const scopusSiteScore = [5000, 5000, 2000, 2000];
 const wosQuartiles = [10000, 8000, 8000, 5000];
-
-const priorityPerformance = [
-  { label: 'Исследования в области цифровизации', value: 3279 },
-  { label: 'Исследования в области ИИ', value: 1005 },
-  { label: 'Научные исследования в медицине', value: 674 },
-  { label: 'Геология, добыча и переработка', value: 577 },
-  { label: 'Науки о жизни и здоровье', value: 404 },
-  { label: 'Интеллектуальный потенциал', value: 386 },
-  { label: 'Рациональное использование ресурсов', value: 378 },
-  { label: 'Информационные и коммуникационные технологии', value: 377 },
-  { label: 'Энергетика и машиностроение', value: 331 },
-  { label: 'Устойчивое развитие', value: 224 },
-  { label: 'Национальная безопасность', value: 121 },
-  { label: 'Передовое производство', value: 58 },
-  { label: 'Экология и окружающая среда', value: 44 },
-  { label: 'Исследования в области культуры', value: 11 },
-  { label: 'Интеллектуальный потенциал молодежи', value: 4 },
-];
 
 const implementationTrend = {
   implementation: [319, 634, 657, 617, 633, 305],
@@ -119,12 +115,43 @@ const patentTrend = {
   deployments: [97, 219, 151, 129, 105, 58],
 };
 
-const topApplicants = [
-  { id: 'kaznu', name: 'КазНУ им. аль-Фараби', value: 826 },
-  { id: 'enu', name: 'Евразийский НУ им. Л.Н. Гумилева', value: 765 },
-  { id: 'kaznpu', name: 'КазНПУ им. Абая', value: 372 },
-  { id: 'karu', name: 'Карагандинский университет им. Е.А. Букетова', value: 360 },
-  { id: 'kit', name: 'КазНИТУ им. К.И. Сатпаева', value: 252 },
+type CSSVars = CSSProperties & { '--accent'?: string };
+
+const getHighlightCards = (t: (key: string) => string) => [
+  { id: 'total', label: t('publications_card_total'), value: '17 130', accent: '#1d4ed8' },
+  { id: 'domestic', label: t('publications_card_domestic'), value: '6 092', accent: '#16a34a' },
+  { id: 'foreign', label: t('publications_card_foreign'), value: '11 038', accent: '#7c3aed' },
+  { id: 'scopus', label: t('publications_card_scopus'), value: '1 498', accent: '#4338ca' },
+  { id: 'wos', label: t('publications_card_wos'), value: '5 282', accent: '#0ea5e9' },
+  { id: 'patents', label: t('publications_card_patents'), value: '2 792', accent: '#ea580c' },
+  { id: 'implementations', label: t('publications_card_implementations'), value: '414', accent: '#db2777' },
+  { id: 'projects', label: t('publications_card_projects'), value: '127', accent: '#059669' },
+];
+
+const getPriorityPerformance = (t: (key: string) => string) => [
+  { label: t('publications_priority_digitalization'), value: 3279 },
+  { label: t('publications_priority_ai'), value: 1005 },
+  { label: t('publications_priority_medicine'), value: 674 },
+  { label: t('publications_priority_geology'), value: 577 },
+  { label: t('publications_priority_life_sciences'), value: 404 },
+  { label: t('publications_priority_intellectual'), value: 386 },
+  { label: t('publications_priority_sustainable_resources'), value: 378 },
+  { label: t('publications_priority_ict'), value: 377 },
+  { label: t('publications_priority_energy'), value: 331 },
+  { label: t('publications_priority_sustainable_development'), value: 224 },
+  { label: t('publications_priority_national_security'), value: 121 },
+  { label: t('publications_priority_advanced_manufacturing'), value: 58 },
+  { label: t('publications_priority_ecology'), value: 44 },
+  { label: t('publications_priority_culture'), value: 11 },
+  { label: t('publications_priority_youth'), value: 4 },
+];
+
+const getTopApplicants = (t: (key: string) => string) => [
+  { id: 'kaznu', name: t('publications_university_kaznu'), value: 826 },
+  { id: 'enu', name: t('publications_university_enu'), value: 765 },
+  { id: 'kaznpu', name: t('publications_university_kaznpu'), value: 372 },
+  { id: 'karu', name: t('publications_university_karu'), value: 360 },
+  { id: 'kit', name: t('publications_university_kaznitu'), value: 252 },
 ];
 
 const filterSelect = (
@@ -147,6 +174,7 @@ const filterSelect = (
 );
 
 const PublicationsPage: React.FC = () => {
+  const { t } = useTranslation();
   const { selectedRegion, selectedRegionId, setSelectedRegionId, regions } = useRegionContext();
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const statsScrollRef = useRef<HTMLDivElement | null>(null);
@@ -154,6 +182,9 @@ const PublicationsPage: React.FC = () => {
     { pointerId: null, startX: 0, scrollLeft: 0 },
   );
   const [isDraggingStats, setIsDraggingStats] = useState(false);
+
+  // Get translated filter options
+  const translatedFilterOptions = useMemo(() => getPublicationFilterOptions(t), [t]);
 
   const handleRangeChange = (key: 'startYear' | 'endYear', value: number) => {
     setFilters((prev) => {
@@ -241,14 +272,14 @@ const PublicationsPage: React.FC = () => {
       labels: publicationYears,
       datasets: [
         {
-          label: 'Отечественные публикации',
+          label: t('publications_chart_domestic'),
           data: domesticPublications,
           backgroundColor: '#1d4ed8',
           borderRadius: 10,
           stack: 'publications',
         },
         {
-          label: 'Зарубежные публикации',
+          label: t('publications_chart_foreign'),
           data: foreignPublications,
           backgroundColor: '#60a5fa',
           borderRadius: 10,
@@ -256,7 +287,7 @@ const PublicationsPage: React.FC = () => {
         },
       ],
     }),
-    [],
+    [t],
   );
 
   const publicationDynamicsOptions = useMemo<ChartOptions<'bar'>>(
@@ -336,6 +367,8 @@ const PublicationsPage: React.FC = () => {
     [],
   );
 
+  const priorityPerformance = useMemo(() => getPriorityPerformance(t), [t]);
+
   const priorityChartData = useMemo(
     () => ({
       labels: priorityPerformance.map((item) => item.label),
@@ -348,7 +381,7 @@ const PublicationsPage: React.FC = () => {
         },
       ],
     }),
-    []);
+    [priorityPerformance]);
 
   const priorityChartOptions = useMemo<ChartOptions<'bar'>>(
     () => ({
@@ -385,7 +418,7 @@ const PublicationsPage: React.FC = () => {
       datasets: [
         {
           type: 'bar' as const,
-          label: 'Количество проектов с внедрением',
+          label: t('publications_chart_implementations_projects'),
           data: implementationTrend.implementation,
           backgroundColor: '#38bdf8',
           borderRadius: 12,
@@ -394,7 +427,7 @@ const PublicationsPage: React.FC = () => {
         },
         {
           type: 'line' as const,
-          label: 'Количество проектов с TRL',
+          label: t('publications_chart_implementations_trl'),
           data: implementationTrend.trl,
           borderColor: '#0f172a',
           backgroundColor: '#0f172a',
@@ -405,7 +438,7 @@ const PublicationsPage: React.FC = () => {
         },
       ],
     }),
-    [],
+    [t],
   );
 
   const implementationChartOptions = useMemo<ChartOptions<'bar' | 'line'>>(
@@ -438,14 +471,14 @@ const PublicationsPage: React.FC = () => {
       labels: publicationYears,
       datasets: [
         {
-          label: 'Патенты',
+          label: t('publications_chart_patents_label'),
           data: patentTrend.patents,
           backgroundColor: '#1d4ed8',
           borderRadius: 12,
           maxBarThickness: 32,
         },
         {
-          label: 'Количество внедрений',
+          label: t('publications_chart_deployments'),
           data: patentTrend.deployments,
           backgroundColor: '#0ea5e9',
           borderRadius: 12,
@@ -453,7 +486,7 @@ const PublicationsPage: React.FC = () => {
         },
       ],
     }),
-    [],
+    [t],
   );
 
   const patentsChartOptions = useMemo<ChartOptions<'bar'>>(
@@ -471,24 +504,26 @@ const PublicationsPage: React.FC = () => {
     [],
   );
 
+  const highlightCards = useMemo(() => getHighlightCards(t), [t]);
+  const topApplicants = useMemo(() => getTopApplicants(t), [t]);
   const totalApplicantPublications = topApplicants.reduce((sum, applicant) => sum + applicant.value, 0);
 
   return (
     <div className="publications-page">
       <header className="publications-page-header">
         <div>
-          <h1>Результаты</h1>
-          <p>Сводная аналитика публикаций, патентов и внедрений</p>
+          <h1>{t('publications_page_heading')}</h1>
+          <p>{t('publications_page_description')}</p>
         </div>
         <div className="publications-header-actions">
           <button type="button" className="publications-export-button">
             <Download size={18} />
-            Экспортировать отчёт
+            {t('publications_export_button')}
           </button>
         </div>
       </header>
 
-      <section className="publications-stats-row" aria-label="Ключевые показатели">
+      <section className="publications-stats-row" aria-label={t('publications_stats_aria')}>
         <div
           className={`publications-stats-scroll${isDraggingStats ? ' is-dragging' : ''}`}
           ref={statsScrollRef}
@@ -515,10 +550,10 @@ const PublicationsPage: React.FC = () => {
         <article className="publications-map-panel">
           <header>
             <div>
-              <p>Публикации по регионам</p>
-              <h2>{selectedRegion?.name ?? 'Республика Казахстан'}</h2>
+              <p>{t('publications_map_title')}</p>
+              <h2>{selectedRegion?.name ?? t('republic_kazakhstan')}</h2>
             </div>
-            <small>Нажмите на регион, чтобы зафиксировать выбор</small>
+            <small>{t('publications_map_hint')}</small>
           </header>
           <div className="publications-map-wrapper">
             <KazakhstanMap selectedRegionId={selectedRegionId} onRegionSelect={handleMapSelect} />
@@ -527,11 +562,11 @@ const PublicationsPage: React.FC = () => {
 
         <article className="publications-filters-panel">
           <header>
-            <h2>Фильтры</h2>
+            <h2>{t('publications_filters_title')}</h2>
           </header>
 
-          <section className="publications-filter-group" aria-label="Диапазон годов">
-            <div className="publications-filter-title">Годы</div>
+          <section className="publications-filter-group" aria-label={t('publications_filters_years_aria')}>
+            <div className="publications-filter-title">{t('publications_filters_years_title')}</div>
             <div className="period-range-slider" style={rangeBackgroundStyle}>
               <div className="period-range-values">
                 <span className="period-range-value">{filters.startYear}</span>
@@ -564,77 +599,77 @@ const PublicationsPage: React.FC = () => {
               'filter-irn',
               'IRN',
               filters.irn,
-              irnOptions.map((value) => ({ value, label: value === 'all' ? 'Все IRN' : value })),
+              irnOptions.map((value) => ({ value, label: value === 'all' ? t('pub_contests_all') : value })),
               (value) => handleSelectChange('irn', value),
             )}
             {filterSelect(
               'filter-financing',
-              'Тип финансирования',
+              t('pub_filter_financing_type'),
               filters.financingType,
               [
-                { value: 'all', label: 'Все типы финансирования' },
-                { value: 'grant', label: 'Грантовое' },
-                { value: 'program', label: 'Программно-целевое' },
-                { value: 'contract', label: 'По договорам' },
+                { value: 'all', label: t('fin_all_types') },
+                { value: 'grant', label: t('pub_financing_grant') },
+                { value: 'program', label: t('pub_financing_program') },
+                { value: 'contract', label: t('pub_financing_contract') },
               ],
               (value) => handleSelectChange('financingType', value),
             )}
             {filterSelect(
               'filter-priority',
-              'Приоритетное направление',
+              t('pub_filter_priority_direction'),
               filters.priority,
               [
-                { value: 'all', label: 'Все направления' },
-                { value: 'health', label: 'Здравоохранение' },
-                { value: 'economy', label: 'Экономика' },
-                { value: 'energy', label: 'Энергетика' },
-                { value: 'ai', label: 'Искусственный интеллект' },
+                { value: 'all', label: t('pub_priority_all') },
+                { value: 'health', label: t('pub_priority_health') },
+                { value: 'economy', label: t('pub_priority_economy') },
+                { value: 'energy', label: t('pub_priority_energy') },
+                { value: 'ai', label: t('pub_priority_ai') },
               ],
               (value) => handleSelectChange('priority', value),
             )}
             {filterSelect(
               'filter-contest',
-              'Наименование конкурса',
+              t('pub_filter_contest_name'),
               filters.contest,
-              contests.map((value) => ({ value, label: value === 'all' ? 'Все конкурсы' : value })),
+              translatedFilterOptions.contests,
               (value) => handleSelectChange('contest', value),
             )}
             {filterSelect(
               'filter-applicant',
-              'Заявитель',
+              t('pub_filter_applicant'),
               filters.applicant,
-              applicants.map((value) => ({ value, label: value === 'all' ? 'Все заявители' : value })),
+              translatedFilterOptions.applicants,
               (value) => handleSelectChange('applicant', value),
             )}
             {filterSelect(
               'filter-customer',
-              'Заказчик',
+              t('pub_filter_customer'),
               filters.customer,
-              customers.map((value) => ({ value, label: value === 'all' ? 'Все заказчики' : value })),
+              translatedFilterOptions.customers,
               (value) => handleSelectChange('customer', value),
             )}
             {filterSelect(
               'filter-mrnti',
-              'МРНТИ',
+              t('pub_filter_mrnti'),
               filters.mrnti,
-              mrntiOptions.map((value) => ({ value, label: value === 'all' ? 'Все коды МРНТИ' : value })),
+              mrntiOptions.map((value) => ({ value, label: value === 'all' ? t('fin_all_types') : value })),
               (value) => handleSelectChange('mrnti', value),
             )}
             {filterSelect(
               'filter-status',
-              'Статус',
+              t('pub_filter_status'),
               filters.status,
-              statusOptions.map((value) => ({ value, label: value === 'all' ? 'Все статусы' : value })),
+              translatedFilterOptions.statusOptions,
               (value) => handleSelectChange('status', value),
             )}
             <label className="publications-filter-item" htmlFor="filter-region">
-              <span>Регион</span>
+              <span>{t('pub_filter_region')}</span>
               <select
                 id="filter-region"
                 value={selectedRegionId}
                 onChange={(event) => setSelectedRegionId(event.target.value as RegionId)}
               >
-                <option value="national">Все регионы</option>
+                <option value="national">{t('pub_region_all')}</option>
                 {regions.map((region) => (
                   <option key={region.id} value={region.id}>
                     {region.name}
@@ -646,13 +681,13 @@ const PublicationsPage: React.FC = () => {
               'filter-trl',
               'TRL',
               filters.trl,
-              trlOptions.map((value) => ({ value, label: value === 'all' ? 'Все уровни' : value })),
+              trlOptions.map((value) => ({ value, label: value === 'all' ? t('fin_all_types') : value })),
               (value) => handleSelectChange('trl', value),
             )}
           </div>
 
           <div className="publications-filter-actions">
-            <button type="button" onClick={handleResetFilters}>Сбросить фильтры</button>
+            <button type="button" onClick={handleResetFilters}>{t('pub_button_reset_filters')}</button>
           </div>
         </article>
       </section>
@@ -660,8 +695,8 @@ const PublicationsPage: React.FC = () => {
       <section className="publications-chart-grid">
         <article className="publications-chart-card chart-span-2">
           <header>
-            <h3>Динамика публикаций</h3>
-            <p>Сравнение отечественных и зарубежных работ</p>
+            <h3>{t('publications_chart_dynamics')}</h3>
+            <p>{t('publications_chart_dynamics_subtitle')}</p>
           </header>
           <div className="chart-body">
             <Bar data={publicationDynamicsData} options={publicationDynamicsOptions} />
@@ -670,7 +705,7 @@ const PublicationsPage: React.FC = () => {
 
         <article className="publications-chart-card">
           <header>
-            <h3>Публикации Scopus по SiteScore</h3>
+            <h3>{t('publications_chart_scopus')}</h3>
           </header>
           <div className="chart-body">
             <Doughnut data={scopusChartData} options={doughnutOptions} />
@@ -679,7 +714,7 @@ const PublicationsPage: React.FC = () => {
 
         <article className="publications-chart-card">
           <header>
-            <h3>Публикации Web of Science по квартилям</h3>
+            <h3>{t('publications_chart_wos')}</h3>
           </header>
           <div className="chart-body">
             <Doughnut data={wosChartData} options={doughnutOptions} />
@@ -690,8 +725,8 @@ const PublicationsPage: React.FC = () => {
       <section className="publications-chart-grid">
         <article className="publications-chart-card chart-span-2">
           <header>
-            <h3>Результативность по приоритетным направлениям</h3>
-            <p>Количество публикаций по ключевым кластерам</p>
+            <h3>{t('publications_chart_priority')}</h3>
+            <p>{t('publications_chart_priority_subtitle')}</p>
           </header>
           <div className="chart-body">
             <Bar data={priorityChartData} options={priorityChartOptions} />
@@ -700,7 +735,7 @@ const PublicationsPage: React.FC = () => {
 
         <article className="publications-chart-card chart-span-2">
           <header>
-            <h3>Динамика проектов с внедрением и количеством TRL</h3>
+            <h3>{t('publications_chart_implementation')}</h3>
           </header>
           <div className="chart-body">
             <ChartComponent type="bar" data={implementationChartData} options={implementationChartOptions} />
@@ -711,8 +746,8 @@ const PublicationsPage: React.FC = () => {
       <section className="publications-chart-grid">
         <article className="publications-chart-card chart-span-2">
           <header>
-            <h3>Топ-5 заявителей</h3>
-            <p>Отечественные публикации</p>
+            <h3>{t('publications_chart_applicants')}</h3>
+            <p>{t('publications_chart_applicants_subtitle')}</p>
           </header>
           <div className="top-applicants-list">
             {topApplicants.map((applicant) => {
@@ -730,7 +765,7 @@ const PublicationsPage: React.FC = () => {
               );
             })}
             <div className="top-applicant-total">
-              <span>Всего</span>
+              <span>{t('publications_top_applicants_total')}</span>
               <strong>{formatNumber(totalApplicantPublications)}</strong>
             </div>
           </div>
@@ -738,8 +773,8 @@ const PublicationsPage: React.FC = () => {
 
         <article className="publications-chart-card chart-span-2">
           <header>
-            <h3>Динамика патентов и внедрений</h3>
-            <p>Сравнение выданных патентов и актов внедрения</p>
+            <h3>{t('publications_chart_patents')}</h3>
+            <p>{t('publications_chart_patents_subtitle')}</p>
           </header>
           <div className="chart-body">
             <Bar data={patentsChartData} options={patentsChartOptions} />

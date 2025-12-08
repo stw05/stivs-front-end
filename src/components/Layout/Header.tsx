@@ -64,7 +64,13 @@ const Header: React.FC = () => {
             >
               {t('rus_label')}
             </span>
-            {/* Удалил 'EN', так как в i18n.tsx нет английского словаря. Если он нужен, добавьте его. */}
+            {/* 🟢 КНОПКА ДЛЯ АНГЛИЙСКОГО ЯЗЫКА */}
+            <span 
+              className={`lang-option ${i18n.language === 'en' ? 'active' : ''}`}
+              onClick={() => changeLanguage('en')}
+            >
+              EN
+            </span>
           </div>
           
           <div className="user-menu">

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Download, Search, ArrowUpDown, SlidersHorizontal, ChevronDown } from 'lucide-react';
 import { useRegionContext } from '../context/RegionContext';
 import type { RegionId } from '../context/RegionContext';
+import { useTranslation } from 'react-i18next';
 import './ProjectsPage.css';
 
 type FinancingType = 'grant' | 'program' | 'contract';
@@ -160,29 +161,6 @@ const projects: Project[] = [
 	},
 ];
 
-const priorityLabels: Record<PriorityDirection, string> = {
-	health: 'Здравоохранение',
-	economy: 'Экономика',
-	ecology: 'Экология',
-	energy: 'Энергетика',
-	transport: 'Транспорт',
-	ai: 'Искусственный интеллект',
-};
-
-const financingLabels: Record<FinancingType, string> = {
-	grant: 'Грантовое',
-	program: 'Программно-целевое',
-	contract: 'По договорам',
-};
-
-const financingTypeOptionValues: (FinancingType | 'all')[] = ['all', 'grant', 'program', 'contract'];
-
-const statusLabels: Record<ProjectStatus, string> = {
-	active: 'В работе',
-	completed: 'Завершен',
-	draft: 'Подготовка',
-};
-
 type ColumnKey =
 	| 'irn'
 	| 'title'
@@ -218,26 +196,6 @@ interface SearchableSelectProps {
 	onSearchChange: (value: string) => void;
 	setRef: (node: HTMLDivElement | null) => void;
 }
-
-const columnDefinitions: ColumnDefinition[] = [
-	{ key: 'irn', label: 'IRN', sortKey: 'irn' },
-	{ key: 'title', label: 'Название', sortKey: 'title' },
-	{ key: 'applicant', label: 'Заявитель', sortKey: 'applicant' },
-	{ key: 'priority', label: 'Приоритет' },
-	{ key: 'financingType', label: 'Финансирование' },
-	{ key: 'financingTotal', label: 'Сумма', sortKey: 'financingTotal' },
-	{ key: 'region', label: 'Регион' },
-	{ key: 'status', label: 'Статус' },
-	{ key: 'period', label: 'Период' },
-];
-
-const defaultVisibleColumns: Record<ColumnKey, boolean> = columnDefinitions.reduce(
-	(acc, column) => ({
-		...acc,
-		[column.key]: true,
-	}),
-	{} as Record<ColumnKey, boolean>,
-);
 
 const dropdownKeys: DropdownFilterKey[] = ['irn', 'financingType', 'applicant', 'customer', 'mrnti'];
 
@@ -339,7 +297,67 @@ const formatCurrency = (value: number): string =>
 	}).format(value);
 
 const ProjectsPage: React.FC = () => {
+	const { t } = useTranslation();
 	const { selectedRegionId, setSelectedRegionId, regions } = useRegionContext();
+	
+	// Динамические переводы
+	const priorityLabels = useMemo<Record<PriorityDirection, string>>(
+		() => ({
+			health: t('projects_priority_health'),
+			economy: t('projects_priority_economy'),
+			ecology: t('projects_priority_ecology'),
+			energy: t('projects_priority_energy'),
+			transport: t('projects_priority_transport'),
+			ai: t('projects_priority_ai'),
+		}),
+		[t],
+	);
+
+	const financingLabels = useMemo<Record<FinancingType, string>>(
+		() => ({
+			grant: t('projects_financing_grant'),
+			program: t('projects_financing_program'),
+			contract: t('projects_financing_contract'),
+		}),
+		[t],
+	);
+
+	const statusLabels = useMemo<Record<ProjectStatus, string>>(
+		() => ({
+			active: t('projects_status_active'),
+			completed: t('projects_status_completed'),
+			draft: t('projects_status_draft'),
+		}),
+		[t],
+	);
+	
+	const columnLabels = useMemo(
+		() => ({
+			irn: t('projects_column_irn'),
+			title: t('projects_column_title'),
+			applicant: t('projects_column_applicant'),
+			priority: t('projects_column_priority'),
+			financingType: t('projects_column_financing_type'),
+			financingTotal: t('projects_column_amount'),
+			region: t('projects_column_region'),
+			status: t('projects_column_status'),
+			period: t('projects_column_period'),
+		}),
+		[t],
+	);
+	
+	const columnDefinitionsLocal: ColumnDefinition[] = [
+		{ key: 'irn', label: columnLabels.irn, sortKey: 'irn' },
+		{ key: 'title', label: columnLabels.title, sortKey: 'title' },
+		{ key: 'applicant', label: columnLabels.applicant, sortKey: 'applicant' },
+		{ key: 'priority', label: columnLabels.priority },
+		{ key: 'financingType', label: columnLabels.financingType },
+		{ key: 'financingTotal', label: columnLabels.financingTotal, sortKey: 'financingTotal' },
+		{ key: 'region', label: columnLabels.region },
+		{ key: 'status', label: columnLabels.status },
+		{ key: 'period', label: columnLabels.period },
+	];
+	
 	const [filters, setFilters] = useState<FilterState>({
 		search: '',
 		startYear: YEAR_RANGE.min,
@@ -355,9 +373,15 @@ const ProjectsPage: React.FC = () => {
 		trl: 'all',
 	});
 	const [sort, setSort] = useState<SortState>({ key: '', direction: '' });
-	const [visibleColumns, setVisibleColumns] = useState<Record<ColumnKey, boolean>>(() => ({
-		...defaultVisibleColumns,
-	}));
+	const [visibleColumns, setVisibleColumns] = useState<Record<ColumnKey, boolean>>(() =>
+		columnDefinitionsLocal.reduce(
+			(acc, column) => ({
+				...acc,
+				[column.key]: true,
+			}),
+			{} as Record<ColumnKey, boolean>,
+		),
+	);
 	const [isColumnPickerOpen, setIsColumnPickerOpen] = useState(false);
 	const columnPickerRef = useRef<HTMLDivElement | null>(null);
 	const [openDropdown, setOpenDropdown] = useState<DropdownFilterKey | null>(null);
@@ -383,16 +407,16 @@ const ProjectsPage: React.FC = () => {
 			}));
 
 		return {
-			irn: buildOptions(irnOptions, 'Все IRN'),
-			applicant: buildOptions(applicantOptions, 'Все заявители'),
-			customer: buildOptions(customerOptions, 'Все заказчики'),
-			mrnti: buildOptions(mrntiOptions, 'Все МРНТИ'),
-			financingType: financingTypeOptionValues.map((value) => ({
+			irn: buildOptions(irnOptions, t('projects_filter_irn')),
+			applicant: buildOptions(applicantOptions, t('projects_filter_applicant')),
+			customer: buildOptions(customerOptions, t('projects_filter_customer')),
+			mrnti: buildOptions(mrntiOptions, t('projects_filter_mrnti')),
+			financingType: (['all', 'grant', 'program', 'contract'] as (FinancingType | 'all')[]).map((value) => ({
 				value,
-				label: value === 'all' ? 'Все типы финансирования' : financingLabels[value as FinancingType],
+				label: value === 'all' ? t('projects_filter_financing_type') : financingLabels[value as FinancingType],
 			})),
 		};
-	}, [applicantOptions, customerOptions, irnOptions, mrntiOptions]);
+	}, [applicantOptions, customerOptions, irnOptions, mrntiOptions, t, financingLabels]);
 
 	const regionNameById = useMemo(() => {
 		const map: Record<string, string> = {};
@@ -403,8 +427,8 @@ const ProjectsPage: React.FC = () => {
 	}, [regions]);
 
 	const activeColumns = useMemo(
-		() => columnDefinitions.filter((column) => visibleColumns[column.key]),
-		[visibleColumns],
+		() => columnDefinitionsLocal.filter((column) => visibleColumns[column.key]),
+		[visibleColumns, columnDefinitionsLocal],
 	);
 
 	const handleSort = (key: keyof Project) => {
@@ -648,40 +672,40 @@ const ProjectsPage: React.FC = () => {
 		<div className="projects-page">
 			<header className="projects-header">
 				<div>
-					<h1>Проекты</h1>
-					<p>Найдено проектов: {filteredProjects.length}</p>
+					<h1>{t('projects_page_header')}</h1>
+					<p>{t('projects_found_count')}{filteredProjects.length}</p>
 				</div>
 				<div className="projects-header-actions">
-					<button type="button" className="projects-header-button">
-						<Download size={18} />
-						Выгрузить отчёт
-					</button>
+				<button type="button" className="projects-header-button">
+					<Download size={18} />
+					{t('projects_export_report')}
+				</button>
 				</div>
 			</header>
 
 			<div className="projects-search-line">
 				<div className="projects-search-toolbar">
-					<div className="projects-search">
-						<Search size={18} />
-						<input
-							type="text"
-							placeholder="Поиск по названию или IRN"
-							value={filters.search}
+				<div className="projects-search">
+					<Search size={18} />
+					<input
+						type="text"
+						placeholder={t('projects_search_placeholder')}
+						value={filters.search}
 							onChange={(event) => handleFilterChange('search', event.target.value)}
 						/>
 					</div>
 					<div className="projects-column-picker" ref={columnPickerRef}>
-						<button
-							type="button"
-							className="projects-column-button"
-							onClick={() => setIsColumnPickerOpen((prev) => !prev)}
-						>
-							<SlidersHorizontal size={16} />
-							<span>Выбрать колонки</span>
-						</button>
-						{isColumnPickerOpen && (
-							<div className="projects-column-list">
-								{columnDefinitions.map((column) => (
+					<button
+						type="button"
+						className="projects-column-button"
+						onClick={() => setIsColumnPickerOpen((prev) => !prev)}
+					>
+						<SlidersHorizontal size={16} />
+						<span>{t('projects_customize_columns')}</span>
+					</button>
+					{isColumnPickerOpen && (
+						<div className="projects-column-list">
+							{columnDefinitionsLocal.map((column) => (
 									<label key={column.key} className="projects-column-option">
 										<input
 											type="checkbox"
@@ -700,15 +724,15 @@ const ProjectsPage: React.FC = () => {
 			<div className="projects-content">
 				<aside className="projects-sidebar">
 					<div className="projects-filter-block">
-						<div className="projects-filter-title">Регион</div>
+						<div className="projects-filter-title">{t('projects_filter_region_title')}</div>
 						<div className="projects-filter-item">
-							<label htmlFor="projects-region">Выберите регион</label>
+							<label htmlFor="projects-region">{t('projects_filter_region_label')}</label>
 							<select
 								id="projects-region"
 								value={selectedRegionId}
 								onChange={(event) => setSelectedRegionId(event.target.value as RegionId)}
 							>
-								<option value="national">Вся страна</option>
+								<option value="national">{t('projects_filter_region_all')}</option>
 								{regions.map((region) => (
 									<option key={region.id} value={region.id}>
 										{region.name}
@@ -719,7 +743,7 @@ const ProjectsPage: React.FC = () => {
 					</div>
 
 					<div className="projects-filter-block">
-						<div className="projects-filter-title">Период</div>
+						<div className="projects-filter-title">{t('projects_filter_period_title')}</div>
 						<div className="period-range-slider" style={rangeBackgroundStyle}>
 							<div className="period-range-values">
 								<span className="period-range-value">{filters.startYear}</span>
@@ -748,14 +772,14 @@ const ProjectsPage: React.FC = () => {
 					</div>
 
 					<div className="projects-filter-block">
-						<div className="projects-filter-title">Фильтры</div>
+						<div className="projects-filter-title">{t('projects_filter_filters_title')}</div>
 						<div className="projects-filters-grid">
 							<div className="projects-filter-item">
-								<label htmlFor="filter-irn">IRN</label>
+								<label htmlFor="filter-irn">{t('projects_label_irn')}</label>
 								<SearchableSelect
 									id="filter-irn"
-									label="IRN"
-									placeholder="Выберите IRN"
+									label={t('projects_label_irn')}
+									placeholder={t('projects_placeholder_irn')}
 									options={dropdownOptions.irn}
 									value={filters.irn}
 									isOpen={openDropdown === 'irn'}
@@ -768,11 +792,11 @@ const ProjectsPage: React.FC = () => {
 							</div>
 
 							<div className="projects-filter-item">
-								<label htmlFor="filter-financing">Тип финансирования</label>
+								<label htmlFor="filter-financing">{t('projects_label_financing_type')}</label>
 								<SearchableSelect
 									id="filter-financing"
-									label="Тип финансирования"
-									placeholder="Выберите тип финансирования"
+									label={t('projects_label_financing_type')}
+									placeholder={t('projects_placeholder_financing_type')}
 									options={dropdownOptions.financingType}
 									value={filters.financingType}
 									isOpen={openDropdown === 'financingType'}
@@ -785,7 +809,7 @@ const ProjectsPage: React.FC = () => {
 							</div>
 
 							<div className="projects-filter-item">
-								<label htmlFor="filter-priority">Приоритет</label>
+								<label htmlFor="filter-priority">{t('projects_label_priority')}</label>
 								<select
 									id="filter-priority"
 									value={filters.priority}
@@ -793,7 +817,7 @@ const ProjectsPage: React.FC = () => {
 										handleFilterChange('priority', event.target.value as FilterState['priority'])
 									}
 								>
-									<option value="all">Все направления</option>
+									<option value="all">{t('projects_option_all_priorities')}</option>
 									{(Object.keys(priorityLabels) as PriorityDirection[]).map((priority) => (
 										<option key={priority} value={priority}>
 											{priorityLabels[priority]}
@@ -803,7 +827,7 @@ const ProjectsPage: React.FC = () => {
 							</div>
 
 							<div className="projects-filter-item">
-								<label htmlFor="filter-contest">Конкурс</label>
+								<label htmlFor="filter-contest">{t('projects_label_contest')}</label>
 								<select
 									id="filter-contest"
 									value={filters.contest}
@@ -811,18 +835,18 @@ const ProjectsPage: React.FC = () => {
 								>
 									{contestOptions.map((option) => (
 										<option key={option} value={option}>
-											{option === 'all' ? 'Все конкурсы' : option}
+											{option === 'all' ? t('projects_option_all_contests') : option}
 										</option>
 									))}
 								</select>
 							</div>
 
 							<div className="projects-filter-item">
-								<label htmlFor="filter-applicant">Заявитель</label>
+								<label htmlFor="filter-applicant">{t('projects_label_applicant')}</label>
 								<SearchableSelect
 									id="filter-applicant"
-									label="Заявитель"
-									placeholder="Выберите заявителя"
+									label={t('projects_label_applicant')}
+									placeholder={t('projects_placeholder_applicant')}
 									options={dropdownOptions.applicant}
 									value={filters.applicant}
 									isOpen={openDropdown === 'applicant'}
@@ -835,11 +859,11 @@ const ProjectsPage: React.FC = () => {
 							</div>
 
 							<div className="projects-filter-item">
-								<label htmlFor="filter-customer">Заказчик</label>
+								<label htmlFor="filter-customer">{t('projects_label_customer')}</label>
 								<SearchableSelect
 									id="filter-customer"
-									label="Заказчик"
-									placeholder="Выберите заказчика"
+									label={t('projects_label_customer')}
+									placeholder={t('projects_placeholder_customer')}
 									options={dropdownOptions.customer}
 									value={filters.customer}
 									isOpen={openDropdown === 'customer'}
@@ -852,11 +876,11 @@ const ProjectsPage: React.FC = () => {
 							</div>
 
 							<div className="projects-filter-item">
-								<label htmlFor="filter-mrnti">МРНТИ</label>
+								<label htmlFor="filter-mrnti">{t('projects_label_mrnti')}</label>
 								<SearchableSelect
 									id="filter-mrnti"
-									label="МРНТИ"
-									placeholder="Выберите код МРНТИ"
+									label={t('projects_label_mrnti')}
+									placeholder={t('projects_placeholder_mrnti')}
 									options={dropdownOptions.mrnti}
 									value={filters.mrnti}
 									isOpen={openDropdown === 'mrnti'}
@@ -869,7 +893,7 @@ const ProjectsPage: React.FC = () => {
 							</div>
 
 							<div className="projects-filter-item">
-								<label htmlFor="filter-status">Статус</label>
+								<label htmlFor="filter-status">{t('projects_label_status')}</label>
 								<select
 									id="filter-status"
 									value={filters.status}
@@ -877,7 +901,7 @@ const ProjectsPage: React.FC = () => {
 										handleFilterChange('status', event.target.value as FilterState['status'])
 									}
 								>
-									<option value="all">Все статусы</option>
+									<option value="all">{t('projects_option_all_statuses')}</option>
 									{(Object.keys(statusLabels) as ProjectStatus[]).map((status) => (
 										<option key={status} value={status}>
 											{statusLabels[status]}
@@ -887,7 +911,7 @@ const ProjectsPage: React.FC = () => {
 							</div>
 
 							<div className="projects-filter-item">
-								<label htmlFor="filter-trl">TRL</label>
+								<label htmlFor="filter-trl">{t('projects_label_trl')}</label>
 								<select
 									id="filter-trl"
 									value={filters.trl}
@@ -900,7 +924,7 @@ const ProjectsPage: React.FC = () => {
 								>
 									{trlOptions.map((option) => (
 										<option key={option} value={option}>
-											{option === 'all' ? 'Все уровни' : `TRL ${option}`}
+											{option === 'all' ? t('projects_option_all_trl') : `TRL ${option}`}
 										</option>
 									))}
 								</select>
@@ -908,11 +932,11 @@ const ProjectsPage: React.FC = () => {
 						</div>
 					</div>
 
-					<div className="projects-filter-actions">
-						<button type="button" onClick={resetFilters}>
-							Сбросить фильтры
-						</button>
-					</div>
+				<div className="projects-filter-actions">
+					<button type="button" onClick={resetFilters}>
+						{t('projects_button_reset_filters')}
+					</button>
+				</div>
 				</aside>
 
 				<main className="projects-main">
@@ -952,11 +976,11 @@ const ProjectsPage: React.FC = () => {
 								</tbody>
 							</table>
 							{filteredProjects.length === 0 && (
-								<div className="no-results">Проекты не найдены, уточните фильтры.</div>
+								<div className="no-results">{t('projects_not_found')}</div>
 							)}
 						</div>
 						<p className="projects-summary">
-							Показано проектов: {filteredProjects.length} из {projects.length}
+							{t('projects_shown')} {filteredProjects.length} {t('projects_from_total')} {projects.length}
 						</p>
 					</section>
 				</main>

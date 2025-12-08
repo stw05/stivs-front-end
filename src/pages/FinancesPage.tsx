@@ -58,76 +58,77 @@ interface ChartFilterState {
   financingTypes: FinancingType[];
 }
 
-const IRN_OPTIONS = [
-  { value: 'all', label: 'Все ИРН' },
-  { value: 'irn-001', label: 'ИРН 001' },
-  { value: 'irn-057', label: 'ИРН 057' },
-  { value: 'irn-112', label: 'ИРН 112' },
-  { value: 'irn-204', label: 'ИРН 204' },
-];
+// Helper function to generate options with translations
+const getFinancesOptions = (t: (key: string) => string) => ({
+  irn: [
+    { value: 'all', label: t('finances_option_all_irn') },
+    { value: 'irn-001', label: 'IRN 001' },
+    { value: 'irn-057', label: 'IRN 057' },
+    { value: 'irn-112', label: 'IRN 112' },
+    { value: 'irn-204', label: 'IRN 204' },
+  ],
+  financingType: [
+    { value: 'gf', label: t('finances_financing_gf') },
+    { value: 'pcf', label: t('finances_financing_pcf') },
+    { value: 'commercial', label: t('finances_financing_commercial') },
+  ],
+  cofinancing: [
+    { value: 'contract', label: t('finances_cofinancing_contract') },
+    { value: 'actual', label: t('finances_cofinancing_actual') },
+  ],
+  expense: [
+    { value: 'salary', label: t('finances_expense_salary') },
+    { value: 'travel', label: t('finances_expense_travel') },
+    { value: 'support', label: t('finances_expense_support') },
+    { value: 'materials', label: t('finances_expense_materials') },
+    { value: 'rent', label: t('finances_expense_rent') },
+    { value: 'protocol', label: t('finances_expense_protocol') },
+  ],
+  priority: [
+    { value: 'all', label: t('finances_option_all_priorities') },
+    { value: 'digital', label: t('finances_priority_digital') },
+    { value: 'education', label: t('finances_priority_education') },
+    { value: 'biotech', label: t('finances_priority_biotech') },
+    { value: 'energy', label: t('finances_priority_energy') },
+  ],
+  competition: [
+    { value: 'all', label: t('finances_option_all_competitions') },
+    { value: 'innovation', label: t('finances_competition_innovation') },
+    { value: 'grant2025', label: t('finances_competition_grant2025') },
+    { value: 'pilot', label: t('finances_competition_pilot') },
+  ],
+  applicant: [
+    { value: 'all', label: t('finances_option_all_applicants') },
+    { value: 'universities', label: t('finances_applicant_universities') },
+    { value: 'companies', label: t('finances_applicant_companies') },
+    { value: 'research', label: t('finances_applicant_research') },
+  ],
+  customer: [
+    { value: 'all', label: t('finances_option_all_customers') },
+    { value: 'ministry', label: t('finances_customer_ministry') },
+    { value: 'state-companies', label: t('finances_customer_state_companies') },
+    { value: 'private', label: t('finances_customer_private') },
+  ],
+  status: [
+    { value: 'all', label: t('finances_option_all_statuses') },
+    { value: 'active', label: t('finances_status_active') },
+    { value: 'completed', label: t('finances_status_completed') },
+    { value: 'pipeline', label: t('finances_status_pipeline') },
+  ],
+});
 
-const FINANCING_TYPE_OPTIONS: Array<{ value: FinancingType; label: string }> = [
-  { value: 'gf', label: 'Государственное финансирование (ГФ)' },
-  { value: 'pcf', label: 'Программно-целевое (ПЦФ)' },
-  { value: 'commercial', label: 'Коммерциализация' },
-];
+const COFINANCING_DEFAULTS: CofinancingType[] = ['contract', 'actual'];
 
-const COFINANCING_OPTIONS: Array<{ value: CofinancingType; label: string }> = [
-  { value: 'contract', label: 'По договору' },
-  { value: 'actual', label: 'Фактическое' },
-];
+const EXPENSE_DEFAULTS: ExpenseCategory[] = ['salary', 'travel', 'support', 'materials', 'rent', 'protocol'];
 
-const EXPENSE_OPTIONS: Array<{ value: ExpenseCategory; label: string }> = [
-  { value: 'salary', label: 'Оплата труда' },
-  { value: 'travel', label: 'Служебные командировки' },
-  { value: 'support', label: 'Научно-организационное сопровождение' },
-  { value: 'materials', label: 'Приобретение материалов' },
-  { value: 'rent', label: 'Расходы на аренду' },
-  { value: 'protocol', label: 'Протокол ННС' },
-];
-
-const PRIORITY_OPTIONS: Array<{ value: PriorityDirection; label: string }> = [
-  { value: 'all', label: 'Все направления' },
-  { value: 'digital', label: 'Цифровизация и ИИ' },
-  { value: 'education', label: 'Образование и кадры' },
-  { value: 'biotech', label: 'Биотех и медицина' },
-  { value: 'energy', label: 'Энергетика и климат' },
-];
-
-const COMPETITION_OPTIONS: Array<{ value: CompetitionName; label: string }> = [
-  { value: 'all', label: 'Все конкурсы' },
-  { value: 'innovation', label: 'Инновационный драйвер' },
-  { value: 'grant2025', label: 'Гранты 2025' },
-  { value: 'pilot', label: 'Пилотные программы' },
-];
-
-const APPLICANT_OPTIONS: Array<{ value: ApplicantType; label: string }> = [
-  { value: 'all', label: 'Все заявители' },
-  { value: 'universities', label: 'Университеты' },
-  { value: 'companies', label: 'Компании' },
-  { value: 'research', label: 'НИИ и центры' },
-];
-
-const CUSTOMER_OPTIONS: Array<{ value: CustomerType; label: string }> = [
-  { value: 'all', label: 'Все заказчики' },
-  { value: 'ministry', label: 'Министерства' },
-  { value: 'state-companies', label: 'Госкомпании' },
-  { value: 'private', label: 'Частные заказчики' },
-];
-
-const STATUS_OPTIONS: Array<{ value: ProjectStatus; label: string }> = [
-  { value: 'all', label: 'Все статусы' },
-  { value: 'active', label: 'В реализации' },
-  { value: 'completed', label: 'Завершены' },
-  { value: 'pipeline', label: 'На рассмотрении' },
-];
+const FINANCING_TYPE_DEFAULTS: FinancingType[] = ['gf', 'pcf', 'commercial'];
 
 const FINANCES_PERIOD_RANGE = { min: 2020, max: 2040 } as const;
 
 const DEFAULT_CHART_FILTERS: ChartFilterState = {
-  cofinancing: COFINANCING_OPTIONS.map((option) => option.value),
-  expenses: EXPENSE_OPTIONS.map((option) => option.value),
-  financingTypes: FINANCING_TYPE_OPTIONS.map((option) => option.value),
+  cofinancing: [...COFINANCING_DEFAULTS],
+  expenses: [...EXPENSE_DEFAULTS],
+  financingTypes: [...FINANCING_TYPE_DEFAULTS],
 };
 
 const COFINANCING_YEAR_LABELS = ['2020', '2021', '2022', '2023', '2024'];
@@ -235,8 +236,26 @@ const FinancesPage: React.FC = () => {
   const { selectedRegion, selectedRegionId, setSelectedRegionId, regions, isNational } =
     useRegionContext();
 
+  const regionLabel = selectedRegion?.name ?? t('republic_kazakhstan');
+  const currencyUnitShort = t('unit_bln_kzt_symbol');
+
   const nationalMetrics = useMemo(() => calculateNationalMetrics(), []);
   const metrics = selectedRegion?.stats ?? nationalMetrics;
+  
+  // Generate translated options
+  const financesOptions = useMemo(() => getFinancesOptions(t), [t]);
+  
+  // Create aliases for backward compatibility with JSX
+  const IRN_OPTIONS = financesOptions.irn;
+  const FINANCING_TYPE_OPTIONS = financesOptions.financingType;
+  const PRIORITY_OPTIONS = financesOptions.priority;
+  const COMPETITION_OPTIONS = financesOptions.competition;
+  const APPLICANT_OPTIONS = financesOptions.applicant;
+  const CUSTOMER_OPTIONS = financesOptions.customer;
+  const STATUS_OPTIONS = financesOptions.status;
+  const COFINANCING_OPTIONS = financesOptions.cofinancing;
+  const EXPENSE_OPTIONS = financesOptions.expense;
+  
   const [filters, setFilters] = useState<FilterState>({
     irn: 'all',
     period: 2030,
@@ -318,7 +337,7 @@ const FinancesPage: React.FC = () => {
     const datasets = activeCofinancingFilters.map((filter) =>
       filter === 'contract'
         ? {
-            label: 'По договору',
+            label: t('finances_cofinancing_contract'),
             data: contractData,
             backgroundColor: '#cbd5f5',
             borderRadius: 12,
@@ -326,7 +345,7 @@ const FinancesPage: React.FC = () => {
             borderSkipped: false,
           }
         : {
-            label: 'Фактическое',
+            label: t('finances_cofinancing_actual'),
             data: actualData,
             backgroundColor: '#2563eb',
             borderRadius: 12,
@@ -339,11 +358,11 @@ const FinancesPage: React.FC = () => {
       labels: COFINANCING_YEAR_LABELS,
       datasets,
     };
-  }, [activeCofinancingFilters, adjustedMetrics.finances.total, filters.cofinancing]);
+  }, [activeCofinancingFilters, adjustedMetrics.finances.total, filters.cofinancing, t]);
 
   const remainingCofinancingOptions = useMemo(
-    () => COFINANCING_OPTIONS.filter((option) => !selectedCofinancingFilters.includes(option.value)),
-    [selectedCofinancingFilters],
+    () => financesOptions.cofinancing.filter((option) => !selectedCofinancingFilters.includes(option.value as CofinancingType)),
+    [selectedCofinancingFilters, financesOptions],
   );
 
   const cofinancingChartOptions = useMemo<ChartOptions<'bar'>>(
@@ -369,7 +388,7 @@ const FinancesPage: React.FC = () => {
             label: (context) => {
               const label = context.dataset.label ?? '';
               const value = context.raw as number;
-              return `${label}: ${formatNumber(value, { maximumFractionDigits: 1 })} млрд ₸`;
+              return `${label}: ${formatNumber(value, { maximumFractionDigits: 1 })} ${currencyUnitShort}`;
             },
           },
         },
@@ -388,12 +407,12 @@ const FinancesPage: React.FC = () => {
           grid: { color: 'rgba(148, 163, 184, 0.2)', drawBorder: false },
           ticks: {
             color: '#475569',
-            callback: (value) => `${Number(value).toFixed(0)} млрд ₸`,
+            callback: (value) => `${Number(value).toFixed(0)} ${currencyUnitShort}`,
           },
         },
       },
     }),
-    [],
+    [currencyUnitShort],
   );
 
   const approvalChartData = useMemo(() => {
@@ -409,7 +428,7 @@ const FinancesPage: React.FC = () => {
       labels: COFINANCING_YEAR_LABELS,
       datasets: [
         {
-          label: 'Одобренная сумма',
+          label: t('finances_chart_approval'),
           data: timeline,
           backgroundColor: '#0ea5e9',
           hoverBackgroundColor: '#0369a1',
@@ -418,7 +437,7 @@ const FinancesPage: React.FC = () => {
         },
       ],
     };
-  }, [adjustedMetrics.finances.lastYear, filters.period]);
+  }, [adjustedMetrics.finances.lastYear, filters.period, t]);
 
   const approvalChartOptions = useMemo<ChartOptions<'bar'>>(
     () => ({
@@ -433,7 +452,7 @@ const FinancesPage: React.FC = () => {
           callbacks: {
             label: (context) => {
               const value = context.raw as number;
-              return `${formatNumber(value, { maximumFractionDigits: 1 })} млрд ₸`;
+              return `${formatNumber(value, { maximumFractionDigits: 1 })} ${currencyUnitShort}`;
             },
           },
         },
@@ -449,28 +468,28 @@ const FinancesPage: React.FC = () => {
           grid: { color: 'rgba(148, 163, 184, 0.2)', drawBorder: false },
           ticks: {
             color: '#94a3b8',
-            callback: (value) => `${value} млрд ₸`,
+            callback: (value) => `${value} ${currencyUnitShort}`,
           },
         },
       },
     }),
-    [],
+    [currencyUnitShort],
   );
 
   const expenseBreakdown = useMemo(
     () =>
-      EXPENSE_OPTIONS.map((option, index) => {
-        const share = EXPENSE_SHARES[option.value];
+      financesOptions.expense.map((option, index) => {
+        const share = EXPENSE_SHARES[option.value as ExpenseCategory];
         const value = Number((adjustedMetrics.finances.total * share).toFixed(1));
         return {
-          key: option.value,
+          key: option.value as ExpenseCategory,
           label: option.label,
           value,
           percentage: Number((share * 100).toFixed(1)),
           color: EXPENSE_ACTIVE_COLORS[index],
         };
       }),
-    [adjustedMetrics.finances.total],
+    [adjustedMetrics.finances.total, financesOptions],
   );
 
   const selectedExpenseFilters = chartFilters.expenses;
@@ -479,48 +498,48 @@ const FinancesPage: React.FC = () => {
     : DEFAULT_CHART_FILTERS.expenses;
 
   const filteredExpenses = useMemo(
-    () => expenseBreakdown.filter((item) => activeExpenseFilters.includes(item.key)),
+    () => expenseBreakdown.filter((item: { key: ExpenseCategory; label: string; value: number; percentage: number; color: string }) => activeExpenseFilters.includes(item.key)),
     [expenseBreakdown, activeExpenseFilters],
   );
 
   const selectedExpenseTotal = useMemo(
-    () => filteredExpenses.reduce((acc, item) => acc + item.value, 0),
+    () => filteredExpenses.reduce((acc: number, item: { key: ExpenseCategory; label: string; value: number; percentage: number; color: string }) => acc + item.value, 0),
     [filteredExpenses],
   );
 
   const selectedExpenseLabel = useMemo(() => {
     if (!selectedExpenseFilters.length) {
-      return 'Все категории';
+      return t('filter_all_categories');
     }
     if (filteredExpenses.length === 1) {
       return filteredExpenses[0]?.label ?? '';
     }
-    return `Выбрано ${filteredExpenses.length}`;
-  }, [filteredExpenses, selectedExpenseFilters.length]);
+    return t('finances_selected_count', { count: filteredExpenses.length });
+  }, [filteredExpenses, selectedExpenseFilters.length, t]);
 
   const expenseChartData = useMemo(() => {
     return {
-      labels: filteredExpenses.map((item) => item.label),
+      labels: filteredExpenses.map((item: { key: ExpenseCategory; label: string; value: number; percentage: number; color: string }) => item.label),
       datasets: [
         {
-          data: filteredExpenses.map((item) => item.value),
-          backgroundColor: filteredExpenses.map((item) => {
-            const colorIndex = EXPENSE_OPTIONS.findIndex((option) => option.value === item.key);
+          data: filteredExpenses.map((item: { key: ExpenseCategory; label: string; value: number; percentage: number; color: string }) => item.value),
+          backgroundColor: filteredExpenses.map((item: { key: ExpenseCategory; label: string; value: number; percentage: number; color: string }) => {
+            const colorIndex = financesOptions.expense.findIndex((option) => option.value === item.key);
             return EXPENSE_ACTIVE_COLORS[colorIndex] ?? '#2563eb';
           }),
-          hoverBackgroundColor: filteredExpenses.map((item) => {
-            const colorIndex = EXPENSE_OPTIONS.findIndex((option) => option.value === item.key);
+          hoverBackgroundColor: filteredExpenses.map((item: { key: ExpenseCategory; label: string; value: number; percentage: number; color: string }) => {
+            const colorIndex = financesOptions.expense.findIndex((option) => option.value === item.key);
             return EXPENSE_ACTIVE_COLORS[colorIndex] ?? '#1d4ed8';
           }),
           borderWidth: 0,
         },
       ],
     };
-  }, [filteredExpenses]);
+  }, [filteredExpenses, financesOptions]);
 
   const remainingExpenseOptions = useMemo(
-    () => EXPENSE_OPTIONS.filter((option) => !selectedExpenseFilters.includes(option.value)),
-    [selectedExpenseFilters],
+    () => financesOptions.expense.filter((option) => !selectedExpenseFilters.includes(option.value as ExpenseCategory)),
+    [selectedExpenseFilters, financesOptions],
   );
 
   const expenseChartOptions = useMemo<ChartOptions<'doughnut'>>(
@@ -538,40 +557,40 @@ const FinancesPage: React.FC = () => {
             label: (context) => {
               const value = context.raw as number;
               const label = context.label ?? '';
-              return `${label}: ${formatNumber(value, { maximumFractionDigits: 1 })} млрд ₸`;
+              return `${label}: ${formatNumber(value, { maximumFractionDigits: 1 })} ${currencyUnitShort}`;
             },
           },
         },
       },
     }),
-    [],
+    [currencyUnitShort],
   );
 
   const financingTypeBreakdown = useMemo(() => {
     const bonus = 0.05;
-    const adjustedShares = FINANCING_TYPE_OPTIONS.map((option) => {
-      const baseShare = FINANCING_TYPE_SHARES[option.value];
+    const adjustedShares = financesOptions.financingType.map((option) => {
+      const baseShare = FINANCING_TYPE_SHARES[option.value as FinancingType];
       if (option.value === filters.financingType) {
         return baseShare + bonus;
       }
-      const remainder = FINANCING_TYPE_OPTIONS.length - 1;
+      const remainder = financesOptions.financingType.length - 1;
       return clampValue(baseShare - bonus / Math.max(remainder, 1), 0.05, 1);
     });
 
-    const shareSum = adjustedShares.reduce((acc, share) => acc + share, 0);
+    const shareSum = adjustedShares.reduce((acc: number, share: number) => acc + share, 0);
 
-    return FINANCING_TYPE_OPTIONS.map((option, index) => {
+    return financesOptions.financingType.map((option: { value: string; label: string }, index: number) => {
       const share = adjustedShares[index] / shareSum;
       const value = Number((adjustedMetrics.finances.total * share).toFixed(1));
       return {
-        key: option.value,
+        key: option.value as FinancingType,
         label: option.label,
         value,
         percentage: Number((share * 100).toFixed(1)),
         color: FINANCING_TYPE_COLORS[index],
       };
     });
-  }, [adjustedMetrics.finances.total, filters.financingType]);
+  }, [adjustedMetrics.finances.total, filters.financingType, financesOptions]);
 
   const selectedFinancingTypeFilters = chartFilters.financingTypes;
   const activeFinancingTypeFilters = selectedFinancingTypeFilters.length
@@ -579,48 +598,48 @@ const FinancesPage: React.FC = () => {
     : DEFAULT_CHART_FILTERS.financingTypes;
 
   const filteredFinancingTypes = useMemo(
-    () => financingTypeBreakdown.filter((item) => activeFinancingTypeFilters.includes(item.key)),
+    () => financingTypeBreakdown.filter((item: { key: FinancingType; label: string; value: number; percentage: number; color: string }) => activeFinancingTypeFilters.includes(item.key)),
     [financingTypeBreakdown, activeFinancingTypeFilters],
   );
 
   const selectedFinancingTypeTotal = useMemo(
-    () => filteredFinancingTypes.reduce((acc, item) => acc + item.value, 0),
+    () => filteredFinancingTypes.reduce((acc: number, item: { key: FinancingType; label: string; value: number; percentage: number; color: string }) => acc + item.value, 0),
     [filteredFinancingTypes],
   );
 
   const selectedFinancingLabel = useMemo(() => {
     if (!selectedFinancingTypeFilters.length) {
-      return 'Все типы';
+      return t('fin_all_types');
     }
     if (filteredFinancingTypes.length === 1) {
       return filteredFinancingTypes[0]?.label ?? '';
     }
-    return `Выбрано ${filteredFinancingTypes.length}`;
-  }, [filteredFinancingTypes, selectedFinancingTypeFilters.length]);
+    return t('finances_selected_count', { count: filteredFinancingTypes.length });
+  }, [filteredFinancingTypes, selectedFinancingTypeFilters.length, t]);
 
   const financingTypeChartData = useMemo(() => {
     return {
-      labels: filteredFinancingTypes.map((item) => item.label),
+      labels: filteredFinancingTypes.map((item: { key: FinancingType; label: string; value: number; percentage: number; color: string }) => item.label),
       datasets: [
         {
-          data: filteredFinancingTypes.map((item) => item.value),
-          backgroundColor: filteredFinancingTypes.map((item) => {
-            const colorIndex = FINANCING_TYPE_OPTIONS.findIndex((option) => option.value === item.key);
+          data: filteredFinancingTypes.map((item: { key: FinancingType; label: string; value: number; percentage: number; color: string }) => item.value),
+          backgroundColor: filteredFinancingTypes.map((item: { key: FinancingType; label: string; value: number; percentage: number; color: string }) => {
+            const colorIndex = financesOptions.financingType.findIndex((option) => option.value === item.key);
             return FINANCING_TYPE_COLORS[colorIndex] ?? '#2563eb';
           }),
-          hoverBackgroundColor: filteredFinancingTypes.map((item) => {
-            const colorIndex = FINANCING_TYPE_OPTIONS.findIndex((option) => option.value === item.key);
+          hoverBackgroundColor: filteredFinancingTypes.map((item: { key: FinancingType; label: string; value: number; percentage: number; color: string }) => {
+            const colorIndex = financesOptions.financingType.findIndex((option) => option.value === item.key);
             return FINANCING_TYPE_COLORS[colorIndex] ?? '#1d4ed8';
           }),
           borderWidth: 0,
         },
       ],
     };
-  }, [filteredFinancingTypes]);
+  }, [filteredFinancingTypes, financesOptions]);
 
   const remainingFinancingTypeOptions = useMemo(
-    () => FINANCING_TYPE_OPTIONS.filter((option) => !selectedFinancingTypeFilters.includes(option.value)),
-    [selectedFinancingTypeFilters],
+    () => financesOptions.financingType.filter((option) => !selectedFinancingTypeFilters.includes(option.value as FinancingType)),
+    [selectedFinancingTypeFilters, financesOptions],
   );
 
   const financingTypeChartOptions = useMemo<ChartOptions<'doughnut'>>(
@@ -638,13 +657,13 @@ const FinancesPage: React.FC = () => {
             label: (context) => {
               const value = context.raw as number;
               const label = context.label ?? '';
-              return `${label}: ${formatNumber(value, { maximumFractionDigits: 1 })} млрд ₸`;
+              return `${label}: ${formatNumber(value, { maximumFractionDigits: 1 })} ${currencyUnitShort}`;
             },
           },
         },
       },
     }),
-    [],
+    [currencyUnitShort],
   );
 
   const topRegions = useMemo(
@@ -662,30 +681,6 @@ const FinancesPage: React.FC = () => {
     [regions],
   );
 
-  const handleRegionSelect = (regionId: string) => {
-    const nextRegionId: RegionId = selectedRegionId === regionId ? 'national' : (regionId as RegionId);
-    setSelectedRegionId(nextRegionId);
-  };
-
-  const fundingTypeOptions: { value: FinancingType; label: string }[] = useMemo(
-    () => [
-      { value: 'gf', label: t('filter_gf') }, // 🟢 ПЕРЕВОД
-      { value: 'pcf', label: t('filter_pcf') }, // 🟢 ПЕРЕВОД
-      { value: 'commercial', label: t('filter_commercial') }, // 🟢 ПЕРЕВОД
-    ],
-    [t],
-  );
-
-  const competitionOptions: { value: CompetitionName; label: string }[] = useMemo(
-    () => [
-      { value: 'all', label: t('filter_all_contests') }, // 🟢 ПЕРЕВОД
-      { value: 'innovation', label: t('filter_innovation') }, // 🟢 ПЕРЕВОД
-      { value: 'grant2025', label: t('filter_grant2025') }, // 🟢 ПЕРЕВОД
-      { value: 'pilot', label: t('filter_pilot') }, // 🟢 ПЕРЕВОД
-    ],
-    [t],
-  );
-
   const comparisonRows = useMemo(() => {
     if (!selectedRegion) {
       return [];
@@ -699,50 +694,58 @@ const FinancesPage: React.FC = () => {
         // label: 'Финансирование, млрд. тг',
         regionValue: `${formatNumber(adjustedMetrics.finances.total, { maximumFractionDigits: 1 })}`,
         nationalValue: `${formatNumber(nationalMetrics.finances.total, { maximumFractionDigits: 1 })}`,
-        delta: `${share.toFixed(1)}% доля`,
+        delta: t('finances_share_value', { value: share.toFixed(1) }),
       },
       {
         label: t('comparison_total_finances'), // 🟢 ПЕРЕВОД
         // label: 'Финансирование за прошлый год, млрд. тг',
         regionValue: `${formatNumber(adjustedMetrics.finances.lastYear, { maximumFractionDigits: 1 })}`,
         nationalValue: `${formatNumber(nationalMetrics.finances.lastYear, { maximumFractionDigits: 1 })}`,
-        delta: `${((adjustedMetrics.finances.lastYear / nationalMetrics.finances.lastYear) * 100).toFixed(1)}% доля`,
+        delta: t('finances_share_value', {
+          value: ((adjustedMetrics.finances.lastYear / nationalMetrics.finances.lastYear) * 100).toFixed(1),
+        }),
       },
       {
-        label: 'Средняя статья расходов, тыс. тг',
+        label: t('comparison_avg_expense'), // 🟢 ПЕРЕВОД
         regionValue: `${formatNumber(adjustedMetrics.finances.avgExpense)}`,
         nationalValue: `${formatNumber(nationalMetrics.finances.avgExpense)}`,
-        delta: `${(adjustedMetrics.finances.avgExpense - nationalMetrics.finances.avgExpense).toFixed(0)} тг`,
+        delta: t('finances_difference_currency', {
+          value: (adjustedMetrics.finances.avgExpense - nationalMetrics.finances.avgExpense).toFixed(0),
+        }),
       },
       {
-        label: 'Освоение бюджета',
+        label: t('comparison_budget_usage'), // 🟢 ПЕРЕВОД
         regionValue: `${formatNumber(adjustedMetrics.finances.budgetUsage, { maximumFractionDigits: 1 })}%`,
         nationalValue: `${formatNumber(nationalMetrics.finances.budgetUsage, { maximumFractionDigits: 1 })}%`,
-        delta: `${(adjustedMetrics.finances.budgetUsage - nationalMetrics.finances.budgetUsage).toFixed(1)} п.п.`,
+        delta: t('finances_difference_pp', {
+          value: (adjustedMetrics.finances.budgetUsage - nationalMetrics.finances.budgetUsage).toFixed(1),
+        }),
       },
       {
-        label: 'Региональные программы',
+        label: t('comparison_regional_programs'), // 🟢 ПЕРЕВОД
         regionValue: `${formatNumber(adjustedMetrics.finances.regionalPrograms)}`,
         nationalValue: `${formatNumber(nationalMetrics.finances.regionalPrograms)}`,
-        delta: `${(
-          (adjustedMetrics.finances.regionalPrograms / nationalMetrics.finances.regionalPrograms) * 100
-        ).toFixed(1)}% доля`,
+        delta: t('finances_share_value', {
+          value: (
+            (adjustedMetrics.finances.regionalPrograms / nationalMetrics.finances.regionalPrograms) * 100
+          ).toFixed(1),
+        }),
       },
     ];
   }, [adjustedMetrics, nationalMetrics, selectedRegion]);
 
   const highlightCards = [
     {
-      title: 'Общая сумма финансирования',
-      value: `${formatNumber(adjustedMetrics.finances.total, { maximumFractionDigits: 1 })} млрд ₸`,
+      title: t('card_total_financing'), // 🟢 ПЕРЕВОД
+      value: `${formatNumber(adjustedMetrics.finances.total, { maximumFractionDigits: 1 })} ${currencyUnitShort}`,
       icon: DollarSign,
       iconBg: 'rgba(59, 130, 246, 0.15)',
       iconColor: '#2563eb',
       accent: 'rgba(59, 130, 246, 0.35)',
     },
     {
-      title: 'Сумма финансирования на текущий год',
-      value: `${formatNumber(adjustedMetrics.finances.lastYear, { maximumFractionDigits: 1 })} млрд ₸`,
+      title: t('card_current_year_financing'), // 🟢 ПЕРЕВОД
+      value: `${formatNumber(adjustedMetrics.finances.lastYear, { maximumFractionDigits: 1 })} ${currencyUnitShort}`,
       icon: TrendingUp,
       iconBg: 'rgba(16, 185, 129, 0.15)',
       iconColor: '#059669',
@@ -886,14 +889,12 @@ const FinancesPage: React.FC = () => {
     <div className="finances-page">
       <header className="finances-header">
         <div>
-          <h1>Финансы</h1>
-          <p>
-            Мониторинг финансирования проектов и подразделений {selectedRegion?.name ?? 'Республики Казахстан'}.
-          </p>
+          <h1>{t('finances_page_heading')}</h1>
+          <p>{t('finances_page_description', { region: regionLabel })}</p>
         </div>
         <div className="finances-controls">
           <label className="sr-only" htmlFor="finances-region-select">
-            Выберите регион
+            {t('finances_select_region_label')}
           </label>
           <select
             id="finances-region-select"
@@ -901,7 +902,7 @@ const FinancesPage: React.FC = () => {
             onChange={handleRegionChange}
             className="finances-region-select"
           >
-            <option value="national">Вся Республика Казахстан</option>
+            <option value="national">{t('finances_region_all_label')}</option>
             {regions.map((region) => (
               <option key={region.id} value={region.id}>
                 {region.name}
@@ -911,9 +912,9 @@ const FinancesPage: React.FC = () => {
         </div>
       </header>
 
-      <section className="finances-filter-bar" aria-label="Фильтры финансирования">
+      <section className="finances-filter-bar" aria-label={t('finances_filters_aria_label')}>
         <div className="finances-filter-group">
-          <label htmlFor="filter-irn">ИРН</label>
+          <label htmlFor="filter-irn">{t('finances_filter_irn')}</label>
           <select
             id="filter-irn"
             className="finances-filter-select"
@@ -930,8 +931,8 @@ const FinancesPage: React.FC = () => {
 
         <div className="finances-filter-group finances-filter-group--range">
           <div className="finances-filter-label">
-            <label htmlFor="filter-period">Период</label>
-            <span className="finances-filter-value">{filters.period} г.</span>
+            <label htmlFor="filter-period">{t('filter_year_range')}</label>
+            <span className="finances-filter-value">{t('finances_period_value', { year: filters.period })}</span>
           </div>
           <div className="period-range-slider" style={periodRangeStyle}>
             <div className="period-range-values">
@@ -955,7 +956,7 @@ const FinancesPage: React.FC = () => {
         </div>
 
         <div className="finances-filter-group">
-          <label htmlFor="filter-type">Тип финансирования</label>
+          <label htmlFor="filter-type">{t('finances_filter_financing_type')}</label>
           <select
             id="filter-type"
             className="finances-filter-select"
@@ -971,7 +972,7 @@ const FinancesPage: React.FC = () => {
         </div>
 
         <div className="finances-filter-group">
-          <label htmlFor="filter-priority">Приоритетные направления</label>
+          <label htmlFor="filter-priority">{t('finances_filter_priority')}</label>
           <select
             id="filter-priority"
             className="finances-filter-select"
@@ -987,7 +988,7 @@ const FinancesPage: React.FC = () => {
         </div>
 
         <div className="finances-filter-group">
-          <label htmlFor="filter-competition">Наименование конкурса</label>
+          <label htmlFor="filter-competition">{t('finances_filter_competition')}</label>
           <select
             id="filter-competition"
             className="finances-filter-select"
@@ -1003,7 +1004,7 @@ const FinancesPage: React.FC = () => {
         </div>
 
         <div className="finances-filter-group">
-          <label htmlFor="filter-applicant">Заявитель</label>
+          <label htmlFor="filter-applicant">{t('finances_filter_applicant')}</label>
           <select
             id="filter-applicant"
             className="finances-filter-select"
@@ -1019,7 +1020,7 @@ const FinancesPage: React.FC = () => {
         </div>
 
         <div className="finances-filter-group">
-          <label htmlFor="filter-customer">Заказчик</label>
+          <label htmlFor="filter-customer">{t('finances_filter_customer')}</label>
           <select
             id="filter-customer"
             className="finances-filter-select"
@@ -1035,7 +1036,7 @@ const FinancesPage: React.FC = () => {
         </div>
 
         <div className="finances-filter-group">
-          <label htmlFor="filter-status">Статус</label>
+          <label htmlFor="filter-status">{t('finances_filter_status')}</label>
           <select
             id="filter-status"
             className="finances-filter-select"
@@ -1051,15 +1052,15 @@ const FinancesPage: React.FC = () => {
         </div>
       </section>
 
-      <section className="finances-visuals" aria-label="Визуализация финансирования">
+      <section className="finances-visuals" aria-label={t('finances_visuals_aria_label')}>
         <div className="finances-top-row">
           <article className="finances-map-card">
             <header className="finances-map-header">
               <div>
-                <span className="finances-map-tag">Финансирование по регионам</span>
-                <h2>{selectedRegion?.name ?? 'Республика Казахстан'}</h2>
+                <span className="finances-map-tag">{t('finances_map_tag_title')}</span>
+                <h2>{regionLabel}</h2>
               </div>
-              <span className="finances-map-hint">Нажмите на регион для фильтрации</span>
+              <span className="finances-map-hint">{t('finances_map_hint')}</span>
             </header>
 
             <div className="finances-map-frame">
@@ -1069,14 +1070,14 @@ const FinancesPage: React.FC = () => {
 
           <article
             className="finances-chart-card finances-chart-card--primary finances-chart-card--expense"
-            aria-label="Распределение объема финансирования по статьям расходов"
+            aria-label={t('finances_expense_distribution_aria')}
           >
             <header className="finances-chart-header">
-              <h2>Распределение объема финансирования</h2>
-              <span>Статьи расходов</span>
+              <h2>{t('finances_expense_distribution_title')}</h2>
+              <span>{t('finances_expense_distribution_subtitle')}</span>
             </header>
             <div className="finances-chip-select-row">
-              <label htmlFor="expenses-chart-filter">Добавить категорию</label>
+              <label htmlFor="expenses-chart-filter">{t('finances_add_category_label')}</label>
               <select
                 id="expenses-chart-filter"
                 className="finances-chip-select"
@@ -1085,7 +1086,7 @@ const FinancesPage: React.FC = () => {
                 disabled={remainingExpenseOptions.length === 0}
               >
                 <option value="" disabled>
-                  {remainingExpenseOptions.length ? 'Выберите категорию' : 'Все категории добавлены'}
+                  {remainingExpenseOptions.length ? t('fin_select_category') : t('fin_all_added_category')}
                 </option>
                 {remainingExpenseOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -1097,14 +1098,14 @@ const FinancesPage: React.FC = () => {
             <div className="finances-chip-list" aria-live="polite">
               {selectedExpenseFilters.length ? (
                 selectedExpenseFilters.map((value) => {
-                  const option = EXPENSE_OPTIONS.find((item) => item.value === value);
+                  const option = EXPENSE_OPTIONS.find((item: { value: string; label: string }) => item.value === value);
                   return (
                     <span key={value} className="finances-chip-pill">
                       {option?.label ?? value}
                       <button
                         type="button"
                         className="finances-chip-remove"
-                        aria-label={`Убрать категорию ${option?.label ?? value}`}
+                          aria-label={t('finances_remove_category_aria', { label: option?.label ?? value })}
                         onClick={() => removeExpenseChip(value)}
                       >
                         ×
@@ -1113,7 +1114,7 @@ const FinancesPage: React.FC = () => {
                   );
                 })
               ) : (
-                <span className="finances-chip-placeholder">Категории не выбраны</span>
+                  <span className="finances-chip-placeholder">{t('finances_categories_placeholder')}</span>
               )}
             </div>
             <div className="finances-distribution-content">
@@ -1123,7 +1124,7 @@ const FinancesPage: React.FC = () => {
                   <span className="value">
                     {formatNumber(selectedExpenseTotal, { maximumFractionDigits: 1 })}
                   </span>
-                  <span className="label">млрд ₸</span>
+                  <span className="label">{currencyUnitShort}</span>
                   <span className="sub-label">{selectedExpenseLabel}</span>
                 </div>
               </div>
@@ -1134,7 +1135,7 @@ const FinancesPage: React.FC = () => {
                 aria-expanded={isExpenseDrawerOpen}
                 aria-controls="expense-breakdown"
               >
-                {isExpenseDrawerOpen ? 'Скрыть детализацию' : 'Показать детализацию'}
+                {isExpenseDrawerOpen ? t('fin_hide_details') : t('fin_show_details')}
                 <span aria-hidden="true">{isExpenseDrawerOpen ? '-' : '+'}</span>
               </button>
               <div
@@ -1144,7 +1145,7 @@ const FinancesPage: React.FC = () => {
                 <div
                   className="finances-breakdown-scroll"
                   role="region"
-                  aria-label="Детализация расходов"
+                  aria-label={t('finances_expense_details_aria')}
                   tabIndex={0}
                 >
                   <ul className="finances-breakdown-list">
@@ -1160,7 +1161,7 @@ const FinancesPage: React.FC = () => {
                         />
                         <div className="finances-breakdown-text">
                           <span className="finances-breakdown-value">
-                            {formatNumber(item.value, { maximumFractionDigits: 1 })} млрд ₸
+                            {formatNumber(item.value, { maximumFractionDigits: 1 })} {currencyUnitShort}
                           </span>
                           <span className="finances-breakdown-label">{item.label}</span>
                         </div>
@@ -1175,14 +1176,14 @@ const FinancesPage: React.FC = () => {
 
           <article
             className="finances-chart-card finances-chart-card--compact finances-chart-card--donut"
-            aria-label="Распределение финансирования по типу"
+            aria-label={t('finances_type_distribution_aria')}
           >
             <header className="finances-chart-header">
-              <h2>Распределение финансирования по типу</h2>
-              <span>ГФ, ПЦФ и коммерциализация</span>
+              <h2>{t('finances_type_distribution_title')}</h2>
+              <span>{t('finances_type_distribution_subtitle')}</span>
             </header>
             <div className="finances-chip-select-row">
-              <label htmlFor="financing-type-chart-filter">Добавить тип</label>
+              <label htmlFor="financing-type-chart-filter">{t('finances_add_type_label')}</label>
               <select
                 id="financing-type-chart-filter"
                 className="finances-chip-select"
@@ -1191,7 +1192,7 @@ const FinancesPage: React.FC = () => {
                 disabled={remainingFinancingTypeOptions.length === 0}
               >
                 <option value="" disabled>
-                  {remainingFinancingTypeOptions.length ? 'Выберите тип' : 'Все типы добавлены'}
+                  {remainingFinancingTypeOptions.length ? t('fin_select_type') : t('fin_all_added_type')}
                 </option>
                 {remainingFinancingTypeOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -1203,14 +1204,14 @@ const FinancesPage: React.FC = () => {
             <div className="finances-chip-list" aria-live="polite">
               {selectedFinancingTypeFilters.length ? (
                 selectedFinancingTypeFilters.map((value) => {
-                  const option = FINANCING_TYPE_OPTIONS.find((item) => item.value === value);
+                  const option = FINANCING_TYPE_OPTIONS.find((item: { value: string; label: string }) => item.value === value);
                   return (
                     <span key={value} className="finances-chip-pill">
                       {option?.label ?? value}
                       <button
                         type="button"
                         className="finances-chip-remove"
-                        aria-label={`Убрать тип ${option?.label ?? value}`}
+                          aria-label={t('finances_remove_type_aria', { label: option?.label ?? value })}
                         onClick={() => removeFinancingChip(value)}
                       >
                         ×
@@ -1219,7 +1220,7 @@ const FinancesPage: React.FC = () => {
                   );
                 })
               ) : (
-                <span className="finances-chip-placeholder">Типы не выбраны</span>
+                  <span className="finances-chip-placeholder">{t('finances_types_placeholder')}</span>
               )}
             </div>
             <div className="finances-distribution-content">
@@ -1233,7 +1234,7 @@ const FinancesPage: React.FC = () => {
                   <span className="value">
                     {formatNumber(selectedFinancingTypeTotal, { maximumFractionDigits: 1 })}
                   </span>
-                  <span className="label">млрд ₸</span>
+                  <span className="label">{currencyUnitShort}</span>
                   <span className="sub-label">{selectedFinancingLabel}</span>
                 </div>
               </div>
@@ -1244,7 +1245,7 @@ const FinancesPage: React.FC = () => {
                 aria-expanded={isFinancingDrawerOpen}
                 aria-controls="financing-breakdown"
               >
-                {isFinancingDrawerOpen ? 'Скрыть детализацию' : 'Показать детализацию'}
+                {isFinancingDrawerOpen ? t('fin_hide_details') : t('fin_show_details')}
                 <span aria-hidden="true">{isFinancingDrawerOpen ? '-' : '+'}</span>
               </button>
               <div
@@ -1254,7 +1255,7 @@ const FinancesPage: React.FC = () => {
                 <div
                   className="finances-breakdown-scroll"
                   role="region"
-                  aria-label="Распределение по типам"
+                  aria-label={t('finances_type_details_aria')}
                   tabIndex={0}
                 >
                   <ul className="finances-breakdown-list finances-breakdown-list--inline">
@@ -1270,7 +1271,7 @@ const FinancesPage: React.FC = () => {
                         />
                         <span className="finances-breakdown-label">{item.label}</span>
                         <span className="finances-breakdown-value">
-                          {formatNumber(item.value, { maximumFractionDigits: 1 })} млрд ₸
+                          {formatNumber(item.value, { maximumFractionDigits: 1 })} {currencyUnitShort}
                         </span>
                       </li>
                     ))}
@@ -1282,13 +1283,16 @@ const FinancesPage: React.FC = () => {
         </div>
 
         <div className="finances-line-column">
-          <article className="finances-chart-card finances-chart-card--primary" aria-label="Софинансирование по годам">
+          <article
+            className="finances-chart-card finances-chart-card--primary"
+            aria-label={t('finances_cofinancing_card_title')}
+          >
             <header className="finances-chart-header">
-              <h2>Софинансирование по годам</h2>
-              <span>Контрактные обязательства и факт</span>
+              <h2>{t('finances_cofinancing_card_title')}</h2>
+              <span>{t('finances_cofinancing_card_subtitle')}</span>
             </header>
             <div className="finances-chip-select-row">
-              <label htmlFor="cofinancing-chart-filter">Добавить фильтр</label>
+              <label htmlFor="cofinancing-chart-filter">{t('finances_add_indicator_label')}</label>
               <select
                 id="cofinancing-chart-filter"
                 className="finances-chip-select"
@@ -1297,7 +1301,7 @@ const FinancesPage: React.FC = () => {
                 disabled={remainingCofinancingOptions.length === 0}
               >
                 <option value="" disabled>
-                  {remainingCofinancingOptions.length ? 'Выберите показатель' : 'Все варианты добавлены'}
+                  {remainingCofinancingOptions.length ? t('fin_select_indicator') : t('fin_all_added_indicator')}
                 </option>
                 {remainingCofinancingOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -1309,14 +1313,14 @@ const FinancesPage: React.FC = () => {
             <div className="finances-chip-list" aria-live="polite">
               {selectedCofinancingFilters.length ? (
                 selectedCofinancingFilters.map((value) => {
-                  const option = COFINANCING_OPTIONS.find((item) => item.value === value);
+                  const option = COFINANCING_OPTIONS.find((item: { value: string; label: string }) => item.value === value);
                   return (
                     <span key={value} className="finances-chip-pill">
                       {option?.label ?? value}
                       <button
                         type="button"
                         className="finances-chip-remove"
-                        aria-label={`Убрать фильтр ${option?.label ?? value}`}
+                          aria-label={t('finances_remove_indicator_aria', { label: option?.label ?? value })}
                         onClick={() => removeCofinancingChip(value)}
                       >
                         ×
@@ -1325,7 +1329,7 @@ const FinancesPage: React.FC = () => {
                   );
                 })
               ) : (
-                <span className="finances-chip-placeholder">Фильтры не выбраны</span>
+                  <span className="finances-chip-placeholder">{t('finances_filters_placeholder')}</span>
               )}
             </div>
             <div className="finances-chart">
@@ -1335,11 +1339,11 @@ const FinancesPage: React.FC = () => {
 
           <article
             className="finances-chart-card finances-chart-card--compact finances-chart-card--approval"
-            aria-label="Одобренная сумма по годам"
+            aria-label={t('finances_chart_approval')}
           >
             <header className="finances-chart-header">
-              <h2>Одобренная сумма по годам</h2>
-              <span>В млрд ₸</span>
+              <h2>{t('finances_chart_approval')}</h2>
+              <span>{t('finances_chart_in_bln')}</span>
             </header>
             <div className="finances-chart finances-chart--mini">
               <Bar data={approvalChartData} options={approvalChartOptions} updateMode="resize" />
@@ -1348,7 +1352,7 @@ const FinancesPage: React.FC = () => {
         </div>
       </section>
 
-      <section className="finances-highlight" aria-label="Ключевые показатели">
+      <section className="finances-highlight" aria-label={t('finances_highlight_aria')}>
         {highlightCards.map((card) => {
           const Icon = card.icon;
           return (
@@ -1370,18 +1374,18 @@ const FinancesPage: React.FC = () => {
       </section>
 
       <div className="finances-grid">
-        <section className="finances-top" aria-label="Лидеры по финансированию">
+        <section className="finances-top" aria-label={t('finances_leaders_aria')}>
           <header className="finances-panel-header">
-            <h2>Лидеры по финансированию</h2>
-            <span>топ-6 регионов</span>
+            <h2>{t('finances_leaders_title')}</h2>
+            <span>{t('finances_leaders_subtitle')}</span>
           </header>
           <table>
             <thead>
               <tr>
-                <th>Регион</th>
-                <th>Финансирование, млрд. тг</th>
-                <th>Прошлый год</th>
-                <th>Освоение бюджета</th>
+                <th>{t('table_header_region')}</th>
+                <th>{t('table_header_financing')}</th>
+                <th>{t('table_header_previous_year')}</th>
+                <th>{t('comparison_budget_usage')}</th>
               </tr>
             </thead>
             <tbody>
@@ -1405,23 +1409,23 @@ const FinancesPage: React.FC = () => {
           </table>
         </section>
 
-        <section className="finances-comparison" aria-label="Сравнение с национальными показателями">
+        <section className="finances-comparison" aria-label={t('finances_comparison_aria')}>
           <header className="finances-panel-header">
-            <h2>Сравнение с национальным уровнем</h2>
+            <h2>{t('comparison_national_level')}</h2>
             {!isNational && <span>{selectedRegion?.name}</span>}
           </header>
           {isNational ? (
             <p className="finances-placeholder">
-              Выберите регион, чтобы увидеть сравнение с национальными значениями.
+              {t('comparison_placeholder')}
             </p>
           ) : (
             <table>
               <thead>
                 <tr>
-                  <th>Показатель</th>
-                  <th>{selectedRegion?.shortName ?? 'Регион'}</th>
-                  <th>Республика</th>
-                  <th>Доля / Δ</th>
+                  <th>{t('table_header_indicator')}</th>
+                  <th>{selectedRegion?.shortName ?? t('table_header_region_short')}</th>
+                  <th>{t('table_header_republic')}</th>
+                  <th>{t('table_header_share_delta')}</th>
                 </tr>
               </thead>
               <tbody>
