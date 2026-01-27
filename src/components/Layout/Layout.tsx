@@ -1,9 +1,13 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Link, Outlet } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Header from './Header';
 import './Layout.css';
 
 const Layout: React.FC = () => {
+  const { t } = useTranslation();
+  const currentYear = new Date().getFullYear();
+
   return (
     <div className="layout">
       <Header />
@@ -13,8 +17,12 @@ const Layout: React.FC = () => {
         </div>
       </main>
       <footer className="footer">
-        <div className="container">
-          <p>Copyright © 2022 Lorem All Rights Reserved</p>
+        <div className="container footer-content">
+          <p>{t('footer_copyright', { year: currentYear })}</p>
+          <Link to="/team" className="footer-link">
+            <span>{t('footer_about_button')}</span>
+            <span aria-hidden="true" className="footer-link-arrow">↗</span>
+          </Link>
         </div>
       </footer>
     </div>

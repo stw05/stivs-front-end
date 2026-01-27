@@ -11,6 +11,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import LoginPage from './pages/LoginPage';
 import RegistrationPage from './pages/RegistrationPage';
 import AdminAuthPage from './pages/AdminAuthPage';
+import TeamPage from './pages/TeamPage';
 import './App.css';
 
 const App: React.FC = () => {
@@ -22,6 +23,7 @@ const App: React.FC = () => {
         <Route path="employees" element={<EmployeesPage />} />
         <Route path="publications" element={<PublicationsPage />} />
         <Route path="finances" element={<FinancesPage />} />
+        <Route path="team" element={<TeamPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegistrationPage />} />
         <Route path="forgot-password" element={<div>Страница восстановления пароля</div>} />
