@@ -15,12 +15,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem 2rem;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .header-left {
   display: flex;
   align-items: center;
+  flex: 0 0 auto;
 }
 .app-logo-link {
   text-decoration: none;
@@ -41,9 +42,18 @@
 
 .navigation {
   display: flex;
-  gap: 2rem;
+  gap: 1.25rem;
   align-items: center;
-  flex-wrap: wrap;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 0.35rem 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.navigation::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-link {
@@ -54,6 +64,8 @@
   border-radius: 6px;
   transition: all 0.2s ease;
   position: relative;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .nav-link:hover {
@@ -70,6 +82,7 @@
   display: flex;
   align-items: center;
   gap: 1.5rem;
+  flex: 0 0 auto;
 }
 
 .language-selector {
@@ -147,6 +160,8 @@
   .navigation {
     gap: 0.75rem;
     justify-content: space-between;
+    flex-wrap: wrap;
+    overflow: visible;
   }
   .nav-link {
     flex: 1 1 calc(50% - 0.75rem);

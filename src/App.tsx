@@ -6,6 +6,7 @@ import ProjectsPage from './pages/ProjectsPage';
 import EmployeesPage from './pages/EmployeesPage';
 import PublicationsPage from './pages/PublicationsPage';
 import FinancesPage from './pages/FinancesPage';
+import MetricsPage from './pages/MetricsPage';
 import AdminPage from './pages/AdminPage';
 import NotFoundPage from './pages/NotFoundPage';
 import LoginPage from './pages/LoginPage';
@@ -23,6 +24,7 @@ const App: React.FC = () => {
         <Route path="employees" element={<EmployeesPage />} />
         <Route path="publications" element={<PublicationsPage />} />
         <Route path="finances" element={<FinancesPage />} />
+        <Route path="metrics" element={<MetricsPage />} />
         <Route path="team" element={<TeamPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegistrationPage />} />

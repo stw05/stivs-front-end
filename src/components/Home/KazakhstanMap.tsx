@@ -10,6 +10,7 @@ import mapGeoJsonUrl from '../../assets/geo/kazakhstan-adm1.geojson?url';
 interface KazakhstanMapProps {
   selectedRegionId: string;
   onRegionSelect: (regionId: string) => void;
+  getRegionFill?: (regionId: string) => string | undefined;
 }
 
 type MapFeature = {
@@ -22,7 +23,11 @@ type MapFeature = {
   name: string;
 };
 
-const KazakhstanMap: React.FC<KazakhstanMapProps> = ({ selectedRegionId, onRegionSelect }) => {
+const KazakhstanMap: React.FC<KazakhstanMapProps> = ({
+  selectedRegionId,
+  onRegionSelect,
+  getRegionFill,
+}) => {
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
   const [featureCollection, setFeatureCollection] = useState<FeatureCollection | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -124,6 +129,15 @@ const KazakhstanMap: React.FC<KazakhstanMapProps> = ({ selectedRegionId, onRegio
       const isSelected = feature.id === selectedRegionId;
       const isHovered = feature.id === hoveredRegion;
       const isCity = feature.type === 'city';
+      const customFill = getRegionFill?.(feature.id);
+      const shouldTint = Boolean(customFill) && !isSelected && !isHovered;
+      const shapeStyle = shouldTint ? { fill: customFill } : undefined;
+      const pathStyle = isCity
+        ? {
+            pointerEvents: 'none' as const,
+            ...shapeStyle,
+          }
+        : shapeStyle;
 
       return (
         <g key={feature.id} className="region-group">
@@ -137,6 +151,7 @@ const KazakhstanMap: React.FC<KazakhstanMapProps> = ({ selectedRegionId, onRegio
               selected: isSelected,
               hovered: isHovered && !isSelected,
             })}
+            style={pathStyle}
             onMouseEnter={!isCity ? () => setHoveredRegion(feature.id) : undefined}
             onMouseLeave={!isCity ? () => setHoveredRegion(null) : undefined}
             onFocus={!isCity ? () => setHoveredRegion(feature.id) : undefined}
@@ -150,7 +165,6 @@ const KazakhstanMap: React.FC<KazakhstanMapProps> = ({ selectedRegionId, onRegio
                 }
               : undefined}
             onClick={!isCity ? () => handleSelect(feature.id) : undefined}
-            style={isCity ? { pointerEvents: 'none' } : undefined}
           />
           {isCity && (
             <circle
@@ -161,6 +175,7 @@ const KazakhstanMap: React.FC<KazakhstanMapProps> = ({ selectedRegionId, onRegio
               cx={feature.centroid[0]}
               cy={feature.centroid[1]}
               r={10}
+              style={shouldTint ? { fill: customFill } : undefined}
               tabIndex={0}
               role="button"
               aria-label={`Город ${feature.name}`}
@@ -184,7 +199,7 @@ const KazakhstanMap: React.FC<KazakhstanMapProps> = ({ selectedRegionId, onRegio
         </g>
       );
     },
-    [handleSelect, hoveredRegion, selectedRegionId],
+    [getRegionFill, handleSelect, hoveredRegion, selectedRegionId],
   );
 
   if (isLoading) {

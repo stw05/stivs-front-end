@@ -14,6 +14,7 @@ const Header: React.FC = () => {
     { path: '/employees', label: t('employees_page_title') }, // 🟢 ПЕРЕВОД
     { path: '/finances', label: t('finances_page_title') }, // 🟢 ПЕРЕВОД
     { path: '/publications', label: t('publications_page_title') }, // 🟢 ПЕРЕВОД
+    { path: '/metrics', label: t('metrics_page_title') },
   ], [t]);
 
   // 🟢 ФУНКЦИЯ ДЛЯ СМЕНЫ ЯЗЫКА

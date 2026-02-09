@@ -163,9 +163,13 @@ const TeamPage: React.FC = () => {
           <h3>{t('team_contact_cta')}</h3>
           <p>{t('team_contact_note')}</p>
         </div>
-        <a className="team-contact-button" href="mailto:science@minedu.kz">
+        <a
+          className="team-contact-button"
+          href="mailto:science@minedu.kz"
+          aria-label={`${t('team_contact_button')} science@minedu.kz`}
+        >
           <Mail size={18} aria-hidden="true" />
-          science@minedu.kz
+          <span>{t('team_contact_button')}</span>
         </a>
       </section>
     </div>
