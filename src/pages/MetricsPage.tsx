@@ -66,7 +66,7 @@ interface QuadrantGuideOptions {
 
 declare module 'chart.js' {
   interface PluginOptionsByType<TType extends ChartType> {
-    quadrantGuide?: QuadrantGuideOptions;
+    quadrantGuide?: TType extends 'scatter' ? QuadrantGuideOptions : never;
   }
 }
 

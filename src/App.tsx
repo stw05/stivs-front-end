@@ -13,6 +13,7 @@ import LoginPage from './pages/LoginPage';
 import RegistrationPage from './pages/RegistrationPage';
 import AdminAuthPage from './pages/AdminAuthPage';
 import TeamPage from './pages/TeamPage';
+import LLMChatPage from './pages/LLMChatPage';
 import './App.css';
 
 const App: React.FC = () => {
@@ -26,6 +27,7 @@ const App: React.FC = () => {
         <Route path="finances" element={<FinancesPage />} />
         <Route path="metrics" element={<MetricsPage />} />
         <Route path="team" element={<TeamPage />} />
+        <Route path="assistant" element={<LLMChatPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegistrationPage />} />
         <Route path="forgot-password" element={<div>Страница восстановления пароля</div>} />

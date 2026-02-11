@@ -1,5 +1,18 @@
 # React + TypeScript + Vite
 
+## UISKS Assistant Chat
+
+The `/assistant` route hosts a chat UI that dispatches prompts to your server-side LLM worker and listens for webhook callbacks that contain the generation status and a link to the produced file. Configure the integration via the following environment variables (e.g. in `.env.local`):
+
+| Variable | Description |
+| --- | --- |
+| `VITE_LLM_CHAT_ENDPOINT` | HTTPS endpoint that accepts `POST { prompt, locale, callbackUrl }` to enqueue generation. |
+| `VITE_LLM_STATUS_ENDPOINT` | Optional polling endpoint used as a fallback when callbacks are unavailable. Must return `{ requestId, status, fileUrl? }`. |
+| `VITE_LLM_CALLBACK_STREAM_BASE` | Optional base URL for SSE channels. When provided, the UI subscribes to `${base}/stream/{requestId}`. |
+| `VITE_LLM_CALLBACK_PROXY` | Explicit callback URL that your backend will hit. Defaults to `window.location.origin/api/llm/callback` if omitted. |
+
+Once configured, every prompt shows in the chat timeline, pending requests appear in the status column, and completed callbacks automatically inject download links for the generated brief.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
