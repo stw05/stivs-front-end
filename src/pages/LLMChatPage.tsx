@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Send,
@@ -13,12 +13,11 @@ import {
 } from 'lucide-react';
 import './LLMChatPage.css';
 
-const CHAT_ENDPOINT = (import.meta.env.VITE_LLM_CHAT_ENDPOINT as string | undefined) ?? '/api/llm/requests';
-const STATUS_ENDPOINT = (import.meta.env.VITE_LLM_STATUS_ENDPOINT as string | undefined) ?? '/api/llm/requests';
-const CALLBACK_STREAM_BASE = (import.meta.env.VITE_LLM_CALLBACK_STREAM_BASE as string | undefined) ?? '';
-const CALLBACK_PROXY = (import.meta.env.VITE_LLM_CALLBACK_PROXY as string | undefined) ?? '';
+const CHAT_ENDPOINT = (import.meta.env.VITE_LLM_CHAT_ENDPOINT as string | undefined) ?? '/api/jobs.php';
+const STATUS_ENDPOINT = (import.meta.env.VITE_LLM_STATUS_ENDPOINT as string | undefined) ?? '/api/status.php';
+const CALLBACK_URL = (import.meta.env.VITE_LLM_CALLBACK_URL as string | undefined) ?? '';
 
-type RequestStatus = 'queued' | 'processing' | 'ready' | 'failed';
+type RequestStatus = 'queued' | 'processing' | 'ready' | 'failed' | 'done';
 
 type ChatRole = 'user' | 'system';
 
@@ -32,9 +31,11 @@ type LLMCallbackPayload = {
 };
 
 type CreateRequestResponse = {
-  requestId: string;
-  status?: RequestStatus;
-  callbackChannel?: string;
+  job_id: string;
+  status?: string;
+  status_url?: string;
+  download_url?: string;
+  callback_url?: string;
   message?: string;
 };
 
@@ -63,9 +64,42 @@ type LLMRequest = {
   status: RequestStatus;
   createdAt: string;
   lastUpdate: string;
-  callbackChannel?: string;
+  statusUrl?: string;
+  downloadUrl?: string;
   events: RequestEvent[];
   fileUrl?: string;
+};
+
+const normalizeStatus = (status?: string): RequestStatus => {
+  if (!status) {
+    return 'queued';
+  }
+
+  if (status === 'queued') {
+    return 'queued';
+  }
+
+  if (status === 'done') {
+    return 'ready';
+  }
+
+  if (status === 'ready') {
+    return 'ready';
+  }
+
+  if (status === 'processing') {
+    return 'processing';
+  }
+
+  if (status === 'failed') {
+    return 'failed';
+  }
+
+  if (status === 'error') {
+    return 'failed';
+  }
+
+  return 'queued';
 };
 
 const trimTrailingSlash = (value: string) => value?.replace(/\/$/, '') ?? '';
@@ -76,18 +110,6 @@ const generateId = () => {
   }
 
   return `llm-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-};
-
-const resolveCallbackUrl = (): string => {
-  if (CALLBACK_PROXY) {
-    return trimTrailingSlash(CALLBACK_PROXY);
-  }
-
-  if (typeof window !== 'undefined') {
-    return `${window.location.origin}/api/llm/callback`;
-  }
-
-  return '';
 };
 
 const renderStatusIcon = (status: RequestStatus) => {
@@ -113,18 +135,7 @@ const LLMChatPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const eventSourcesRef = useRef<Record<string, EventSource>>({});
   const pollersRef = useRef<Record<string, number>>({});
-
-  const callbackUrl = useMemo(resolveCallbackUrl, []);
-  const callbackChannelFactory = useCallback((requestId: string) => {
-    if (!CALLBACK_STREAM_BASE) {
-      return undefined;
-    }
-
-    const base = trimTrailingSlash(CALLBACK_STREAM_BASE);
-    return `${base}/stream/${requestId}`;
-  }, []);
 
   const requestStatusToLabel = useCallback((status: RequestStatus) => {
     switch (status) {
@@ -133,6 +144,7 @@ const LLMChatPage: React.FC = () => {
       case 'processing':
         return t('llm_chat_status_processing');
       case 'ready':
+      case 'done':
         return t('llm_chat_status_ready');
       case 'failed':
         return t('llm_chat_status_failed');
@@ -149,15 +161,9 @@ const LLMChatPage: React.FC = () => {
     }
   }, []);
 
-  const closeEventChannel = useCallback((requestId: string) => {
-    const source = eventSourcesRef.current[requestId];
-    if (source) {
-      source.close();
-      delete eventSourcesRef.current[requestId];
-    }
-  }, []);
-
   const handleIncomingPayload = useCallback((payload: LLMCallbackPayload) => {
+    const normalizedStatus = normalizeStatus(payload.status);
+
     setRequests((prev) => prev.map((request) => {
       if (request.id !== payload.requestId) {
         return request;
@@ -166,7 +172,7 @@ const LLMChatPage: React.FC = () => {
       const timestamp = payload.timestamp ?? new Date().toISOString();
       const event: RequestEvent = {
         id: generateId(),
-        status: payload.status,
+        status: normalizedStatus,
         timestamp,
         detail: payload.detail,
         fileUrl: payload.fileUrl,
@@ -175,7 +181,7 @@ const LLMChatPage: React.FC = () => {
       const nextEvents = [event, ...request.events];
       const nextRequest: LLMRequest = {
         ...request,
-        status: payload.status,
+        status: normalizedStatus,
         lastUpdate: timestamp,
         events: nextEvents,
         fileUrl: payload.fileUrl ?? request.fileUrl,
@@ -184,8 +190,7 @@ const LLMChatPage: React.FC = () => {
       return nextRequest;
     }));
 
-    if (payload.status === 'ready' && payload.fileUrl) {
-      closeEventChannel(payload.requestId);
+    if (normalizedStatus === 'ready' && payload.fileUrl) {
       setChatMessages((prev) => [
         ...prev,
         {
@@ -194,7 +199,7 @@ const LLMChatPage: React.FC = () => {
           content: t('llm_chat_message_ready'),
           timestamp: new Date().toISOString(),
           requestId: payload.requestId,
-          status: payload.status,
+          status: normalizedStatus,
           fileUrl: payload.fileUrl,
           detail: payload.detail,
         },
@@ -202,8 +207,7 @@ const LLMChatPage: React.FC = () => {
       stopPolling(payload.requestId);
     }
 
-    if (payload.status === 'failed') {
-      closeEventChannel(payload.requestId);
+    if (normalizedStatus === 'failed') {
       setChatMessages((prev) => [
         ...prev,
         {
@@ -212,33 +216,40 @@ const LLMChatPage: React.FC = () => {
           content: t('llm_chat_message_failed'),
           timestamp: new Date().toISOString(),
           requestId: payload.requestId,
-          status: payload.status,
+          status: normalizedStatus,
           detail: payload.detail,
         },
       ]);
       stopPolling(payload.requestId);
     }
-  }, [closeEventChannel, stopPolling, t]);
+  }, [stopPolling, t]);
 
-  const pollStatus = useCallback((requestId: string) => {
-    if (!STATUS_ENDPOINT) {
+  const pollStatus = useCallback((requestId: string, statusUrl?: string) => {
+    if (!STATUS_ENDPOINT && !statusUrl) {
       return;
     }
 
     stopPolling(requestId);
-
-    const base = trimTrailingSlash(STATUS_ENDPOINT);
+    const base = statusUrl ? trimTrailingSlash(statusUrl) : trimTrailingSlash(STATUS_ENDPOINT);
+    const url = statusUrl ? base : `${base}?job_id=${encodeURIComponent(requestId)}`;
 
     const pollerId = window.setInterval(async () => {
       try {
-        const response = await fetch(`${base}/${requestId}`);
+        const response = await fetch(url);
         if (!response.ok) {
           throw new Error('Status request failed');
         }
 
-        const payload = await response.json() as LLMCallbackPayload;
-        if (payload?.status) {
-          handleIncomingPayload(payload);
+        const payload = await response.json() as Record<string, unknown>;
+        const status = normalizeStatus(typeof payload.status === 'string' ? payload.status : undefined);
+        if (status) {
+          handleIncomingPayload({
+            requestId,
+            status,
+            fileUrl: typeof payload.download_url === 'string' ? payload.download_url : undefined,
+            detail: typeof payload.detail === 'string' ? payload.detail : undefined,
+            timestamp: typeof payload.updated_at === 'string' ? payload.updated_at : new Date().toISOString(),
+          });
         }
       } catch (error) {
         console.error('LLM status poll error', error);
@@ -248,34 +259,7 @@ const LLMChatPage: React.FC = () => {
     pollersRef.current[requestId] = pollerId;
   }, [handleIncomingPayload, stopPolling]);
 
-  const subscribeToChannel = useCallback((channelUrl: string | undefined, requestId: string) => {
-    if (!channelUrl || typeof window === 'undefined') {
-      return;
-    }
-
-    if (!('EventSource' in window)) {
-      pollStatus(requestId);
-      return;
-    }
-
-    const eventSource = new EventSource(channelUrl);
-    eventSource.onmessage = (event) => {
-      try {
-        const payload = JSON.parse(event.data) as LLMCallbackPayload;
-        handleIncomingPayload(payload);
-      } catch (error) {
-        console.error('LLM callback parse error', error);
-      }
-    };
-
-    eventSource.onerror = () => {
-      eventSource.close();
-      delete eventSourcesRef.current[requestId];
-      pollStatus(requestId);
-    };
-
-    eventSourcesRef.current[requestId] = eventSource;
-  }, [handleIncomingPayload, pollStatus]);
+  // SSE callbacks removed; polling handles lifecycle
 
   const appendUserMessage = useCallback((prompt: string) => {
     setChatMessages((prev) => [
@@ -321,9 +305,9 @@ const LLMChatPage: React.FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          prompt: trimmed,
+          text: trimmed,
           locale: i18n.language,
-          callbackUrl,
+          ...(CALLBACK_URL ? { callback_url: CALLBACK_URL } : {}),
         }),
       });
 
@@ -332,9 +316,9 @@ const LLMChatPage: React.FC = () => {
       }
 
       const data = await response.json() as CreateRequestResponse;
-      const requestId = data.requestId;
+      const requestId = data.job_id;
       const createdAt = new Date().toISOString();
-      const initialStatus: RequestStatus = data.status ?? 'queued';
+      const initialStatus: RequestStatus = normalizeStatus(data.status);
 
       const newRequest: LLMRequest = {
         id: requestId,
@@ -342,7 +326,8 @@ const LLMChatPage: React.FC = () => {
         status: initialStatus,
         createdAt,
         lastUpdate: createdAt,
-        callbackChannel: data.callbackChannel ?? callbackChannelFactory(requestId),
+        statusUrl: data.status_url,
+        downloadUrl: data.download_url,
         events: [
           {
             id: generateId(),
@@ -351,16 +336,14 @@ const LLMChatPage: React.FC = () => {
             detail: data.message ?? t('llm_chat_request_created'),
           },
         ],
+        fileUrl: data.download_url,
       };
 
       setRequests((prev) => [newRequest, ...prev]);
       appendSystemMessage(t('llm_chat_request_registered'), requestId);
 
-      if (newRequest.callbackChannel) {
-        subscribeToChannel(newRequest.callbackChannel, requestId);
-      } else {
-        pollStatus(requestId);
-      }
+      // Always poll, because callback endpoint is reachable only inside the tunnel.
+      pollStatus(requestId, newRequest.statusUrl);
 
       setInputValue('');
     } catch (error) {
@@ -370,12 +353,9 @@ const LLMChatPage: React.FC = () => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [appendSystemMessage, appendUserMessage, callbackChannelFactory, callbackUrl, i18n.language, inputValue, pollStatus, subscribeToChannel, t, isSubmitting]);
+  }, [appendSystemMessage, appendUserMessage, i18n.language, inputValue, pollStatus, t, isSubmitting]);
 
   useEffect(() => () => {
-    Object.values(eventSourcesRef.current).forEach((source) => {
-      source?.close();
-    });
     Object.values(pollersRef.current).forEach((intervalId) => {
       clearInterval(intervalId);
     });
@@ -403,11 +383,6 @@ const LLMChatPage: React.FC = () => {
               <RefreshCcw size={20} />
               <span>{t('llm_chat_meta_async')}</span>
             </div>
-          </div>
-          <div className="llm-callback-card" aria-live="polite">
-            <p className="llm-hero-label">{t('llm_chat_callback_label')}</p>
-            <p className="llm-hero-value">{callbackUrl || t('llm_chat_callback_placeholder')}</p>
-            <span className="llm-hero-hint">{t('llm_chat_callback_hint')}</span>
           </div>
         </div>
       </section>
@@ -530,10 +505,6 @@ const LLMChatPage: React.FC = () => {
               <div>
                 <span>{t('llm_chat_endpoint_status')}</span>
                 <code>{STATUS_ENDPOINT}</code>
-              </div>
-              <div>
-                <span>{t('llm_chat_endpoint_callback')}</span>
-                <code>{callbackUrl || '—'}</code>
               </div>
             </div>
             <p className="llm-integration-hint">
