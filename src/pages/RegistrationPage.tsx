@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './RegistrationPage.css';
+import { ApiError } from '../api/client';
+import { authApi } from '../api/services';
 
 // 💡 1. УПРОЩЕННАЯ СТРУКТУРА: Регион/Область -> Районы/Города/НП
 // { [Регион/Область]: [Районы/Крупные города/НП] }
@@ -95,6 +97,7 @@ interface RegistrationFormData {
 
 const RegistrationPage: React.FC = () => {
   const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Инициализация состояния
   const [formData, setFormData] = useState<RegistrationFormData>({
@@ -149,7 +152,7 @@ const RegistrationPage: React.FC = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (formData.password !== formData.passwordConfirm) {
       alert('Пароли не совпадают. Пожалуйста, проверьте ввод.');
@@ -159,8 +162,23 @@ const RegistrationPage: React.FC = () => {
       alert('Необходимо согласиться с политикой конфиденциальности.');
       return;
     }
-    console.log('Отправка данных на регистрацию:', formData);
-    navigate('/ecp-confirm');
+    setIsSubmitting(true);
+    try {
+      const fullName = [formData.lastName, formData.firstName, formData.middleName].filter(Boolean).join(' ');
+      await authApi.register({
+        email: formData.loginEmail,
+        password: formData.password,
+        name: fullName || formData.organizationName,
+        role: 'staff',
+      });
+      alert('Регистрация прошла успешно. Теперь войдите в систему.');
+      navigate('/login');
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'Не удалось завершить регистрацию.';
+      alert(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   // 💡 МЕМОИЗИРОВАННЫЙ СПИСОК ДЛЯ ВТОРОГО ДРОПДАУНА (Город/Район)
@@ -483,8 +501,8 @@ const RegistrationPage: React.FC = () => {
                     <label htmlFor="consent">Я соглашаюсь с политикой конфиденциальности и обработки персональных данных.</label>
                 </div>
                 
-                <button type="submit" className="primaryButton">
-                    Зарегистрироваться
+                <button type="submit" className="primaryButton" disabled={isSubmitting}>
+                  {isSubmitting ? 'Регистрируем...' : 'Зарегистрироваться'}
                 </button>
                 <Link to="/login" className="secondaryLink">
                     Войти

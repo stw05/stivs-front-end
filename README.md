@@ -1,5 +1,28 @@
 # React + TypeScript + Vite
 
+## Backend Integration (STIVS API)
+
+Frontend now uses REST endpoints from your backend (`/api/auth`, `/api/projects`, `/api/employees`, `/api/publications`, `/api/finances`).
+
+Use environment-based config files in the project root:
+
+- `.env.development` — for local run (`npm run dev`)
+- `.env.production` — for production build (`npm run build`)
+
+Required variables:
+
+- `VITE_API_BASE_URL` — backend base URL
+- `VITE_APP_ENV` — project mode: `local` or `prod`
+
+Example:
+
+```env
+VITE_APP_ENV=local
+VITE_API_BASE_URL=http://localhost:3000
+```
+
+If this variable is not set, the app defaults to `http://localhost:3000`.
+
 ## UISKS Assistant Chat
 
 The `/assistant` route hosts a chat UI that dispatches prompts to your server-side LLM worker and listens for webhook callbacks that contain the generation status and a link to the produced file. Configure the integration via the following environment variables (e.g. in `.env.local`):

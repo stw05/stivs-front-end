@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Cpu, Users2, FileText, DollarSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import KazakhstanMap from '../components/Home/KazakhstanMap';
@@ -8,14 +8,50 @@ import type { RegionId } from '../context/RegionContext';
 import { calculateNationalMetrics, formatNumber } from '../utils/metrics';
 import './HomePage.css';
 import { useTranslation } from 'react-i18next';
+import { ApiError } from '../api/client';
+import { dashboardApi } from '../api/services';
+import type { DashboardSummary } from '../api/types';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { selectedRegionId, selectedRegion, setSelectedRegionId } = useRegionContext();
+  const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null);
+  const [isDashboardLoading, setIsDashboardLoading] = useState(false);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadDashboardSummary = async () => {
+      setIsDashboardLoading(true);
+      setDashboardError(null);
+      try {
+        const summary = await dashboardApi.summary(selectedRegion?.name);
+        setDashboardSummary(summary);
+      } catch (error) {
+        const message = error instanceof ApiError ? error.message : 'Не удалось загрузить сводку главной страницы.';
+        setDashboardError(message);
+        setDashboardSummary(null);
+      } finally {
+        setIsDashboardLoading(false);
+      }
+    };
+
+    void loadDashboardSummary();
+  }, [selectedRegion?.name]);
 
   const nationalMetrics = useMemo(() => calculateNationalMetrics(), []);
-  const metrics = selectedRegion?.stats ?? nationalMetrics;
+  const metrics = useMemo(() => {
+    if (!dashboardSummary) {
+      return selectedRegion?.stats ?? nationalMetrics;
+    }
+
+    return {
+      projects: dashboardSummary.projects,
+      publications: dashboardSummary.publications,
+      people: dashboardSummary.people,
+      finances: dashboardSummary.finances,
+    };
+  }, [dashboardSummary, nationalMetrics, selectedRegion?.stats]);
 
   const handleRegionSelect = (regionId: string) => {
     const nextRegionId: RegionId = selectedRegionId === regionId ? 'national' : (regionId as RegionId);
@@ -168,7 +204,9 @@ const HomePage: React.FC = () => {
               <h2>{selectedRegion?.name ?? t('republic_kazakhstan')}</h2> {/* 🟢 ПЕРЕВОД */}
               <p className="map-info-subtitle">
                 {t('map_subtitle')} {/* 🟢 НОВЫЙ ПЕРЕВОД */}
+                {isDashboardLoading ? ' · Загрузка...' : ''}
               </p>
+              {dashboardError && <p className="map-info-subtitle">{dashboardError}</p>}
 
               <div className="map-info-grid">
                 {mapHighlights.map((item) => (

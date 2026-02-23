@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import './AdminAuthPage.css';
+import { ApiError } from '../api/client';
+import { authApi } from '../api/services';
 
 const AdminAuthPage: React.FC = () => {
   const { t } = useTranslation();
@@ -11,12 +13,25 @@ const AdminAuthPage: React.FC = () => {
   const [pin, setPin] = useState('');
   const [rememberDevice, setRememberDevice] = useState(true);
   const [showPin, setShowPin] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // TODO: integrate with backend auth provider
-    if (email && password) {
+    setIsSubmitting(true);
+    try {
+      const response = await authApi.login(email, password);
+      const userRole = response.role ?? response.user.role;
+      if (userRole !== 'admin') {
+        alert('Доступ в админ-панель разрешён только пользователям с ролью admin.');
+        return;
+      }
+      authApi.persistAuth(response);
       navigate('/admin/console');
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'Ошибка входа в админ-панель.';
+      alert(message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -84,7 +99,9 @@ const AdminAuthPage: React.FC = () => {
           </label>
 
           <div className="auth-actions">
-            <button type="submit">{t('admin_auth_login_button')}</button>
+            <button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Входим...' : t('admin_auth_login_button')}
+            </button>
             <button type="button" className="ghost" onClick={() => navigate('/')}>{t('admin_auth_main_site')}</button>
           </div>
         </form>

@@ -4,12 +4,15 @@ import { useRegionContext } from '../context/RegionContext';
 import type { RegionId } from '../context/RegionContext'; 
 import './EmployeesPage.css';
 import { useTranslation } from 'react-i18next';
+import { ApiError } from '../api/client';
+import { employeesApi, mapRegionToId } from '../api/services';
+import type { BackendEmployee, PaginationMeta } from '../api/types';
 
 // --- 1. Типы данных и мок-данные ---
 export type AffiliateType = 'staff' | 'external' | 'all'; // Штатный/Сторонний/Все
 export type GenderType = 'male' | 'female' | 'all';
 export type CitizenshipType = 'resident' | 'non-resident' | 'all';
-export type DegreeType = 'doctor' | 'candidate' | 'master' | 'phd' | 'none' | 'all';
+export type DegreeType = string;
 export type HIndexGroup = '0-1' | '2-5' | '6-10' | '10+' | 'all';
 export type MRNTIType = '11.00.00' | '27.00.00' | '55.00.00' | 'all'; // Примерные коды
 export type ClassifierType = 'economic' | 'social' | 'technical' | 'all'; // Примерные категории
@@ -36,7 +39,7 @@ interface Employee {
   researcherIdWos: string; // Researcher ID Web of Science
 }
 
-const mockEmployees: Employee[] = [
+const initialEmployees: Employee[] = [
   // 🟢 ОБНОВЛЕННЫЕ МОК-ДАННЫЕ (добавлены mrntiCode и classifier)
   { id: 'e1', name: 'Иванов И.И.', position: 'Профессор', department: 'Кафедра А', regionId: 'almaty-city', hireDate: '2015-01-10', email: 'ivanov@uni.kz', birthYear: 1985, affiliateType: 'staff', gender: 'male', degree: 'doctor', citizenship: 'resident', projectRole: 'Руководитель', hIndex: 7, mrntiCode: '11.00.00', classifier: 'technical' , scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171' },
   { id: 'e2', name: 'Петрова А.К.', position: 'Доцент', department: 'Кафедра B', regionId: 'west-kazakhstan', hireDate: '2018-05-20', email: 'petrova@uni.kz', birthYear: 1990, affiliateType: 'staff', gender: 'female', degree: 'candidate', citizenship: 'resident', projectRole: 'Исполнитель', hIndex: 4, mrntiCode: '27.00.00', classifier: 'social', scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171' },
@@ -53,9 +56,7 @@ const currentYear = new Date().getFullYear();
 // Устанавливаем минимальные и максимальные границы для фильтра возраста (20 - 80)
 const MIN_AGE_LIMIT = 20; 
 const MAX_AGE_LIMIT = 80;
-const allPositions = Array.from(new Set(mockEmployees.map((e) => e.position))).sort();
-const allProjectRoles = Array.from(new Set(mockEmployees.map((e) => e.projectRole))).sort();
-const allDepartments = Array.from(new Set(mockEmployees.map((e) => e.department))).sort();
+const PAGE_LIMIT = 20;
 
 
 interface EmployeeFilters {
@@ -139,6 +140,26 @@ const createInitialFilters = (): EmployeeFilters => ({
 const EmployeesPage: React.FC = () => {
   const { selectedRegionId, regions } = useRegionContext();
   const { t } = useTranslation(); 
+  const [employeesData, setEmployeesData] = useState<Employee[]>(initialEmployees);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [employeeFilters, setEmployeeFilters] = useState<{
+    position: string[];
+    degree: string[];
+  } | null>(null);
+  const [employeeFiltersMeta, setEmployeeFiltersMeta] = useState<{
+    position: Array<{ value: string; count: number }>;
+    degree: Array<{ value: string; count: number }>;
+  } | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageMeta, setPageMeta] = useState<PaginationMeta>({
+    page: 1,
+    limit: PAGE_LIMIT,
+    total: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
   
   const [filters, setFilters] = useState<EmployeeFilters>(() => createInitialFilters());
   
@@ -161,6 +182,207 @@ const EmployeesPage: React.FC = () => {
     () => employeeColumnDefinitions.filter((column) => visibleColumns[column.key]),
     [visibleColumns],
   );
+
+  const allPositions = useMemo(
+    () =>
+      employeeFilters?.position.length
+        ? employeeFilters.position
+        : Array.from(new Set(employeesData.map((employee) => employee.position))).sort(),
+    [employeeFilters?.position, employeesData],
+  );
+
+  const allDegrees = useMemo(
+    () => (employeeFilters?.degree.length ? employeeFilters.degree : ['doctor', 'candidate', 'phd', 'master', 'none']),
+    [employeeFilters?.degree],
+  );
+  const positionCountByValue = useMemo(
+    () => new Map((employeeFiltersMeta?.position ?? []).map((item) => [item.value, item.count])),
+    [employeeFiltersMeta?.position],
+  );
+  const degreeCountByValue = useMemo(
+    () => new Map((employeeFiltersMeta?.degree ?? []).map((item) => [item.value, item.count])),
+    [employeeFiltersMeta?.degree],
+  );
+
+  const allProjectRoles = useMemo(
+    () => Array.from(new Set(employeesData.map((employee) => employee.projectRole))).sort(),
+    [employeesData],
+  );
+
+  const allDepartments = useMemo(
+    () => Array.from(new Set(employeesData.map((employee) => employee.department))).sort(),
+    [employeesData],
+  );
+  const employeesAvailableCounts = useMemo(
+    () => ({
+      gender: 2,
+      affiliate: 2,
+      citizenship: 2,
+      region: regions.length,
+      degree: allDegrees.length,
+      position: allPositions.length,
+      department: allDepartments.length,
+      projectRole: allProjectRoles.length,
+      mrnti: 3,
+      classifier: 3,
+      hIndex: 4,
+    }),
+    [allDegrees.length, allDepartments.length, allPositions.length, allProjectRoles.length, regions.length],
+  );
+
+  useEffect(() => {
+    const loadEmployeeFilters = async () => {
+      try {
+        const payload = await employeesApi.filters();
+        setEmployeeFilters({
+          position: payload.position,
+          degree: payload.degree,
+        });
+      } catch {
+        setEmployeeFilters(null);
+      }
+    };
+
+    void loadEmployeeFilters();
+  }, []);
+
+  useEffect(() => {
+    const loadEmployeeFiltersMeta = async () => {
+      try {
+        const hIndexRangeByGroup: Record<HIndexGroup | 'all', { min?: number; max?: number }> = {
+          '0-1': { min: 0, max: 1 },
+          '2-5': { min: 2, max: 5 },
+          '6-10': { min: 6, max: 10 },
+          '10+': { min: 10 },
+          all: {},
+        };
+        const hIndexRange = hIndexRangeByGroup[filters.hIndexGroup];
+
+        const payload = await employeesApi.filtersMeta({
+          region: selectedRegionId === 'national' ? undefined : (regionNameById[selectedRegionId] ?? undefined),
+          position: filters.position === 'all' ? undefined : filters.position,
+          degree: filters.degree === 'all' ? undefined : filters.degree,
+          minHIndex: hIndexRange.min,
+          maxHIndex: hIndexRange.max,
+          q: filters.searchTerm || undefined,
+        });
+
+        setEmployeeFiltersMeta({
+          position: payload.position,
+          degree: payload.degree,
+        });
+      } catch {
+        setEmployeeFiltersMeta(null);
+      }
+    };
+
+    void loadEmployeeFiltersMeta();
+  }, [
+    filters.degree,
+    filters.hIndexGroup,
+    filters.position,
+    filters.searchTerm,
+    regionNameById,
+    selectedRegionId,
+  ]);
+
+  useEffect(() => {
+    const toEmployee = (item: BackendEmployee): Employee => {
+      const metrics = item.metrics ?? {};
+      const hIndexRaw = metrics.hIndex;
+      const hIndex = typeof hIndexRaw === 'number' ? hIndexRaw : Number(hIndexRaw ?? 0);
+      const researcherIdWosRaw = metrics.researcherIdWos;
+      const researcherIdWos = typeof researcherIdWosRaw === 'string' ? researcherIdWosRaw : '';
+      const scopusRaw = metrics.scopusAuthorId;
+      const scopusAuthorId = typeof scopusRaw === 'string' ? scopusRaw : '';
+
+      return {
+        id: item.id,
+        name: item.name,
+        position: item.position,
+        department: item.department || '—',
+        regionId: mapRegionToId(item.region) as RegionId,
+        hireDate: new Date().toISOString().slice(0, 10),
+        email: item.email,
+        birthYear: 1990,
+        affiliateType: 'staff',
+        gender: 'male',
+        degree: 'none',
+        citizenship: 'resident',
+        projectRole: 'Исполнитель',
+        hIndex: Number.isFinite(hIndex) ? hIndex : 0,
+        mrntiCode: '11.00.00',
+        classifier: 'technical',
+        scopusAuthorId: scopusAuthorId || '-',
+        researcherIdWos: researcherIdWos || '-',
+      };
+    };
+
+    const loadEmployees = async () => {
+      setIsLoading(true);
+      setLoadError(null);
+      try {
+        const hIndexRangeByGroup: Record<HIndexGroup | 'all', { min?: number; max?: number }> = {
+          '0-1': { min: 0, max: 1 },
+          '2-5': { min: 2, max: 5 },
+          '6-10': { min: 6, max: 10 },
+          '10+': { min: 10 },
+          all: {},
+        };
+        const hIndexRange = hIndexRangeByGroup[filters.hIndexGroup];
+
+        const payload = await employeesApi.list({
+          page: currentPage,
+          limit: PAGE_LIMIT,
+          region: selectedRegionId === 'national' ? undefined : (regionNameById[selectedRegionId] ?? undefined),
+          position: filters.position === 'all' ? undefined : filters.position,
+          degree: filters.degree === 'all' ? undefined : filters.degree,
+          minHIndex: hIndexRange.min,
+          maxHIndex: hIndexRange.max,
+          q: filters.searchTerm || undefined,
+        });
+        setEmployeesData(payload.items.map(toEmployee));
+        setPageMeta(payload.meta);
+      } catch (error) {
+        const message = error instanceof ApiError ? error.message : 'Не удалось загрузить сотрудников с backend.';
+        setLoadError(message);
+        const fallbackTotal = initialEmployees.length;
+        const fallbackTotalPages = Math.ceil(fallbackTotal / PAGE_LIMIT);
+        const start = (currentPage - 1) * PAGE_LIMIT;
+        setEmployeesData(initialEmployees.slice(start, start + PAGE_LIMIT));
+        setPageMeta({
+          page: currentPage,
+          limit: PAGE_LIMIT,
+          total: fallbackTotal,
+          totalPages: fallbackTotalPages,
+          hasNextPage: currentPage < fallbackTotalPages,
+          hasPrevPage: currentPage > 1,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void loadEmployees();
+  }, [
+    currentPage,
+    filters.degree,
+    filters.hIndexGroup,
+    filters.position,
+    filters.searchTerm,
+    regionNameById,
+    selectedRegionId,
+  ]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters.degree, filters.hIndexGroup, filters.position, filters.searchTerm, selectedRegionId]);
+
+  useEffect(() => {
+    if (pageMeta.totalPages > 0 && currentPage > pageMeta.totalPages) {
+      setCurrentPage(pageMeta.totalPages);
+    }
+  }, [currentPage, pageMeta.totalPages]);
 
   // Универсальный обработчик для текстовых и селектов
   const handleFilterChange = (name: keyof EmployeeFilters, value: string | AffiliateType | GenderType | CitizenshipType | DegreeType | HIndexGroup) => {
@@ -259,6 +481,9 @@ const EmployeesPage: React.FC = () => {
       case 'scopusAuthorId':
         return employee.scopusAuthorId;
       case 'researcherIdWos':
+        if (!employee.researcherIdWos || employee.researcherIdWos === '-') {
+          return '-';
+        }
         return (
           <a
             href={employee.researcherIdWos}
@@ -285,7 +510,7 @@ const EmployeesPage: React.FC = () => {
 
   // --- ЛОГИКА ФИЛЬТРАЦИИ И СОРТИРОВКИ ---
   const filteredEmployees = useMemo(() => {
-    let list = mockEmployees;
+    let list = employeesData;
     const { searchTerm, position, department, minAge, maxAge, affiliateType, gender, degree, citizenship, projectRole, hIndexGroup } = filters;
 
     // 1. Фильтрация по региону
@@ -392,7 +617,7 @@ const EmployeesPage: React.FC = () => {
     }
 
     return list;
-  }, [selectedRegionId, filters, sort]);
+  }, [selectedRegionId, filters, sort, employeesData]);
 
   // Заглушка для действий с сотрудниками
   const handleAction = (action: string, employee?: Employee) => {
@@ -401,6 +626,7 @@ const EmployeesPage: React.FC = () => {
   };
   
   const totalEmployeesCount = filteredEmployees.length;
+  const totalPages = Math.max(pageMeta.totalPages, 1);
 
   return (
     <div className="employees-page">
@@ -408,8 +634,10 @@ const EmployeesPage: React.FC = () => {
         <div>
           <h1>{t('employees_page_title')}</h1>
           <p>
-            {t('in_database')}{mockEmployees.length} {t('found_count')}{totalEmployeesCount}
+            {t('in_database')}{pageMeta.total} {t('found_count')}{totalEmployeesCount}
+            {isLoading ? ' · Загрузка...' : ''}
           </p>
+          {loadError && <p>{loadError}</p>}
         </div>
         <div className="employees-header-actions">
           <button
@@ -467,7 +695,10 @@ const EmployeesPage: React.FC = () => {
             <div className="employees-filter-title">{t('filter_section_general')}</div>
             <div className="employees-filters-grid">
               <div className="employees-filter-item">
-                <label htmlFor="gender-filter">{t('filter_label_gender')}</label>
+                <label htmlFor="gender-filter">
+                  {t('filter_label_gender')}
+                  <span className="employees-filter-badge">доступно {employeesAvailableCounts.gender}</span>
+                </label>
                 <select
                   id="gender-filter"
                   value={filters.gender}
@@ -480,7 +711,10 @@ const EmployeesPage: React.FC = () => {
               </div>
 
               <div className="employees-filter-item">
-                <label htmlFor="affiliate-filter">{t('filter_label_affiliate')}</label>
+                <label htmlFor="affiliate-filter">
+                  {t('filter_label_affiliate')}
+                  <span className="employees-filter-badge">доступно {employeesAvailableCounts.affiliate}</span>
+                </label>
                 <select
                   id="affiliate-filter"
                   value={filters.affiliateType}
@@ -493,7 +727,10 @@ const EmployeesPage: React.FC = () => {
               </div>
 
               <div className="employees-filter-item">
-                <label htmlFor="citizenship-filter">{t('filter_label_citizenship')}</label>
+                <label htmlFor="citizenship-filter">
+                  {t('filter_label_citizenship')}
+                  <span className="employees-filter-badge">доступно {employeesAvailableCounts.citizenship}</span>
+                </label>
                 <select
                   id="citizenship-filter"
                   value={filters.citizenship}
@@ -506,7 +743,10 @@ const EmployeesPage: React.FC = () => {
               </div>
 
               <div className="employees-filter-item">
-                <label htmlFor="regionId">{t('employee_col_region')}</label>
+                <label htmlFor="regionId">
+                  {t('employee_col_region')}
+                  <span className="employees-filter-badge">доступно {employeesAvailableCounts.region}</span>
+                </label>
                 <select
                   id="regionId"
                   value={filters.regionId}
@@ -527,23 +767,30 @@ const EmployeesPage: React.FC = () => {
             <div className="employees-filter-title">{t('filter_section_activity')}</div>
             <div className="employees-filters-grid">
               <div className="employees-filter-item">
-                <label htmlFor="degree-filter">{t('filter_label_degree')}</label>
+                <label htmlFor="degree-filter">
+                  {t('filter_label_degree')}
+                  <span className="employees-filter-badge">доступно {employeesAvailableCounts.degree}</span>
+                </label>
                 <select
                   id="degree-filter"
                   value={filters.degree}
                   onChange={(e) => handleFilterChange('degree', e.target.value as DegreeType)}
                 >
                   <option value="all">{t('filter_option_all_degrees')}</option>
-                  <option value="doctor">{t('degree_doctor')}</option>
-                  <option value="candidate">{t('degree_candidate')}</option>
-                  <option value="phd">{t('degree_phd')}</option>
-                  <option value="master">{t('degree_master')}</option>
-                  <option value="none">{t('degree_none')}</option>
+                  {allDegrees.map((degreeOption) => (
+                    <option key={degreeOption} value={degreeOption}>
+                      {degreeOption}
+                      {degreeCountByValue.get(degreeOption) !== undefined ? ` (${degreeCountByValue.get(degreeOption)})` : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div className="employees-filter-item">
-                <label htmlFor="position-filter">{t('filter_label_position')}</label>
+                <label htmlFor="position-filter">
+                  {t('filter_label_position')}
+                  <span className="employees-filter-badge">доступно {employeesAvailableCounts.position}</span>
+                </label>
                 <select
                   id="position-filter"
                   value={filters.position}
@@ -553,13 +800,17 @@ const EmployeesPage: React.FC = () => {
                   {allPositions.map((p) => (
                     <option key={p} value={p}>
                       {p}
+                      {positionCountByValue.get(p) !== undefined ? ` (${positionCountByValue.get(p)})` : ''}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div className="employees-filter-item">
-                <label htmlFor="department-filter">{t('filter_label_department')}</label>
+                <label htmlFor="department-filter">
+                  {t('filter_label_department')}
+                  <span className="employees-filter-badge">доступно {employeesAvailableCounts.department}</span>
+                </label>
                 <select
                   id="department-filter"
                   value={filters.department}
@@ -575,7 +826,10 @@ const EmployeesPage: React.FC = () => {
               </div>
 
               <div className="employees-filter-item">
-                <label htmlFor="project-role-filter">{t('filter_label_project_role')}</label>
+                <label htmlFor="project-role-filter">
+                  {t('filter_label_project_role')}
+                  <span className="employees-filter-badge">доступно {employeesAvailableCounts.projectRole}</span>
+                </label>
                 <select
                   id="project-role-filter"
                   value={filters.projectRole}
@@ -598,7 +852,10 @@ const EmployeesPage: React.FC = () => {
             <div className="employees-filters-grid">
               <div className="employees-filter-item">
                 {/* 🟢 ФИЛЬТР: МРНТИ */}
-                <label htmlFor="mrnti">{t('filter_label_mrnti')}</label>
+                <label htmlFor="mrnti">
+                  {t('filter_label_mrnti')}
+                  <span className="employees-filter-badge">доступно {employeesAvailableCounts.mrnti}</span>
+                </label>
                 <select
                   id="mrnti"
                   value={filters.mrnti}
@@ -613,7 +870,10 @@ const EmployeesPage: React.FC = () => {
 
             <div className="employees-filter-item">
                 {/* 🟢 ФИЛЬТР: КЛАССИФИКАТОР */}
-                <label htmlFor="classifier">{t('filter_label_classifier')}</label>
+                <label htmlFor="classifier">
+                  {t('filter_label_classifier')}
+                  <span className="employees-filter-badge">доступно {employeesAvailableCounts.classifier}</span>
+                </label>
                 <select
                   id="classifier"
                   value={filters.classifier}
@@ -655,7 +915,10 @@ const EmployeesPage: React.FC = () => {
 
             <div className="employees-filter-item">
               {/* 🟢 ФИЛЬТР: H-INDEX */}
-              <label htmlFor="h-index-filter">{t('filter_label_hindex')}</label>
+              <label htmlFor="h-index-filter">
+                {t('filter_label_hindex')}
+                <span className="employees-filter-badge">доступно {employeesAvailableCounts.hIndex}</span>
+              </label>
               <select
                 id="h-index-filter"
                 value={filters.hIndexGroup}
@@ -754,8 +1017,27 @@ const EmployeesPage: React.FC = () => {
               )}
             </div>
             <p className="employees-summary">
-              {t('show_employees_summary')}{filteredEmployees.length} {t('from_total_summary')}{mockEmployees.length}
+              {t('show_employees_summary')}{filteredEmployees.length} {t('from_total_summary')}{pageMeta.total}
             </p>
+            <div className="employees-pagination">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={!pageMeta.hasPrevPage || isLoading}
+              >
+                Назад
+              </button>
+              <span>
+                Страница {pageMeta.page} из {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => prev + 1)}
+                disabled={!pageMeta.hasNextPage || isLoading}
+              >
+                Вперёд
+              </button>
+            </div>
           </section>
         </main>
       </div>

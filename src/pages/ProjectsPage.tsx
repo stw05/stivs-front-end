@@ -4,6 +4,9 @@ import { useRegionContext } from '../context/RegionContext';
 import type { RegionId } from '../context/RegionContext';
 import { useTranslation } from 'react-i18next';
 import './ProjectsPage.css';
+import { ApiError } from '../api/client';
+import { mapRegionToId, projectsApi } from '../api/services';
+import type { BackendProject, PaginationMeta } from '../api/types';
 
 type FinancingType = 'grant' | 'program' | 'contract';
 type PriorityDirection = 'health' | 'economy' | 'ecology' | 'energy' | 'transport' | 'ai';
@@ -31,8 +34,9 @@ interface Project {
 }
 
 const YEAR_RANGE = { min: 2021, max: 2025 } as const;
+const PAGE_LIMIT = 20;
 
-const projects: Project[] = [
+const initialProjects: Project[] = [
 	{
 		id: 'cp230198765',
 		irn: 'CP230198765',
@@ -213,11 +217,19 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
 	setRef,
 }) => {
 	const normalizedSearch = searchValue.trim().toLowerCase();
-	const filteredOptions = options.filter((option) =>
-		normalizedSearch.length === 0
-			? true
-			: option.label.toLowerCase().includes(normalizedSearch),
-	);
+	const filteredOptions = useMemo(() => {
+		if (!isOpen) {
+			return [] as OptionItem[];
+		}
+
+		const matched = normalizedSearch.length === 0
+			? options
+			: options.filter((option) => option.label.toLowerCase().includes(normalizedSearch));
+
+		const maxVisible = normalizedSearch.length === 0 ? 250 : 500;
+		return matched.slice(0, maxVisible);
+	}, [isOpen, normalizedSearch, options]);
+	const isTrimmed = isOpen && normalizedSearch.length === 0 && options.length > filteredOptions.length;
 	const activeOption = options.find((option) => option.value === value);
 	const selectClassName = `projects-select${isOpen ? ' projects-select--open' : ''}`;
 	const valueClassName = `projects-select-value${value === 'all' ? ' projects-select-value--placeholder' : ''}`;
@@ -261,6 +273,9 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
 									</button>
 								</li>
 							))
+						)}
+						{isTrimmed && (
+							<li className="projects-select-empty">Показаны первые {filteredOptions.length} значений. Уточните поиск.</li>
 						)}
 					</ul>
 				</div>
@@ -383,6 +398,31 @@ const ProjectsPage: React.FC = () => {
 		),
 	);
 	const [isColumnPickerOpen, setIsColumnPickerOpen] = useState(false);
+	const [projectsData, setProjectsData] = useState<Project[]>(initialProjects);
+	const [isLoading, setIsLoading] = useState(false);
+	const [loadError, setLoadError] = useState<string | null>(null);
+	const [debouncedSearch, setDebouncedSearch] = useState('');
+	const [projectFilters, setProjectFilters] = useState<{
+		irn: string[];
+		applicant: string[];
+		mrnti: string[];
+		trl: string[];
+	} | null>(null);
+	const [projectFiltersMeta, setProjectFiltersMeta] = useState<{
+		irn: Array<{ value: string; count: number }>;
+		applicant: Array<{ value: string; count: number }>;
+		mrnti: Array<{ value: string; count: number }>;
+		financingType: Array<{ value: string; count: number }>;
+	} | null>(null);
+	const [currentPage, setCurrentPage] = useState(1);
+	const [pageMeta, setPageMeta] = useState<PaginationMeta>({
+		page: 1,
+		limit: PAGE_LIMIT,
+		total: 0,
+		totalPages: 0,
+		hasNextPage: false,
+		hasPrevPage: false,
+	});
 	const columnPickerRef = useRef<HTMLDivElement | null>(null);
 	const [openDropdown, setOpenDropdown] = useState<DropdownFilterKey | null>(null);
 	const [dropdownSearch, setDropdownSearch] = useState<Record<DropdownFilterKey, string>>(() =>
@@ -393,30 +433,93 @@ const ProjectsPage: React.FC = () => {
 	);
 	const dropdownRefs = useRef<Partial<Record<DropdownFilterKey, HTMLDivElement | null>>>({});
 
-	const irnOptions = useMemo(() => ['all', ...new Set(projects.map((item) => item.irn))], []);
-	const contestOptions = useMemo(() => ['all', ...new Set(projects.map((item) => item.contest))], []);
-	const applicantOptions = useMemo(() => ['all', ...new Set(projects.map((item) => item.applicant))], []);
-	const customerOptions = useMemo(() => ['all', ...new Set(projects.map((item) => item.customer))], []);
-	const mrntiOptions = useMemo(() => ['all', ...new Set(projects.map((item) => item.mrnti))], []);
-	const trlOptions = useMemo<(TrlLevel | 'all')[]>(() => ['all', ...new Set(projects.map((item) => item.trl))], []);
+	const irnOptions = useMemo(
+		() => ['all', ...(projectFilters?.irn.length ? projectFilters.irn : [...new Set(projectsData.map((item) => item.irn))])],
+		[projectFilters?.irn, projectsData],
+	);
+	const contestOptions = useMemo(() => ['all', ...new Set(projectsData.map((item) => item.contest))], [projectsData]);
+	const applicantOptions = useMemo(
+		() => ['all', ...(projectFilters?.applicant.length ? projectFilters.applicant : [...new Set(projectsData.map((item) => item.applicant))])],
+		[projectFilters?.applicant, projectsData],
+	);
+	const customerOptions = useMemo(() => ['all', ...new Set(projectsData.map((item) => item.customer))], [projectsData]);
+	const mrntiOptions = useMemo(
+		() => ['all', ...(projectFilters?.mrnti.length ? projectFilters.mrnti : [...new Set(projectsData.map((item) => item.mrnti))])],
+		[projectFilters?.mrnti, projectsData],
+	);
+	const trlOptions = useMemo<(TrlLevel | 'all')[]>(() => {
+		if (projectFilters?.trl.length) {
+			const parsed = projectFilters.trl
+				.map((value) => Number(String(value).replace(/[^\d]/g, '')))
+				.filter((value) => value >= 3 && value <= 9) as TrlLevel[];
+			return ['all', ...new Set(parsed)];
+		}
+		return ['all', ...new Set(projectsData.map((item) => item.trl))];
+	}, [projectFilters?.trl, projectsData]);
 	const dropdownOptions = useMemo<Record<DropdownFilterKey, OptionItem[]>>(() => {
-		const buildOptions = (options: string[], allLabel: string): OptionItem[] =>
+		const toCountMap = (countList?: Array<{ value: string; count: number }>): Map<string, number> =>
+			new Map((countList ?? []).map((item) => [item.value, item.count]));
+
+		const irnCountMap = toCountMap(projectFiltersMeta?.irn);
+		const applicantCountMap = toCountMap(projectFiltersMeta?.applicant);
+		const mrntiCountMap = toCountMap(projectFiltersMeta?.mrnti);
+		const financingTypeCountMap = toCountMap(projectFiltersMeta?.financingType);
+
+		const withCount = (value: string, countMap?: Map<string, number>): string => {
+			const count = countMap?.get(value);
+			return count !== undefined ? `${value} (${count})` : value;
+		};
+
+		const buildOptions = (
+			options: string[],
+			allLabel: string,
+			countMap?: Map<string, number>,
+		): OptionItem[] =>
 			options.map((value) => ({
 				value,
-				label: value === 'all' ? allLabel : value,
+				label: value === 'all' ? allLabel : withCount(value, countMap),
 			}));
 
 		return {
-			irn: buildOptions(irnOptions, t('projects_filter_irn')),
-			applicant: buildOptions(applicantOptions, t('projects_filter_applicant')),
+			irn: buildOptions(irnOptions, t('projects_filter_irn'), irnCountMap),
+			applicant: buildOptions(applicantOptions, t('projects_filter_applicant'), applicantCountMap),
 			customer: buildOptions(customerOptions, t('projects_filter_customer')),
-			mrnti: buildOptions(mrntiOptions, t('projects_filter_mrnti')),
+			mrnti: buildOptions(mrntiOptions, t('projects_filter_mrnti'), mrntiCountMap),
 			financingType: (['all', 'grant', 'program', 'contract'] as (FinancingType | 'all')[]).map((value) => ({
 				value,
-				label: value === 'all' ? t('projects_filter_financing_type') : financingLabels[value as FinancingType],
+				label:
+					value === 'all'
+						? t('projects_filter_financing_type')
+						: withCount(financingLabels[value as FinancingType], financingTypeCountMap),
 			})),
 		};
-	}, [applicantOptions, customerOptions, irnOptions, mrntiOptions, t, financingLabels]);
+	}, [applicantOptions, customerOptions, irnOptions, mrntiOptions, t, financingLabels, projectFiltersMeta]);
+	const projectAvailableCounts = useMemo(
+		() => ({
+			region: regions.length,
+			irn: Math.max(irnOptions.length - 1, 0),
+			financingType: Math.max(dropdownOptions.financingType.length - 1, 0),
+			priority: Object.keys(priorityLabels).length,
+			contest: Math.max(contestOptions.length - 1, 0),
+			applicant: Math.max(applicantOptions.length - 1, 0),
+			customer: Math.max(customerOptions.length - 1, 0),
+			mrnti: Math.max(mrntiOptions.length - 1, 0),
+			status: Object.keys(statusLabels).length,
+			trl: trlOptions.filter((option) => option !== 'all').length,
+		}),
+		[
+			regions.length,
+			irnOptions.length,
+			dropdownOptions.financingType.length,
+			priorityLabels,
+			contestOptions.length,
+			applicantOptions.length,
+			customerOptions.length,
+			mrntiOptions.length,
+			statusLabels,
+			trlOptions,
+		],
+	);
 
 	const regionNameById = useMemo(() => {
 		const map: Record<string, string> = {};
@@ -466,6 +569,188 @@ const ProjectsPage: React.FC = () => {
 		document.addEventListener('mousedown', handleClick);
 		return () => document.removeEventListener('mousedown', handleClick);
 	}, [isColumnPickerOpen]);
+
+	useEffect(() => {
+		const loadProjectFilters = async () => {
+			try {
+				const payload = await projectsApi.filters();
+				setProjectFilters({
+					irn: payload.irn,
+					applicant: payload.applicant,
+					mrnti: payload.mrnti,
+					trl: payload.trl,
+				});
+			} catch {
+				setProjectFilters(null);
+			}
+		};
+
+		void loadProjectFilters();
+	}, []);
+
+	useEffect(() => {
+		const timeout = window.setTimeout(() => {
+			setDebouncedSearch(filters.search);
+		}, 300);
+
+		return () => window.clearTimeout(timeout);
+	}, [filters.search]);
+
+	useEffect(() => {
+		const loadProjectFilterMeta = async () => {
+			try {
+				const payload = await projectsApi.filtersMeta({
+					irn: filters.irn === 'all' ? undefined : filters.irn,
+					status: filters.status === 'all' ? undefined : filters.status,
+					region:
+						selectedRegionId === 'national'
+							? undefined
+							: (regionNameById[selectedRegionId] ?? undefined),
+					financingType: filters.financingType === 'all' ? undefined : filters.financingType,
+					priority: filters.priority === 'all' ? undefined : filters.priority,
+					applicant: filters.applicant === 'all' ? undefined : filters.applicant,
+					q: debouncedSearch || undefined,
+				});
+
+				setProjectFiltersMeta({
+					irn: payload.irn,
+					applicant: payload.applicant,
+					mrnti: payload.mrnti,
+					financingType: payload.financingType,
+				});
+			} catch {
+				setProjectFiltersMeta(null);
+			}
+		};
+
+		void loadProjectFilterMeta();
+	}, [
+		filters.applicant,
+		filters.financingType,
+		filters.irn,
+		filters.priority,
+		filters.status,
+		debouncedSearch,
+		regionNameById,
+		selectedRegionId,
+	]);
+
+	useEffect(() => {
+		const toProjectStatus = (value: string): ProjectStatus => {
+			if (value === 'active') {
+				return 'active';
+			}
+			if (value === 'completed') {
+				return 'completed';
+			}
+			return 'draft';
+		};
+
+		const toProject = (item: BackendProject): Project => {
+			const startYear = item.startDate ? new Date(item.startDate).getFullYear() : YEAR_RANGE.min;
+			const endYear = item.endDate ? new Date(item.endDate).getFullYear() : YEAR_RANGE.max;
+			const tags = item.tags ?? [];
+
+			let financingType: FinancingType = 'grant';
+			if (tags.some((tag) => tag.toLowerCase().includes('contract'))) {
+				financingType = 'contract';
+			} else if (tags.some((tag) => tag.toLowerCase().includes('program'))) {
+				financingType = 'program';
+			}
+
+			const parsedTrlTag = tags.find((tag) => /^trl[-\s]?\d$/i.test(tag));
+			const trlValue = parsedTrlTag ? Number(parsedTrlTag.replace(/[^\d]/g, '')) : 4;
+
+			return {
+				id: item.id,
+				irn: item.id.toUpperCase(),
+				title: item.title,
+				applicant: item.lead || '—',
+				supervisor: item.lead || '—',
+				priority: 'ai',
+				contest: 'API',
+				financingType,
+				financingTotal: item.budget,
+				regionId: mapRegionToId(item.region) as RegionId,
+				customer: '—',
+				mrnti: '—',
+				status: toProjectStatus(item.status),
+				trl: (trlValue >= 3 && trlValue <= 9 ? trlValue : 4) as TrlLevel,
+				startYear: Number.isFinite(startYear) ? startYear : YEAR_RANGE.min,
+				endYear: Number.isFinite(endYear) ? endYear : YEAR_RANGE.max,
+			};
+		};
+
+		const loadProjects = async () => {
+			setIsLoading(true);
+			setLoadError(null);
+			try {
+				const payload = await projectsApi.list({
+					page: currentPage,
+					limit: PAGE_LIMIT,
+					irn: filters.irn === 'all' ? undefined : filters.irn,
+					q: debouncedSearch || undefined,
+					region:
+						selectedRegionId === 'national'
+							? undefined
+							: (regionNameById[selectedRegionId] ?? undefined),
+					financingType: filters.financingType === 'all' ? undefined : filters.financingType,
+					priority: filters.priority === 'all' ? undefined : filters.priority,
+					applicant: filters.applicant === 'all' ? undefined : filters.applicant,
+					status: filters.status === 'all' ? undefined : filters.status,
+				});
+				setProjectsData(payload.items.map(toProject));
+				setPageMeta(payload.meta);
+			} catch (error) {
+				const message = error instanceof ApiError ? error.message : 'Не удалось загрузить проекты с backend.';
+				setLoadError(message);
+				const fallbackTotal = initialProjects.length;
+				const fallbackTotalPages = Math.ceil(fallbackTotal / PAGE_LIMIT);
+				const start = (currentPage - 1) * PAGE_LIMIT;
+				setProjectsData(initialProjects.slice(start, start + PAGE_LIMIT));
+				setPageMeta({
+					page: currentPage,
+					limit: PAGE_LIMIT,
+					total: fallbackTotal,
+					totalPages: fallbackTotalPages,
+					hasNextPage: currentPage < fallbackTotalPages,
+					hasPrevPage: currentPage > 1,
+				});
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		void loadProjects();
+	}, [
+		currentPage,
+		filters.applicant,
+		filters.financingType,
+		filters.irn,
+		filters.priority,
+		filters.status,
+		debouncedSearch,
+		regionNameById,
+		selectedRegionId,
+	]);
+
+	useEffect(() => {
+		setCurrentPage(1);
+	}, [
+		filters.applicant,
+		filters.financingType,
+		filters.irn,
+		filters.priority,
+		filters.search,
+		filters.status,
+		selectedRegionId,
+	]);
+
+	useEffect(() => {
+		if (pageMeta.totalPages > 0 && currentPage > pageMeta.totalPages) {
+			setCurrentPage(pageMeta.totalPages);
+		}
+	}, [currentPage, pageMeta.totalPages]);
 
 	useEffect(() => {
 		if (!openDropdown) {
@@ -616,7 +901,7 @@ const ProjectsPage: React.FC = () => {
 	};
 
 	const filteredProjects = useMemo(() => {
-		let list = projects.filter((project) => {
+		let list = projectsData.filter((project) => {
 			const matchesSearch = filters.search
 				? project.title.toLowerCase().includes(filters.search.toLowerCase()) ||
 					project.irn.toLowerCase().includes(filters.search.toLowerCase())
@@ -666,14 +951,20 @@ const ProjectsPage: React.FC = () => {
 		}
 
 		return list;
-	}, [filters, sort, selectedRegionId]);
+	}, [filters, sort, selectedRegionId, projectsData]);
+
+	const totalPages = Math.max(pageMeta.totalPages, 1);
 
 	return (
 		<div className="projects-page">
 			<header className="projects-header">
 				<div>
 					<h1>{t('projects_page_header')}</h1>
-					<p>{t('projects_found_count')}{filteredProjects.length}</p>
+					<p>
+						{t('projects_found_count')}{pageMeta.total}
+						{isLoading ? ' · Загрузка...' : ''}
+					</p>
+					{loadError && <p className="projects-load-error">{loadError}</p>}
 				</div>
 				<div className="projects-header-actions">
 				<button type="button" className="projects-header-button">
@@ -726,7 +1017,10 @@ const ProjectsPage: React.FC = () => {
 					<div className="projects-filter-block">
 						<div className="projects-filter-title">{t('projects_filter_region_title')}</div>
 						<div className="projects-filter-item">
-							<label htmlFor="projects-region">{t('projects_filter_region_label')}</label>
+							<label htmlFor="projects-region">
+								{t('projects_filter_region_label')}
+								<span className="projects-filter-badge">доступно {projectAvailableCounts.region}</span>
+							</label>
 							<select
 								id="projects-region"
 								value={selectedRegionId}
@@ -775,7 +1069,10 @@ const ProjectsPage: React.FC = () => {
 						<div className="projects-filter-title">{t('projects_filter_filters_title')}</div>
 						<div className="projects-filters-grid">
 							<div className="projects-filter-item">
-								<label htmlFor="filter-irn">{t('projects_label_irn')}</label>
+								<label htmlFor="filter-irn">
+									{t('projects_label_irn')}
+									<span className="projects-filter-badge">доступно {projectAvailableCounts.irn}</span>
+								</label>
 								<SearchableSelect
 									id="filter-irn"
 									label={t('projects_label_irn')}
@@ -792,7 +1089,10 @@ const ProjectsPage: React.FC = () => {
 							</div>
 
 							<div className="projects-filter-item">
-								<label htmlFor="filter-financing">{t('projects_label_financing_type')}</label>
+								<label htmlFor="filter-financing">
+									{t('projects_label_financing_type')}
+									<span className="projects-filter-badge">доступно {projectAvailableCounts.financingType}</span>
+								</label>
 								<SearchableSelect
 									id="filter-financing"
 									label={t('projects_label_financing_type')}
@@ -809,7 +1109,10 @@ const ProjectsPage: React.FC = () => {
 							</div>
 
 							<div className="projects-filter-item">
-								<label htmlFor="filter-priority">{t('projects_label_priority')}</label>
+								<label htmlFor="filter-priority">
+									{t('projects_label_priority')}
+									<span className="projects-filter-badge">доступно {projectAvailableCounts.priority}</span>
+								</label>
 								<select
 									id="filter-priority"
 									value={filters.priority}
@@ -827,7 +1130,10 @@ const ProjectsPage: React.FC = () => {
 							</div>
 
 							<div className="projects-filter-item">
-								<label htmlFor="filter-contest">{t('projects_label_contest')}</label>
+								<label htmlFor="filter-contest">
+									{t('projects_label_contest')}
+									<span className="projects-filter-badge">доступно {projectAvailableCounts.contest}</span>
+								</label>
 								<select
 									id="filter-contest"
 									value={filters.contest}
@@ -842,7 +1148,10 @@ const ProjectsPage: React.FC = () => {
 							</div>
 
 							<div className="projects-filter-item">
-								<label htmlFor="filter-applicant">{t('projects_label_applicant')}</label>
+								<label htmlFor="filter-applicant">
+									{t('projects_label_applicant')}
+									<span className="projects-filter-badge">доступно {projectAvailableCounts.applicant}</span>
+								</label>
 								<SearchableSelect
 									id="filter-applicant"
 									label={t('projects_label_applicant')}
@@ -859,7 +1168,10 @@ const ProjectsPage: React.FC = () => {
 							</div>
 
 							<div className="projects-filter-item">
-								<label htmlFor="filter-customer">{t('projects_label_customer')}</label>
+								<label htmlFor="filter-customer">
+									{t('projects_label_customer')}
+									<span className="projects-filter-badge">доступно {projectAvailableCounts.customer}</span>
+								</label>
 								<SearchableSelect
 									id="filter-customer"
 									label={t('projects_label_customer')}
@@ -876,7 +1188,10 @@ const ProjectsPage: React.FC = () => {
 							</div>
 
 							<div className="projects-filter-item">
-								<label htmlFor="filter-mrnti">{t('projects_label_mrnti')}</label>
+								<label htmlFor="filter-mrnti">
+									{t('projects_label_mrnti')}
+									<span className="projects-filter-badge">доступно {projectAvailableCounts.mrnti}</span>
+								</label>
 								<SearchableSelect
 									id="filter-mrnti"
 									label={t('projects_label_mrnti')}
@@ -893,7 +1208,10 @@ const ProjectsPage: React.FC = () => {
 							</div>
 
 							<div className="projects-filter-item">
-								<label htmlFor="filter-status">{t('projects_label_status')}</label>
+								<label htmlFor="filter-status">
+									{t('projects_label_status')}
+									<span className="projects-filter-badge">доступно {projectAvailableCounts.status}</span>
+								</label>
 								<select
 									id="filter-status"
 									value={filters.status}
@@ -911,7 +1229,10 @@ const ProjectsPage: React.FC = () => {
 							</div>
 
 							<div className="projects-filter-item">
-								<label htmlFor="filter-trl">{t('projects_label_trl')}</label>
+								<label htmlFor="filter-trl">
+									{t('projects_label_trl')}
+									<span className="projects-filter-badge">доступно {projectAvailableCounts.trl}</span>
+								</label>
 								<select
 									id="filter-trl"
 									value={filters.trl}
@@ -980,8 +1301,27 @@ const ProjectsPage: React.FC = () => {
 							)}
 						</div>
 						<p className="projects-summary">
-							{t('projects_shown')} {filteredProjects.length} {t('projects_from_total')} {projects.length}
+							{t('projects_shown')} {filteredProjects.length} {t('projects_from_total')} {pageMeta.total}
 						</p>
+						<div className="projects-pagination">
+							<button
+								type="button"
+								onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+								disabled={!pageMeta.hasPrevPage || isLoading}
+							>
+								Назад
+							</button>
+							<span>
+								Страница {pageMeta.page} из {totalPages}
+							</span>
+							<button
+								type="button"
+								onClick={() => setCurrentPage((prev) => prev + 1)}
+								disabled={!pageMeta.hasNextPage || isLoading}
+							>
+								Вперёд
+							</button>
+						</div>
 					</section>
 				</main>
 			</div>
