@@ -83,6 +83,19 @@
     background: #e2e8f0;
 }
 
+.publications-module-banner {
+    width: 100%;
+    box-sizing: border-box;
+    background: #dc2626;
+    color: #ffffff;
+    border-radius: 12px;
+    padding: 0.8rem 1rem;
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-align: center;
+    letter-spacing: 0.01em;
+}
+
 /* --- KPI карточки --- */
 
 .publications-stats-row {

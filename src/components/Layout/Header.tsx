@@ -26,12 +26,52 @@ const Header: React.FC = () => {
   return (
     <header className="header">
       <div className="header-content">
-        <div className="header-left">
-          <div className="logo">
-            <Link to="/" className="app-logo-link"> 
-              <h1>{t('app_name')}</h1> {/* 🟢 ПЕРЕВОД */}
-            </Link>
-            <span className="logo-subtitle">{t('app_title_full')}</span> {/* 🟢 ПЕРЕВОД */}
+        <div className="header-top-row">
+          <div className="header-left">
+            <div className="logo">
+              <Link to="/" className="app-logo-link"> 
+                <h1>{t('app_name')}</h1> {/* 🟢 ПЕРЕВОД */}
+              </Link>
+              <span className="logo-subtitle">{t('app_title_full')}</span> {/* 🟢 ПЕРЕВОД */}
+            </div>
+          </div>
+
+          <div className="header-right">
+            <div className="language-selector">
+              {/* 🟢 КНОПКА ДЛЯ КАЗАХСКОГО ЯЗЫКА */}
+              <span 
+                className={`lang-option ${i18n.language === 'kk' ? 'active' : ''}`}
+                onClick={() => changeLanguage('kk')}
+              >
+                {t('kaz_label')}
+              </span>
+              {/* 🟢 КНОПКА ДЛЯ РУССКОГО ЯЗЫКА */}
+              <span 
+                className={`lang-option ${i18n.language === 'ru' ? 'active' : ''}`}
+                onClick={() => changeLanguage('ru')}
+              >
+                {t('rus_label')}
+              </span>
+              {/* 🟢 КНОПКА ДЛЯ АНГЛИЙСКОГО ЯЗЫКА */}
+              <span 
+                className={`lang-option ${i18n.language === 'en' ? 'active' : ''}`}
+                onClick={() => changeLanguage('en')}
+              >
+                EN
+              </span>
+            </div>
+            
+            <div className="user-menu">
+              <div className="user-avatar">
+                <Link to="/login" className="user-avatar-link">
+                <User size={20} />
+                </Link>
+              </div>
+              <div className="user-dropdown">
+                <Settings size={16} />
+                <LogOut size={16} />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -49,44 +89,6 @@ const Header: React.FC = () => {
             );
           })}
         </nav>
-
-      <div className="header-right">
-          <div className="language-selector">
-            {/* 🟢 КНОПКА ДЛЯ КАЗАХСКОГО ЯЗЫКА */}
-            <span 
-              className={`lang-option ${i18n.language === 'kk' ? 'active' : ''}`}
-              onClick={() => changeLanguage('kk')}
-            >
-              {t('kaz_label')}
-            </span>
-            {/* 🟢 КНОПКА ДЛЯ РУССКОГО ЯЗЫКА */}
-            <span 
-              className={`lang-option ${i18n.language === 'ru' ? 'active' : ''}`}
-              onClick={() => changeLanguage('ru')}
-            >
-              {t('rus_label')}
-            </span>
-            {/* 🟢 КНОПКА ДЛЯ АНГЛИЙСКОГО ЯЗЫКА */}
-            <span 
-              className={`lang-option ${i18n.language === 'en' ? 'active' : ''}`}
-              onClick={() => changeLanguage('en')}
-            >
-              EN
-            </span>
-          </div>
-          
-          <div className="user-menu">
-            <div className="user-avatar">
-              <Link to="/login" className="user-avatar-link">
-              <User size={20} />
-              </Link>
-            </div>
-            <div className="user-dropdown">
-              <Settings size={16} />
-              <LogOut size={16} />
-            </div>
-          </div>
-        </div>
       </div>
     </header>
   );

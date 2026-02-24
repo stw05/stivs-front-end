@@ -387,6 +387,10 @@ const LLMChatPage: React.FC = () => {
         </div>
       </section>
 
+      <div className="llm-module-banner" role="status" aria-live="polite">
+        модуль находится на стадии интеграции и тестирования
+      </div>
+
       <div className="llm-grid">
         <section className="llm-chat-panel" aria-label={t('llm_chat_panel_label')}>
           <div className="llm-chat-window">

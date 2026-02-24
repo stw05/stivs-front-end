@@ -533,6 +533,10 @@ const MetricsPage: React.FC = () => {
         </div>
       </section>
 
+      <div className="metrics-module-banner" role="status" aria-live="polite">
+        модуль находится на стадии интеграции и тестирования
+      </div>
+
       <div className="metrics-main">
         <section className="metrics-scatter-card">
           <header className="metrics-card-header">

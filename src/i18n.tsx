@@ -436,7 +436,7 @@ const resources = {
       "pub_button_reset_filters": "Сбросить фильтры",
 
       // --- ПУБЛИКАЦИИ - КАРТОЧКИ И ГРАФИКИ ---
-      "publications_page_heading": "Результаты",
+      "publications_page_heading": "Публикации",
       "publications_page_description": "Сводная аналитика публикаций, патентов и внедрений",
       "publications_export_button": "Экспортировать отчёт",
       "publications_stats_aria": "Ключевые показатели публикаций",
@@ -1100,7 +1100,7 @@ const resources = {
       "pub_button_reset_filters": "Сүзгілерін тазартау",
 
       // --- ПУБЛИКАЦИЯЛАР - КАРТОЧКАЛАР ЖӘНЕ ГРАФИКАЛАР ---
-      "publications_page_heading": "Нәтижелер",
+      "publications_page_heading": "Басылымдар",
       "publications_page_description": "Публикациялар, патенттер және енгізулер бойынша жиынтық аналитика",
       "publications_export_button": "Есепті жүктеу",
       "publications_stats_aria": "Публикациялар бойынша негізгі көрсеткіштер",
@@ -1767,7 +1767,7 @@ const resources = {
       "pub_button_reset_filters": "Reset filters",
 
       // --- PUBLICATIONS - CARDS & CHARTS ---
-      "publications_page_heading": "Results",
+      "publications_page_heading": "Publications",
       "publications_page_description": "Consolidated analytics for publications, patents, and implementations",
       "publications_export_button": "Export report",
       "publications_stats_aria": "Key publication indicators",

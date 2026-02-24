@@ -121,6 +121,64 @@ const patentTrend = {
 
 type CSSVars = CSSProperties & { '--accent'?: string };
 
+type BackendPaginationMeta = Partial<PaginationMeta> & {
+  total_pages?: number;
+  has_next_page?: boolean;
+  has_prev_page?: boolean;
+};
+
+const parsePositiveInt = (value: unknown): number | null => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return null;
+  }
+
+  const intValue = Math.floor(numeric);
+  return intValue > 0 ? intValue : null;
+};
+
+const parseNonNegativeInt = (value: unknown): number | null => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return null;
+  }
+
+  const intValue = Math.floor(numeric);
+  return intValue >= 0 ? intValue : null;
+};
+
+const normalizePageMeta = (meta: BackendPaginationMeta | undefined, fallbackPage: number): PaginationMeta => {
+  const limit = parsePositiveInt(meta?.limit) ?? PAGE_LIMIT;
+  const total = parseNonNegativeInt(meta?.total) ?? 0;
+  const backendTotalPages = parsePositiveInt(meta?.totalPages ?? meta?.total_pages);
+  const computedTotalPages = Math.max(Math.ceil(total / limit), 1);
+  const totalPages = backendTotalPages ?? computedTotalPages;
+  const backendPage = parsePositiveInt(meta?.page);
+  const requestedPage = Math.max(1, fallbackPage);
+  const page = Math.min(backendPage ?? requestedPage, totalPages);
+
+  const hasPrevPage = typeof meta?.hasPrevPage === 'boolean'
+    ? meta.hasPrevPage
+    : typeof meta?.has_prev_page === 'boolean'
+      ? meta.has_prev_page
+      : page > 1;
+
+  const hasNextPage = typeof meta?.hasNextPage === 'boolean'
+    ? meta.hasNextPage
+    : typeof meta?.has_next_page === 'boolean'
+      ? meta.has_next_page
+      : page < totalPages;
+
+  return {
+    page,
+    limit,
+    total,
+    totalPages,
+    hasNextPage,
+    hasPrevPage,
+  };
+};
+
 const getHighlightCards = (
   t: (key: string) => string,
   stats: {
@@ -293,7 +351,11 @@ const PublicationsPage: React.FC = () => {
           year: filters.startYear === filters.endYear ? filters.startYear : undefined,
         });
         setPublicationsData(payload.items);
-        setPageMeta(payload.meta);
+        const normalizedMeta = normalizePageMeta(payload.meta as BackendPaginationMeta, currentPage);
+        setPageMeta(normalizedMeta);
+        if (normalizedMeta.page !== currentPage) {
+          setCurrentPage(normalizedMeta.page);
+        }
       } catch (error) {
         const message = error instanceof ApiError ? error.message : 'Не удалось загрузить публикации с backend.';
         setLoadError(message);
@@ -755,6 +817,7 @@ const PublicationsPage: React.FC = () => {
   const topApplicants = useMemo(() => getTopApplicants(t, filteredPublications), [t, filteredPublications]);
   const totalApplicantPublications = topApplicants.reduce((sum, applicant) => sum + applicant.value, 0);
   const totalPages = Math.max(pageMeta.totalPages, 1);
+  const currentPageSafe = Math.min(Math.max(currentPage, 1), totalPages);
 
   return (
     <div className="publications-page">
@@ -773,17 +836,17 @@ const PublicationsPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={!pageMeta.hasPrevPage || isLoading}
+              disabled={isLoading || currentPageSafe <= 1 || !pageMeta.hasPrevPage}
             >
               Назад
             </button>
             <span>
-              Страница {pageMeta.page} из {totalPages}
+              Страница {currentPageSafe} из {totalPages}
             </span>
             <button
               type="button"
-              onClick={() => setCurrentPage((prev) => prev + 1)}
-              disabled={!pageMeta.hasNextPage || isLoading}
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={isLoading || currentPageSafe >= totalPages || !pageMeta.hasNextPage}
             >
               Вперёд
             </button>
@@ -794,6 +857,10 @@ const PublicationsPage: React.FC = () => {
           </button>
         </div>
       </header>
+
+      <div className="publications-module-banner" role="status" aria-live="polite">
+        модуль находится на стадии интеграции и тестирования
+      </div>
 
       <section className="publications-stats-row" aria-label={t('publications_stats_aria')}>
         <div
