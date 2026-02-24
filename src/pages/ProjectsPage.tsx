@@ -361,17 +361,20 @@ const ProjectsPage: React.FC = () => {
 		[t],
 	);
 	
-	const columnDefinitionsLocal: ColumnDefinition[] = [
-		{ key: 'irn', label: columnLabels.irn, sortKey: 'irn' },
-		{ key: 'title', label: columnLabels.title, sortKey: 'title' },
-		{ key: 'applicant', label: columnLabels.applicant, sortKey: 'applicant' },
-		{ key: 'priority', label: columnLabels.priority },
-		{ key: 'financingType', label: columnLabels.financingType },
-		{ key: 'financingTotal', label: columnLabels.financingTotal, sortKey: 'financingTotal' },
-		{ key: 'region', label: columnLabels.region },
-		{ key: 'status', label: columnLabels.status },
-		{ key: 'period', label: columnLabels.period },
-	];
+	const columnDefinitionsLocal: ColumnDefinition[] = useMemo(
+		() => [
+			{ key: 'irn', label: columnLabels.irn, sortKey: 'irn' },
+			{ key: 'title', label: columnLabels.title, sortKey: 'title' },
+			{ key: 'applicant', label: columnLabels.applicant, sortKey: 'applicant' },
+			{ key: 'priority', label: columnLabels.priority },
+			{ key: 'financingType', label: columnLabels.financingType },
+			{ key: 'financingTotal', label: columnLabels.financingTotal, sortKey: 'financingTotal' },
+			{ key: 'region', label: columnLabels.region },
+			{ key: 'status', label: columnLabels.status },
+			{ key: 'period', label: columnLabels.period },
+		],
+		[columnLabels],
+	);
 	
 	const [filters, setFilters] = useState<FilterState>({
 		search: '',

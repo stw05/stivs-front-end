@@ -777,7 +777,7 @@ const FinancesPage: React.FC = () => {
         }),
       },
     ];
-  }, [adjustedMetrics, nationalMetrics, selectedRegion]);
+  }, [adjustedMetrics, nationalMetrics, selectedRegion, t]);
 
   const highlightCards = [
     {

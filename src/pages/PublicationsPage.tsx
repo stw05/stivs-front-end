@@ -363,15 +363,12 @@ const PublicationsPage: React.FC = () => {
       trl: Math.max(trlOptions.length - 1, 0),
     }),
     [
-      applicantOptions.length,
-      irnOptions.length,
-      mrntiOptions.length,
-      publicationTypeOptions.length,
-      regions.length,
-      translatedFilterOptions.contests.length,
-      translatedFilterOptions.customers.length,
-      translatedFilterOptions.statusOptions.length,
-      trlOptions.length,
+      applicantOptions,
+      publicationTypeOptions,
+      regions,
+      translatedFilterOptions.contests,
+      translatedFilterOptions.customers,
+      translatedFilterOptions.statusOptions,
     ],
   );
 
