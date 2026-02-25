@@ -13,8 +13,8 @@ import {
 } from 'lucide-react';
 import './LLMChatPage.css';
 
-const CHAT_ENDPOINT = (import.meta.env.VITE_LLM_CHAT_ENDPOINT as string | undefined) ?? '/api/jobs.php';
-const STATUS_ENDPOINT = (import.meta.env.VITE_LLM_STATUS_ENDPOINT as string | undefined) ?? '/api/status.php';
+const CHAT_ENDPOINT = (import.meta.env.VITE_LLM_CHAT_ENDPOINT as string | undefined) ?? '/api/llm/jobs.php';
+const STATUS_ENDPOINT = (import.meta.env.VITE_LLM_STATUS_ENDPOINT as string | undefined) ?? '/api/llm/status.php';
 const CALLBACK_URL = (import.meta.env.VITE_LLM_CALLBACK_URL as string | undefined) ?? '';
 
 type RequestStatus = 'queued' | 'processing' | 'ready' | 'failed' | 'done';
@@ -70,6 +70,9 @@ type LLMRequest = {
   fileUrl?: string;
 };
 
+const LLM_CHAT_MESSAGES_STORAGE_KEY = 'uisks.llm.chatMessages';
+const LLM_CHAT_REQUESTS_STORAGE_KEY = 'uisks.llm.requests';
+
 const normalizeStatus = (status?: string): RequestStatus => {
   if (!status) {
     return 'queued';
@@ -104,6 +107,26 @@ const normalizeStatus = (status?: string): RequestStatus => {
 
 const trimTrailingSlash = (value: string) => value?.replace(/\/$/, '') ?? '';
 
+const normalizeLlmApiUrl = (value?: string): string | undefined => {
+  if (!value) {
+    return undefined;
+  }
+
+  const normalizedPath = (path: string) => path.replace(/\/api\/(status|download)\.php$/i, '/api/llm/$1.php');
+
+  try {
+    const baseOrigin =
+      typeof window !== 'undefined' && window.location?.origin
+        ? window.location.origin
+        : 'http://localhost';
+    const parsedUrl = new URL(value, baseOrigin);
+    parsedUrl.pathname = normalizedPath(parsedUrl.pathname);
+    return parsedUrl.toString();
+  } catch {
+    return value.replace(/\/api\/(status|download)\.php(?=\?|#|$)/i, '/api/llm/$1.php');
+  }
+};
+
 const generateId = () => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
@@ -127,11 +150,97 @@ const renderStatusIcon = (status: RequestStatus) => {
   }
 };
 
+const isRequestStatus = (value: unknown): value is RequestStatus =>
+  value === 'queued' || value === 'processing' || value === 'ready' || value === 'failed' || value === 'done';
+
+const loadStoredChatMessages = (): ChatMessage[] => {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  try {
+    const raw = window.localStorage.getItem(LLM_CHAT_MESSAGES_STORAGE_KEY);
+    if (!raw) {
+      return [];
+    }
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+      .map((item) => {
+        const role: ChatRole = item.role === 'user' ? 'user' : 'system';
+        return {
+          id: typeof item.id === 'string' ? item.id : generateId(),
+          role,
+          content: typeof item.content === 'string' ? item.content : '',
+          timestamp: typeof item.timestamp === 'string' ? item.timestamp : new Date().toISOString(),
+          requestId: typeof item.requestId === 'string' ? item.requestId : undefined,
+          status: isRequestStatus(item.status) ? item.status : undefined,
+          fileUrl: typeof item.fileUrl === 'string' ? item.fileUrl : undefined,
+          detail: typeof item.detail === 'string' ? item.detail : undefined,
+        };
+      })
+      .filter((item) => item.content.length > 0);
+  } catch {
+    return [];
+  }
+};
+
+const loadStoredRequests = (): LLMRequest[] => {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  try {
+    const raw = window.localStorage.getItem(LLM_CHAT_REQUESTS_STORAGE_KEY);
+    if (!raw) {
+      return [];
+    }
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+      .map((item) => {
+        const eventsRaw = Array.isArray(item.events) ? item.events : [];
+        const events: RequestEvent[] = eventsRaw
+          .filter((event): event is Record<string, unknown> => typeof event === 'object' && event !== null)
+          .map((event) => ({
+            id: typeof event.id === 'string' ? event.id : generateId(),
+            status: isRequestStatus(event.status) ? event.status : 'queued',
+            timestamp: typeof event.timestamp === 'string' ? event.timestamp : new Date().toISOString(),
+            detail: typeof event.detail === 'string' ? event.detail : undefined,
+            fileUrl: typeof event.fileUrl === 'string' ? normalizeLlmApiUrl(event.fileUrl) : undefined,
+          }));
+
+        return {
+          id: typeof item.id === 'string' ? item.id : generateId(),
+          prompt: typeof item.prompt === 'string' ? item.prompt : '',
+          status: isRequestStatus(item.status) ? item.status : 'queued',
+          createdAt: typeof item.createdAt === 'string' ? item.createdAt : new Date().toISOString(),
+          lastUpdate: typeof item.lastUpdate === 'string' ? item.lastUpdate : new Date().toISOString(),
+          statusUrl: typeof item.statusUrl === 'string' ? normalizeLlmApiUrl(item.statusUrl) : undefined,
+          downloadUrl: typeof item.downloadUrl === 'string' ? normalizeLlmApiUrl(item.downloadUrl) : undefined,
+          events,
+          fileUrl: typeof item.fileUrl === 'string' ? normalizeLlmApiUrl(item.fileUrl) : undefined,
+        };
+      })
+      .filter((item) => item.prompt.length > 0);
+  } catch {
+    return [];
+  }
+};
+
 const LLMChatPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const [inputValue, setInputValue] = useState('');
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [requests, setRequests] = useState<LLMRequest[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => loadStoredChatMessages());
+  const [requests, setRequests] = useState<LLMRequest[]>(() => loadStoredRequests());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -163,6 +272,7 @@ const LLMChatPage: React.FC = () => {
 
   const handleIncomingPayload = useCallback((payload: LLMCallbackPayload) => {
     const normalizedStatus = normalizeStatus(payload.status);
+    const normalizedFileUrl = normalizeLlmApiUrl(payload.fileUrl);
 
     setRequests((prev) => prev.map((request) => {
       if (request.id !== payload.requestId) {
@@ -184,13 +294,13 @@ const LLMChatPage: React.FC = () => {
         status: normalizedStatus,
         lastUpdate: timestamp,
         events: nextEvents,
-        fileUrl: payload.fileUrl ?? request.fileUrl,
+        fileUrl: normalizedFileUrl ?? request.fileUrl,
       };
 
       return nextRequest;
     }));
 
-    if (normalizedStatus === 'ready' && payload.fileUrl) {
+    if (normalizedStatus === 'ready' && normalizedFileUrl) {
       setChatMessages((prev) => [
         ...prev,
         {
@@ -200,7 +310,7 @@ const LLMChatPage: React.FC = () => {
           timestamp: new Date().toISOString(),
           requestId: payload.requestId,
           status: normalizedStatus,
-          fileUrl: payload.fileUrl,
+          fileUrl: normalizedFileUrl,
           detail: payload.detail,
         },
       ]);
@@ -319,6 +429,8 @@ const LLMChatPage: React.FC = () => {
       const requestId = data.job_id;
       const createdAt = new Date().toISOString();
       const initialStatus: RequestStatus = normalizeStatus(data.status);
+      const normalizedStatusUrl = normalizeLlmApiUrl(data.status_url);
+      const normalizedDownloadUrl = normalizeLlmApiUrl(data.download_url);
 
       const newRequest: LLMRequest = {
         id: requestId,
@@ -326,8 +438,8 @@ const LLMChatPage: React.FC = () => {
         status: initialStatus,
         createdAt,
         lastUpdate: createdAt,
-        statusUrl: data.status_url,
-        downloadUrl: data.download_url,
+        statusUrl: normalizedStatusUrl,
+        downloadUrl: normalizedDownloadUrl,
         events: [
           {
             id: generateId(),
@@ -336,7 +448,7 @@ const LLMChatPage: React.FC = () => {
             detail: data.message ?? t('llm_chat_request_created'),
           },
         ],
-        fileUrl: data.download_url,
+        fileUrl: normalizedDownloadUrl,
       };
 
       setRequests((prev) => [newRequest, ...prev]);
@@ -360,6 +472,28 @@ const LLMChatPage: React.FC = () => {
       clearInterval(intervalId);
     });
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.localStorage.setItem(LLM_CHAT_MESSAGES_STORAGE_KEY, JSON.stringify(chatMessages));
+  }, [chatMessages]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.localStorage.setItem(LLM_CHAT_REQUESTS_STORAGE_KEY, JSON.stringify(requests));
+  }, [requests]);
+
+  useEffect(() => {
+    requests.forEach((request) => {
+      if (request.status === 'queued' || request.status === 'processing') {
+        pollStatus(request.id, request.statusUrl);
+      }
+    });
+  }, [pollStatus, requests]);
 
   return (
     <div className="llm-chat-page">
