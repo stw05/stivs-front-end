@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Download, Search, Eye, Pencil, Trash2, ArrowUpDown, SlidersHorizontal } from 'lucide-react';
+import { Download, Search, ArrowUpDown, SlidersHorizontal } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useRegionContext } from '../context/RegionContext';
 import type { RegionId } from '../context/RegionContext'; 
 import './EmployeesPage.css';
@@ -36,6 +37,7 @@ interface Employee {
   mrntiCode: MRNTIType;
   classifier: ClassifierType;
   scopusAuthorId: string; // Author ID в Scopus
+  hIndexScopus?: number;
   researcherIdWos: string; // Researcher ID Web of Science
 }
 
@@ -87,11 +89,11 @@ type EmployeeColumnKey =
   | 'position'
   | 'degree'
   | 'scopusAuthorId'
+  | 'hIndexScopus'
   | 'researcherIdWos'
   | 'hIndex'
   | 'region'
-  | 'age'
-  | 'hireDate';
+  | 'age';
 
 interface EmployeeColumnDefinition {
   key: EmployeeColumnKey;
@@ -104,11 +106,11 @@ const employeeColumnDefinitions: EmployeeColumnDefinition[] = [
   { key: 'position', label: 'Ученое звание', sortKey: 'position' },
   { key: 'degree', label: 'Ученая степень', sortKey: 'degree' },
   { key: 'scopusAuthorId', label: 'AUTHOR ID В SCOPUS' },
+  { key: 'hIndexScopus', label: 'H-индекс Scopus', sortKey: 'hIndex' },
   { key: 'researcherIdWos', label: 'RESEARCHER ID WEB OF SCIENCE' },
-  { key: 'hIndex', label: 'H-index', sortKey: 'hIndex' },
+  { key: 'hIndex', label: 'H-индекс WoS', sortKey: 'hIndex' },
   { key: 'region', label: 'Регион' },
   { key: 'age', label: 'Возраст', sortKey: 'age' },
-  { key: 'hireDate', label: 'Дата приема', sortKey: 'hireDate' },
 ];
 
 const defaultVisibleEmployeeColumns: Record<EmployeeColumnKey, boolean> = employeeColumnDefinitions.reduce(
@@ -295,6 +297,10 @@ const EmployeesPage: React.FC = () => {
       const researcherIdWos = typeof researcherIdWosRaw === 'string' ? researcherIdWosRaw : '';
       const scopusRaw = metrics.scopusAuthorId;
       const scopusAuthorId = typeof scopusRaw === 'string' ? scopusRaw : '';
+      const hIndexScopusRaw = metrics.hIndexScopus;
+      const hIndexScopus = typeof hIndexScopusRaw === 'number'
+        ? hIndexScopusRaw
+        : Number(hIndexScopusRaw ?? hIndex);
 
       return {
         id: item.id,
@@ -311,6 +317,7 @@ const EmployeesPage: React.FC = () => {
         citizenship: 'resident',
         projectRole: 'Исполнитель',
         hIndex: Number.isFinite(hIndex) ? hIndex : 0,
+        hIndexScopus: Number.isFinite(hIndexScopus) ? hIndexScopus : Number.isFinite(hIndex) ? hIndex : 0,
         mrntiCode: '11.00.00',
         classifier: 'technical',
         scopusAuthorId: scopusAuthorId || '-',
@@ -473,13 +480,19 @@ const EmployeesPage: React.FC = () => {
   const renderEmployeeCell = (columnKey: EmployeeColumnKey, employee: Employee): React.ReactNode => {
     switch (columnKey) {
       case 'name':
-        return `${employee.name} (${employee.gender === 'male' ? t('gender_short_male') : t('gender_short_female')})`;
+        return (
+          <Link to={`/employees/profile/${employee.id}`} state={{ employee }}>
+            {employee.name} ({employee.gender === 'male' ? t('gender_short_male') : t('gender_short_female')})
+          </Link>
+        );
       case 'position':
         return employee.position;
       case 'degree':
         return employee.degree === 'none' ? '-' : employee.degree;
       case 'scopusAuthorId':
         return employee.scopusAuthorId;
+      case 'hIndexScopus':
+        return employee.hIndexScopus ?? employee.hIndex;
       case 'researcherIdWos':
         if (!employee.researcherIdWos || employee.researcherIdWos === '-') {
           return '-';
@@ -500,8 +513,6 @@ const EmployeesPage: React.FC = () => {
         return regionNameById[employee.regionId] ?? t('not_available_short');
       case 'age':
         return currentYear - employee.birthYear;
-      case 'hireDate':
-        return new Date(employee.hireDate).toLocaleDateString('ru-RU');
       default:
         return null;
     }
@@ -535,11 +546,6 @@ const EmployeesPage: React.FC = () => {
     }
     
     // 🟢 8. ФИЛЬТРАЦИЯ ПО КЛАССИФИКАТОРУ
-    if (filters.classifier !== 'all') {
-        // ✅ ИСПРАВЛЕНО
-        list = list.filter((emp) => emp.classifier === filters.classifier);
-    }
-
     // 🟢 9. ФИЛЬТРАЦИЯ ПО РЕГИОНУ (фильтр на боковой панели)
     if (filters.regionId !== 'all') {
         // ✅ ИСПРАВЛЕНО
@@ -866,24 +872,6 @@ const EmployeesPage: React.FC = () => {
                   <option value="27.00.00">27.00.00 — {t('mrnti_27_desc')}</option>
                   <option value="55.00.00">55.00.00 — {t('mrnti_55_desc')}</option>
                 </select>
-            </div>
-
-            <div className="employees-filter-item">
-                {/* 🟢 ФИЛЬТР: КЛАССИФИКАТОР */}
-                <label htmlFor="classifier">
-                  {t('filter_label_classifier')}
-                  <span className="employees-filter-badge">доступно {employeesAvailableCounts.classifier}</span>
-                </label>
-                <select
-                  id="classifier"
-                  value={filters.classifier}
-                  onChange={(e) => handleFilterChange('classifier', e.target.value as ClassifierType)}
-                >
-                  <option value="all">{t('filter_option_all_classifiers')}</option>
-                  <option value="economic">{t('classifier_economic')}</option>
-                  <option value="social">{t('classifier_social')}</option>
-                  <option value="technical">{t('classifier_technical')}</option>
-                </select>
               </div>
             </div>
           </div>
@@ -969,8 +957,6 @@ const EmployeesPage: React.FC = () => {
                         <th key={column.key}>{column.label}</th>
                       );
                     })}
-                    {/* 🟢 ЗАГОЛОВОК СТОЛБЦА ДЕЙСТВИЙ */}
-                    <th className="actions-column">{t('table_header_actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -979,34 +965,6 @@ const EmployeesPage: React.FC = () => {
                       {activeColumns.map((column) => (
                         <td key={`${employee.id}-${column.key}`}>{renderEmployeeCell(column.key, employee)}</td>
                       ))}
-                      <td className="actions-column">
-                        <div className="actions-buttons">
-                          <button
-                            // 🟢 ДЕЙСТВИЕ: ПРОСМОТР
-                            onClick={() => handleAction(t('action_view'), employee)}
-                            aria-label={t('aria_view_employee')}
-                            title={t('action_view')}
-                          >
-                            <Eye size={16} />
-                          </button>
-                          <button
-                            // 🟢 ДЕЙСТВИЕ: РЕДАКТИРОВАНИЕ
-                            onClick={() => handleAction(t('action_edit'), employee)}
-                            aria-label={t('aria_edit_employee')}
-                            title={t('action_edit')}
-                          >
-                            <Pencil size={16} />
-                          </button>
-                          <button
-                            // 🟢 ДЕЙСТВИЕ: УДАЛЕНИЕ
-                            onClick={() => handleAction(t('action_delete'), employee)}
-                            aria-label={t('aria_delete_employee')}
-                            title={t('action_delete')}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
                     </tr>
                   ))}
                 </tbody>

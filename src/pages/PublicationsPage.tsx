@@ -1074,7 +1074,6 @@ const PublicationsPage: React.FC = () => {
       <section className="publications-chart-grid">
         <article className="publications-chart-card chart-span-2">
           <header>
-            <h3>{t('publications_chart_priority')}</h3>
             <p>{t('publications_chart_priority_subtitle')}</p>
           </header>
           <div className="chart-body">
@@ -1096,7 +1095,6 @@ const PublicationsPage: React.FC = () => {
         <article className="publications-chart-card chart-span-2">
           <header>
             <h3>{t('publications_chart_applicants')}</h3>
-            <p>{t('publications_chart_applicants_subtitle')}</p>
           </header>
           <div className="top-applicants-list">
             {topApplicants.map((applicant) => {

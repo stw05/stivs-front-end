@@ -11,6 +11,7 @@ interface KazakhstanMapProps {
   selectedRegionId: string;
   onRegionSelect: (regionId: string) => void;
   getRegionFill?: (regionId: string) => string | undefined;
+  useShortLabels?: boolean;
 }
 
 type MapFeature = {
@@ -27,6 +28,7 @@ const KazakhstanMap: React.FC<KazakhstanMapProps> = ({
   selectedRegionId,
   onRegionSelect,
   getRegionFill,
+  useShortLabels = true,
 }) => {
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
   const [featureCollection, setFeatureCollection] = useState<FeatureCollection | null>(null);
@@ -194,12 +196,12 @@ const KazakhstanMap: React.FC<KazakhstanMapProps> = ({
             />
           )}
           <text x={feature.label[0]} y={feature.label[1]} className="region-label">
-            {feature.shortName}
+            {useShortLabels ? feature.shortName : feature.name}
           </text>
         </g>
       );
     },
-    [getRegionFill, handleSelect, hoveredRegion, selectedRegionId],
+    [getRegionFill, handleSelect, hoveredRegion, selectedRegionId, useShortLabels],
   );
 
   if (isLoading) {

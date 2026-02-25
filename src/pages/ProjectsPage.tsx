@@ -799,11 +799,7 @@ const ProjectsPage: React.FC = () => {
 			case 'irn':
 				return project.irn;
 			case 'title':
-				return (
-					<button type="button" className="projects-link-button">
-						{project.title}
-					</button>
-				);
+				return project.title;
 			case 'applicant':
 				return project.applicant;
 			case 'priority':

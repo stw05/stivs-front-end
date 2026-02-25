@@ -18,7 +18,7 @@ const resources = {
       "home_page_title": "Главная", // статичная
       "projects_page_title": "Проекты",
       "employees_page_title": "Сотрудники",
-      "publications_page_title": "Публикации", // Обновлено
+      "publications_page_title": "Результативность", // Обновлено
       "finances_page_title": "Финансы",
       "finances_page_heading": "Финансы",
       "finances_page_description": "Мониторинг финансирования проектов и подразделений для {{region}}.",
@@ -161,17 +161,28 @@ const resources = {
       
       // --- ОБЗОР (HomePage.tsx) - КАРТА И ФИЛЬТРЫ ---
       "map_overview_title": "Обзор по регионам",
-      "map_tag_national": "Свод по стране",
+      "map_tag_national": "Статистика по стране",
       "map_tag_selected": "Выбран регион",
       "map_subtitle": "Обновленные показатели проектов, публикаций и финансирования по выбранной территории.",
-      "map_action_button": "Смотреть детальную статистику",
+      "map_action_button": "",
       "stats_section_title": "Основные показатели системы",
       
       // --- МЕТРИКИ РЕГИОНОВ (MetricsPage.tsx) ---
-      "metrics_page_kicker": "Метрики регионов",
-      "metrics_page_title": "Научные метрики регионов",
-      "metrics_page_description": "Публикационная активность, влияние и устойчивость каждого региона на одном экране.",
+      "metrics_page_kicker": "",
+      "metrics_page_title": "Научный профиль регионов Казахстана",
+      "metrics_page_description": "Публикационная активность, влияние и устойчивость каждого региона на основе данных КазИНЦ.",
       "metrics_reset_selection": "Сбросить выбор",
+      "metrics_about_button": "?",
+      "metrics_about_title": "О странице",
+      "metrics_about_intro": "Страница «Научный профиль регионов Казахстана» предназначена для сравнения регионов по показателям публикационной активности и научного влияния на основе данных Казахстанского индекса научного цитирования (КазИНЦ).",
+      "metrics_about_item_publications": "📄 объём публикаций региона",
+      "metrics_about_item_citations": "📈 уровень цитируемости научных работ",
+      "metrics_about_item_authors": "👥 активность и вклад авторов",
+      "metrics_about_item_collaboration": "🤝 уровень межрегионального научного сотрудничества",
+      "metrics_about_item_topics": "🧪 тематическая структура исследований (по МРНТИ)",
+      "metrics_about_chart": "Основной график страницы показывает соотношение публикационной активности и научного влияния региона. Это позволяет определить регионы высокой эффективности, регионы с потенциалом роста, а также области, требующие дополнительного развития научной инфраструктуры.",
+      "metrics_about_auto": "Все показатели рассчитываются автоматически на основе данных публикаций и цитирований и могут изменяться в зависимости от выбранного периода и фильтров.",
+      "metrics_about_warning": "⚠️ Важно: значения отражают количественные библиометрические показатели и не являются прямой оценкой качества научных исследований.",
       "metrics_scatter_title": "Активность vs Влияние",
       "metrics_scatter_subtitle": "Сопоставление KPI по регионам",
       "metrics_axis_activity_label": "Активность региона",
@@ -184,10 +195,11 @@ const resources = {
       "metrics_quadrant_leaders": "⭐ Лидеры",
       "metrics_quadrant_growth": "📈 Потенциал роста",
       "metrics_quadrant_risk": "⚠️ Риск качества",
-      "metrics_quadrant_laggards": "🔻 Аутсайдеры",
+      "metrics_quadrant_laggards": "🧭 Зона развития",
       "metrics_scatter_size_hint": "Размер = активные авторы",
       "metrics_scatter_color_hint": "Цвет = тип региона",
       "metrics_map_synced_label": "Синхронизировано со scatter",
+      "metrics_map_title": "Карта регионов",
       "metrics_map_metric_citations": "Цитирования на 1 статью",
       "metrics_map_metric_citations_short": "Цит./статью",
       "metrics_map_metric_per_org": "Публикации на 1 организацию",
@@ -215,6 +227,9 @@ const resources = {
       "metrics_tooltip_hindex": "Медианный h-index",
       "metrics_tooltip_collaboration": "Межрегиональные статьи",
       "metrics_tooltip_concentration": "Концентрация топ-10 авторов",
+      "metrics_country_median_label": "Медиана по стране",
+      "metrics_tooltip_median_x": "Медиана X",
+      "metrics_tooltip_median_y": "Медиана Y",
 
       // Фильтры
       "filter_select_direction": "Все направления",
@@ -357,7 +372,7 @@ const resources = {
       "filter_option_all_departments": "Все подразделения",
       "filter_label_project_role": "Роль в проекте",
       "filter_option_all_roles": "Все роли",
-      "filter_section_research_codes": "Исследовательские коды",
+      "filter_section_research_codes": "Классификаторы",
       "filter_label_mrnti": "МРНТИ",
       "filter_option_all_codes": "Все коды",
       "mrnti_11_desc": "Математика", // 11.00.00
@@ -436,7 +451,7 @@ const resources = {
       "pub_button_reset_filters": "Сбросить фильтры",
 
       // --- ПУБЛИКАЦИИ - КАРТОЧКИ И ГРАФИКИ ---
-      "publications_page_heading": "Публикации",
+      "publications_page_heading": "Результативность",
       "publications_page_description": "Сводная аналитика публикаций, патентов и внедрений",
       "publications_export_button": "Экспортировать отчёт",
       "publications_stats_aria": "Ключевые показатели публикаций",
@@ -464,11 +479,11 @@ const resources = {
       "publications_chart_wos": "Распределение WoS Quartiles",
       "publications_chart_priority": "Производительность по приоритетам",
       "publications_chart_priority_subtitle": "Количество публикаций по приоритетным направлениям",
-      "publications_chart_implementation": "Внедрения и уровень готовности",
+      "publications_chart_implementation": "Внедрения и технологический уровень готовности",
       "publications_chart_implementations_projects": "Внедрения проектов",
       "publications_chart_implementations_trl": "Средний TRL",
-      "publications_chart_applicants": "Топ заявителей",
-      "publications_chart_applicants_subtitle": "Доля публикаций ведущих организаций",
+      "publications_chart_applicants": "Топ - заявителей по публикациям",
+      "publications_chart_applicants_subtitle": "",
       "publications_chart_patents": "Патенты и внедрения",
       "publications_chart_patents_subtitle": "Сравнение патентов и внедрений",
       "publications_chart_patents_label": "Патенты",

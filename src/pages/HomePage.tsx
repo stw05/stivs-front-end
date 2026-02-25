@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Cpu, Users2, FileText, DollarSign } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import KazakhstanMap from '../components/Home/KazakhstanMap';
 import { regionsData } from '../components/Home/regionsData';
 import { useRegionContext } from '../context/RegionContext';
@@ -13,7 +13,6 @@ import { dashboardApi } from '../api/services';
 import type { DashboardSummary } from '../api/types';
 
 const HomePage: React.FC = () => {
-  const navigate = useNavigate();
   const { t } = useTranslation();
   const { selectedRegionId, selectedRegion, setSelectedRegionId } = useRegionContext();
   const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null);
@@ -138,18 +137,22 @@ const HomePage: React.FC = () => {
     {
       label: t('projects_page_title'), // 🟢 ПЕРЕВОД
       value: formatNumber(metrics.projects.total),
+      path: '/projects',
     },
     {
       label: t('publications_page_title'), // 🟢 ПЕРЕВОД
       value: formatNumber(metrics.publications.total),
+      path: '/publications',
     },
     {
       label: t('employees_page_title'), // 🟢 ПЕРЕВОД
       value: formatNumber(metrics.people.total),
+      path: '/employees',
     },
     {
       label: t('finances_page_title'), // 🟢 ПЕРЕВОД
       value: `${formatNumber(metrics.finances.total, { maximumFractionDigits: 1 })} ${t('unit_mlrd_tg')}`, // 🟢 ПЕРЕВОД (Ед. изм)
+      path: '/finances',
     },
   ];
 
@@ -210,20 +213,12 @@ const HomePage: React.FC = () => {
 
               <div className="map-info-grid">
                 {mapHighlights.map((item) => (
-                  <div key={item.label} className="map-info-item">
+                  <Link key={item.label} to={item.path} className="map-info-item">
                     <span className="map-info-item-label">{item.label}</span>
                     <span className="map-info-item-value">{item.value}</span>
-                  </div>
+                  </Link>
                 ))}
               </div>
-
-              <button
-                type="button"
-                className="map-action-button"
-                onClick={() => navigate('/finances')}
-              >
-                {t('map_action_button')} {/* 🟢 ПЕРЕВОД */}
-              </button>
             </aside>
           </div>
         </div>

@@ -6,6 +6,7 @@ import './App.css';
 const HomePage = lazy(() => import('./pages/HomePage'));
 const ProjectsPage = lazy(() => import('./pages/ProjectsPage'));
 const EmployeesPage = lazy(() => import('./pages/EmployeesPage'));
+const EmployeeProfilePage = lazy(() => import('./pages/EmployeeProfilePage'));
 const PublicationsPage = lazy(() => import('./pages/PublicationsPage'));
 const FinancesPage = lazy(() => import('./pages/FinancesPage'));
 const MetricsPage = lazy(() => import('./pages/MetricsPage'));
@@ -25,6 +26,7 @@ const App: React.FC = () => {
           <Route index element={<HomePage />} />
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="employees" element={<EmployeesPage />} />
+          <Route path="employees/profile/:employeeId" element={<EmployeeProfilePage />} />
           <Route path="publications" element={<PublicationsPage />} />
           <Route path="finances" element={<FinancesPage />} />
           <Route path="metrics" element={<MetricsPage />} />

@@ -9,7 +9,6 @@ const Header: React.FC = () => {
   const { t, i18n } = useTranslation();
 
   const navigationItems = useMemo(() => [
-    { path: '/', label: t('home_page_title') }, // 🟢 ПЕРЕВОД
     { path: '/projects', label: t('projects_page_title') }, // 🟢 ПЕРЕВОД
     { path: '/employees', label: t('employees_page_title') }, // 🟢 ПЕРЕВОД
     { path: '/finances', label: t('finances_page_title') }, // 🟢 ПЕРЕВОД

@@ -111,6 +111,8 @@
   flex-direction: column;
   gap: 0.25rem;
   min-height: 96px;
+  text-decoration: none;
+  color: inherit;
 }
 
 .map-info-item-label {

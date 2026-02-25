@@ -16,7 +16,7 @@ import type {
   Plugin,
   ScatterDataPoint,
 } from 'chart.js';
-import { SlidersHorizontal, Sparkles, Map as MapIcon, RefreshCcw } from 'lucide-react';
+import { SlidersHorizontal, Sparkles, Map as MapIcon, RefreshCcw, CircleHelp } from 'lucide-react';
 import KazakhstanMap from '../components/Home/KazakhstanMap';
 import { useRegionContext } from '../context/RegionContext';
 import type { RegionId } from '../context/RegionContext';
@@ -188,6 +188,7 @@ const MetricsPage: React.FC = () => {
   const [xMetric, setXMetric] = useState<XAxisMetric>('perOrg');
   const [yMetric, setYMetric] = useState<YAxisMetric>('citations');
   const [mapMetric, setMapMetric] = useState<MapMetricKey>('citations');
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
   const scatterRef = useRef<ChartJS<'scatter', ScatterPoint[], unknown> | null>(null);
 
   const { pointsByType, xMedian, yMedian } = useMemo(() => {
@@ -230,13 +231,13 @@ const MetricsPage: React.FC = () => {
   }, [xMetric, yMetric]);
 
   const scatterDatasets = useMemo<ChartDataset<'scatter', ScatterPoint[]>[]>(() => {
-    return (Object.keys(pointsByType) as Array<RegionScienceProfile['type']>).map((type) => ({
+    const datasets = (Object.keys(pointsByType) as Array<RegionScienceProfile['type']>).map((type) => ({
       label:
         type === 'city'
           ? t('metrics_legend_cities')
           : t('metrics_legend_regions'),
       data: pointsByType[type],
-      pointBackgroundColor: (context) => {
+      pointBackgroundColor: (context: any) => {
         const raw = context.raw as ScatterPoint;
         const isSelected = raw?.regionId === selectedRegionId;
         if (isSelected) {
@@ -246,10 +247,37 @@ const MetricsPage: React.FC = () => {
       },
       pointBorderColor: 'rgba(255,255,255,0.9)',
       pointBorderWidth: 2,
-      pointRadius: (context) => (context.raw as ScatterPoint)?.size ?? 8,
-      pointHoverRadius: (context) => ((context.raw as ScatterPoint)?.size ?? 8) + 2,
+      pointRadius: (context: any) => (context.raw as ScatterPoint)?.size ?? 8,
+      pointHoverRadius: (context: any) => ((context.raw as ScatterPoint)?.size ?? 8) + 2,
     }));
-  }, [pointsByType, selectedRegionId, t]);
+
+    datasets.push({
+      label: t('metrics_country_median_label'),
+      data: [
+        {
+          x: Number(xMedian.toFixed(2)),
+          y: Number(yMedian.toFixed(2)),
+          regionId: 'national-median',
+          regionName: t('metrics_country_median_label'),
+          publications: nationalScienceSnapshot.publications,
+          citationsPerArticle: nationalScienceSnapshot.citationsPerArticle,
+          medianHIndex: nationalScienceSnapshot.medianHIndex,
+          collaborationShare: nationalScienceSnapshot.collaborationShare,
+          concentrationTop10: 0,
+          activeAuthors: nationalScienceSnapshot.activeAuthors,
+          size: 8,
+          type: 'region',
+        },
+      ],
+      pointBackgroundColor: () => '#0f172a',
+      pointBorderColor: '#ffffff',
+      pointBorderWidth: 2,
+      pointRadius: () => 8,
+      pointHoverRadius: () => 10,
+    });
+
+    return datasets;
+  }, [pointsByType, selectedRegionId, t, xMedian, yMedian]);
 
   const scatterData = useMemo(() => ({ datasets: scatterDatasets }), [scatterDatasets]);
 
@@ -281,6 +309,12 @@ const MetricsPage: React.FC = () => {
             const raw = context.raw as ScatterPoint;
             if (!raw) {
               return [];
+            }
+            if (raw.regionId === 'national-median') {
+              return [
+                `${t('metrics_tooltip_median_x')}: ${raw.x.toFixed(1)}`,
+                `${t('metrics_tooltip_median_y')}: ${raw.y.toFixed(1)}`,
+              ];
             }
             return [
               `${t('metrics_tooltip_publications')}: ${formatNumber(raw.publications)}`,
@@ -358,10 +392,11 @@ const MetricsPage: React.FC = () => {
       const dataset = chart.data.datasets?.[datasetIndex] as ChartDataset<'scatter', ScatterPoint[]> | undefined;
       const point = dataset?.data?.[index];
       if (point) {
-        setSelectedRegionId(point.regionId as RegionId);
+        const nextRegionId = selectedRegionId === point.regionId ? 'national' : point.regionId;
+        setSelectedRegionId(nextRegionId as RegionId);
       }
     },
-    [setSelectedRegionId],
+    [selectedRegionId, setSelectedRegionId],
   );
 
   const mapMetricConfig = useMemo<Record<MapMetricKey, { label: string; short: string; format: (value: number) => string }>>(
@@ -516,11 +551,20 @@ const MetricsPage: React.FC = () => {
     <div className="metrics-page">
       <section className="metrics-header">
         <div className="metrics-header-text">
-          <span className="metrics-kicker">{t('metrics_page_kicker')}</span>
           <h1>{t('metrics_page_title')}</h1>
           <p>{t('metrics_page_description')}</p>
         </div>
         <div className="metrics-header-controls">
+          <button
+            type="button"
+            className="metrics-info-button"
+            onClick={() => setIsAboutOpen((prev) => !prev)}
+            aria-expanded={isAboutOpen}
+            aria-controls="metrics-about-panel"
+          >
+            <CircleHelp size={16} />
+            <span>{t('metrics_about_button')}</span>
+          </button>
           <div className="metrics-header-icon" aria-hidden="true">
             <Sparkles size={28} />
           </div>
@@ -532,6 +576,23 @@ const MetricsPage: React.FC = () => {
           )}
         </div>
       </section>
+
+      {isAboutOpen && (
+        <section className="metrics-about-panel" id="metrics-about-panel">
+          <h2>{t('metrics_about_title')}</h2>
+          <p>{t('metrics_about_intro')}</p>
+          <ul>
+            <li>{t('metrics_about_item_publications')}</li>
+            <li>{t('metrics_about_item_citations')}</li>
+            <li>{t('metrics_about_item_authors')}</li>
+            <li>{t('metrics_about_item_collaboration')}</li>
+            <li>{t('metrics_about_item_topics')}</li>
+          </ul>
+          <p>{t('metrics_about_chart')}</p>
+          <p>{t('metrics_about_auto')}</p>
+          <p className="metrics-about-warning">{t('metrics_about_warning')}</p>
+        </section>
+      )}
 
       <div className="metrics-module-banner" role="status" aria-live="polite">
         модуль находится на стадии интеграции и тестирования
@@ -590,8 +651,8 @@ const MetricsPage: React.FC = () => {
         <aside className="metrics-map-card">
           <div className="metrics-map-header">
             <div>
-              <p className="metrics-card-kicker">{t('metrics_map_synced_label')}</p>
-              <h3>{mapMetricConfig[mapMetric].label}</h3>
+              <h3>{t('metrics_map_title')}</h3>
+              <p className="metrics-map-current-metric">{mapMetricConfig[mapMetric].label}</p>
               <p className="metrics-map-hint">{t('metrics_map_hint')}</p>
             </div>
             <MapIcon size={28} />
@@ -611,8 +672,12 @@ const MetricsPage: React.FC = () => {
           <div className="metrics-map-frame">
             <KazakhstanMap
               selectedRegionId={selectedRegionId}
-              onRegionSelect={(regionId) => setSelectedRegionId(regionId as RegionId)}
+              onRegionSelect={(regionId) => {
+                const nextRegionId = selectedRegionId === regionId ? 'national' : regionId;
+                setSelectedRegionId(nextRegionId as RegionId);
+              }}
               getRegionFill={mapFillResolver}
+              useShortLabels={false}
             />
           </div>
           <div className="metrics-map-legend">

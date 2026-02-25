@@ -49,6 +49,56 @@
   justify-content: flex-end;
 }
 
+.metrics-info-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #ffffff;
+  color: #1d4ed8;
+  border: 1px solid rgba(37, 99, 235, 0.28);
+  border-radius: 999px;
+  padding: 0.45rem 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.metrics-info-button:hover,
+.metrics-info-button:focus-visible {
+  background: #eff6ff;
+}
+
+.metrics-about-panel {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  padding: 1.25rem 1.35rem;
+  color: #334155;
+}
+
+.metrics-about-panel h2 {
+  margin: 0 0 0.65rem;
+  color: #0f172a;
+  font-size: 1.1rem;
+}
+
+.metrics-about-panel p {
+  margin: 0 0 0.55rem;
+  line-height: 1.45;
+}
+
+.metrics-about-panel ul {
+  margin: 0 0 0.6rem;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.32rem;
+}
+
+.metrics-about-warning {
+  color: #991b1b;
+  font-weight: 600;
+}
+
 .metrics-module-banner {
   width: 100%;
   box-sizing: border-box;
@@ -95,7 +145,7 @@
 
 .metrics-main {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(280px, 0.9fr);
+  grid-template-columns: minmax(0, 1.85fr) minmax(360px, 1.1fr);
   gap: 1.5rem;
   align-items: start;
 }
@@ -195,9 +245,20 @@
   gap: 1rem;
 }
 
+.metrics-map-header > div {
+  min-height: 108px;
+}
+
 .metrics-map-header h3 {
   margin: 0.35rem 0;
   font-size: 1.4rem;
+}
+
+.metrics-map-current-metric {
+  margin: 0;
+  color: rgba(226, 232, 240, 0.95);
+  font-weight: 600;
+  min-height: 1.25rem;
 }
 
 .metrics-map-hint {
@@ -226,12 +287,28 @@
 .metrics-map-frame {
   background: linear-gradient(160deg, rgba(13, 42, 148, 0.32), rgba(37, 99, 235, 0.35));
   border-radius: 24px;
-  padding: 1.25rem;
+  padding: 0.75rem;
   border: 1px solid rgba(148, 197, 255, 0.35);
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .metrics-map-frame .map-svg {
-  max-width: 100%;
+  width: min(100%, 620px);
+  margin: 0 auto;
+}
+
+.metrics-map-frame .region-label {
+  fill: #f8fafc;
+  stroke: rgba(15, 23, 42, 0.65);
+  stroke-width: 2px;
+  paint-order: stroke;
+  font-size: clamp(0.58rem, 0.82vw, 0.72rem);
+  letter-spacing: 0.01em;
+  font-weight: 700;
 }
 
 .metrics-map-legend {
@@ -338,6 +415,11 @@
 @media (max-width: 720px) {
   .metrics-header {
     flex-direction: column;
+  }
+
+  .metrics-map-frame {
+    min-height: 260px;
+    padding: 0.65rem;
   }
 
   .metrics-scatter-chart {
