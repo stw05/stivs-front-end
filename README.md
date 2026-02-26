@@ -1,5 +1,10 @@
 # React + TypeScript + Vite
 
+## Requirements
+
+- Node.js 24.x
+- npm 11+
+
 ## Backend Integration (STIVS API)
 
 Frontend now uses REST endpoints from your backend (`/api/auth`, `/api/projects`, `/api/employees`, `/api/publications`, `/api/finances`).
