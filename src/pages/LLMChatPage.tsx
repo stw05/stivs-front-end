@@ -121,9 +121,24 @@ const normalizeLlmApiUrl = (value?: string): string | undefined => {
         : 'http://localhost';
     const parsedUrl = new URL(value, baseOrigin);
     parsedUrl.pathname = normalizedPath(parsedUrl.pathname);
+
+    if (typeof window !== 'undefined' && window.location?.origin) {
+      if (window.location.protocol === 'https:' && parsedUrl.protocol === 'http:') {
+        parsedUrl.protocol = 'https:';
+      }
+
+      if (parsedUrl.host === window.location.host) {
+        return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
+      }
+    }
+
     return parsedUrl.toString();
   } catch {
-    return value.replace(/\/api\/(status|download)\.php(?=\?|#|$)/i, '/api/llm/$1.php');
+    const fallback = value.replace(/\/api\/(status|download)\.php(?=\?|#|$)/i, '/api/llm/$1.php');
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:' && fallback.startsWith('http://')) {
+      return fallback.replace(/^http:\/\//i, 'https://');
+    }
+    return fallback;
   }
 };
 
