@@ -269,13 +269,21 @@
 .metrics-map-toggles {
   display: flex;
   gap: 0.5rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
 .metrics-map-toggles .toggle-chip {
   background: rgba(15, 23, 42, 0.35);
   border: 1px solid rgba(148, 163, 184, 0.4);
   color: #e2e8f0;
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.1;
+  padding: 0.35rem 0.72rem;
 }
 
 .metrics-map-toggles .toggle-chip.active {
@@ -389,6 +397,71 @@
   margin-bottom: 0.6rem;
 }
 
+.metrics-index-label-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.metrics-inline-help {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.metrics-inline-help-button {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: #ffffff;
+  color: #334155;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+  padding: 0;
+}
+
+.metrics-inline-help-button:hover,
+.metrics-inline-help-button:focus-visible {
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+
+.metrics-inline-help-tooltip {
+  position: absolute;
+  z-index: 20;
+  bottom: calc(100% + 10px);
+  left: 0;
+  width: min(460px, 65vw);
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+  color: #334155;
+  line-height: 1.35;
+  font-size: 0.8rem;
+  font-weight: 500;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.metrics-inline-help-tooltip p {
+  margin: 0;
+}
+
+.metrics-inline-help:hover .metrics-inline-help-tooltip,
+.metrics-inline-help:focus-within .metrics-inline-help-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
 .metrics-index-bar {
   height: 10px;
   border-radius: 999px;
@@ -429,5 +502,10 @@
   .metrics-scatter-legend {
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  .metrics-inline-help-tooltip {
+    width: min(340px, 78vw);
+    left: -0.5rem;
   }
 }

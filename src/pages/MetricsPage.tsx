@@ -36,7 +36,7 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend);
 
 type XAxisMetric = 'perOrg' | 'perAuthor';
 type YAxisMetric = 'citations' | 'citedShare';
-type MapMetricKey = 'citations' | 'perOrg' | 'visibility';
+type MapMetricKey = 'citations' | 'perOrg';
 
 interface ScatterPoint extends ScatterDataPoint {
   x: number;
@@ -155,8 +155,6 @@ const getMapMetricValue = (region: RegionScienceProfile, metric: MapMetricKey): 
   switch (metric) {
     case 'perOrg':
       return region.publicationsPerOrg;
-    case 'visibility':
-      return region.visibilityIndex;
     case 'citations':
     default:
       return region.citationsPerArticle;
@@ -166,9 +164,10 @@ const getMapMetricValue = (region: RegionScienceProfile, metric: MapMetricKey): 
 const getChoroplethColor = (value: number, min: number, max: number): string => {
   const range = max - min || 1;
   const ratio = clampValue((value - min) / range, 0, 1);
-  const hue = 210 - ratio * 70; // from blue to teal
-  const lightness = 78 - ratio * 28;
-  return `hsl(${hue}, 75%, ${lightness}%)`;
+  const hue = 130;
+  const saturation = 45 + ratio * 30;
+  const lightness = 92 - ratio * 50;
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 };
 
 const formatPercent = (value: number, digits = 0): string => {
@@ -300,10 +299,19 @@ const MetricsPage: React.FC = () => {
           padding: 14,
           titleFont: { weight: 600 },
         callbacks: {
-          title: () => '',
+          title: (items) => {
+            const raw = items[0]?.raw as ScatterPoint | undefined;
+            return raw?.regionName ?? '';
+          },
           label: (context) => {
             const raw = context.raw as ScatterPoint;
-            return raw?.regionName ?? '';
+            if (!raw) {
+              return '';
+            }
+            if (raw.regionId === 'national-median') {
+              return t('metrics_country_median_label');
+            }
+            return '';
           },
           afterLabel: (context) => {
             const raw = context.raw as ScatterPoint;
@@ -411,11 +419,6 @@ const MetricsPage: React.FC = () => {
         short: t('metrics_map_metric_per_org_short'),
         format: (value: number) => `${value.toFixed(1)}`,
       },
-      visibility: {
-        label: t('metrics_map_metric_visibility'),
-        short: t('metrics_map_metric_visibility_short'),
-        format: (value: number) => `${value.toFixed(0)}`,
-      },
     }),
     [t],
   );
@@ -440,6 +443,35 @@ const MetricsPage: React.FC = () => {
     [mapMetric, mapStats.max, mapStats.min],
   );
 
+  const countryAverageSnapshot = useMemo(() => {
+    const count = scienceMetrics.length || 1;
+    const totals = scienceMetrics.reduce(
+      (acc, region) => {
+        acc.publications += region.publications;
+        acc.citationsPerArticle += region.citationsPerArticle;
+        acc.activeAuthors += region.activeAuthors;
+        acc.medianHIndex += region.medianHIndex;
+        acc.collaborationShare += region.collaborationShare;
+        return acc;
+      },
+      {
+        publications: 0,
+        citationsPerArticle: 0,
+        activeAuthors: 0,
+        medianHIndex: 0,
+        collaborationShare: 0,
+      },
+    );
+
+    return {
+      publications: Math.round(totals.publications / count),
+      citationsPerArticle: totals.citationsPerArticle / count,
+      activeAuthors: Math.round(totals.activeAuthors / count),
+      medianHIndex: totals.medianHIndex / count,
+      collaborationShare: totals.collaborationShare / count,
+    };
+  }, []);
+
   const selectedProfile = useMemo(() => {
     if (selectedRegionId === 'national') {
       return null;
@@ -448,7 +480,7 @@ const MetricsPage: React.FC = () => {
   }, [selectedRegionId]);
 
   const kpiScopeLabel = selectedProfile?.name ?? t('metrics_kpi_scope_country');
-  const kpiSource = selectedProfile ?? nationalScienceSnapshot;
+  const kpiSource = selectedProfile ?? countryAverageSnapshot;
 
   const kpiCards = useMemo(
     () => [
@@ -499,18 +531,21 @@ const MetricsPage: React.FC = () => {
       {
         key: 'activity',
         label: t('metrics_index_activity'),
+        description: t('metrics_index_activity_description'),
         value: indexSource.activity,
         bounds: scienceIndexBounds.activity,
       },
       {
         key: 'influence',
         label: t('metrics_index_influence'),
+        description: t('metrics_index_influence_description'),
         value: indexSource.influence,
         bounds: scienceIndexBounds.influence,
       },
       {
         key: 'stability',
         label: t('metrics_index_stability'),
+        description: t('metrics_index_stability_description'),
         value: indexSource.stability,
         bounds: scienceIndexBounds.stability,
       },
@@ -540,9 +575,8 @@ const MetricsPage: React.FC = () => {
 
   const mapOptions: Array<{ value: MapMetricKey; label: string }> = useMemo(
     () => [
-      { value: 'citations', label: mapMetricConfig.citations.short },
-      { value: 'perOrg', label: mapMetricConfig.perOrg.short },
-      { value: 'visibility', label: mapMetricConfig.visibility.short },
+      { value: 'citations', label: mapMetricConfig.citations.label },
+      { value: 'perOrg', label: mapMetricConfig.perOrg.label },
     ],
     [mapMetricConfig],
   );
@@ -678,6 +712,7 @@ const MetricsPage: React.FC = () => {
               }}
               getRegionFill={mapFillResolver}
               useShortLabels={false}
+              showLabels={false}
             />
           </div>
           <div className="metrics-map-legend">
@@ -730,7 +765,21 @@ const MetricsPage: React.FC = () => {
             {indexCards.map((indexCard) => (
               <article key={indexCard.key} className="metrics-index-card">
                 <div className="metrics-index-labels">
-                  <span>{indexCard.label}</span>
+                  <div className="metrics-index-label-main">
+                    <span>{indexCard.label}</span>
+                    <div className="metrics-inline-help">
+                      <button
+                        type="button"
+                        className="metrics-inline-help-button"
+                        aria-label={t('metrics_index_help_aria', { label: indexCard.label })}
+                      >
+                        <CircleHelp size={14} />
+                      </button>
+                      <div className="metrics-inline-help-tooltip" role="tooltip">
+                        <p>{indexCard.description}</p>
+                      </div>
+                    </div>
+                  </div>
                   <strong>{indexCard.value.toFixed(2)}</strong>
                 </div>
                 <div className="metrics-index-bar">
