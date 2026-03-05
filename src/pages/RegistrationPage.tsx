@@ -4,7 +4,7 @@ import './RegistrationPage.css';
 import { ApiError } from '../api/client';
 import { authApi } from '../api/services';
 
-// 💡 1. УПРОЩЕННАЯ СТРУКТУРА: Регион/Область -> Районы/Города/НП
+
 // { [Регион/Область]: [Районы/Крупные города/НП] }
 const REGION_DATA: { [key: string]: string[] } = {
   'г. Астана': [
@@ -67,7 +67,7 @@ interface RegistrationFormData {
   // Если вы хотите использовать существующее имя 'oblast' для района/города,
   // просто переименуем его в JSX. Для чистоты оставим только 'region' и 'city'
   
-  // !!! ВНИМАНИЕ: Для использования существующего интерфейса RegistrationFormData
+
   // мы оставим имена полей region, oblast, city. Но будем использовать только region и city.
   
   oblast: string; // Имя оставлено для совместимости с интерфейсом, но не используется как отдельный уровень
@@ -98,6 +98,8 @@ interface RegistrationFormData {
 const RegistrationPage: React.FC = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
   // Инициализация состояния
   const [formData, setFormData] = useState<RegistrationFormData>({
@@ -154,12 +156,14 @@ const RegistrationPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setFormError(null);
+    setFormSuccess(null);
     if (formData.password !== formData.passwordConfirm) {
-      alert('Пароли не совпадают. Пожалуйста, проверьте ввод.');
+      setFormError('Пароли не совпадают. Пожалуйста, проверьте ввод.');
       return;
     }
     if (!formData.consent) {
-      alert('Необходимо согласиться с политикой конфиденциальности.');
+      setFormError('Необходимо согласиться с политикой конфиденциальности.');
       return;
     }
     setIsSubmitting(true);
@@ -171,17 +175,17 @@ const RegistrationPage: React.FC = () => {
         name: fullName || formData.organizationName,
         role: 'staff',
       });
-      alert('Регистрация прошла успешно. Теперь войдите в систему.');
-      navigate('/login');
+      setFormSuccess('Регистрация прошла успешно. Теперь войдите в систему.');
+      setTimeout(() => navigate('/login'), 1500);
     } catch (error) {
       const message = error instanceof ApiError ? error.message : 'Не удалось завершить регистрацию.';
-      alert(message);
+      setFormError(message);
     } finally {
       setIsSubmitting(false);
     }
   };
   
-  // 💡 МЕМОИЗИРОВАННЫЙ СПИСОК ДЛЯ ВТОРОГО ДРОПДАУНА (Город/Район)
+
   const dependentCitiesList = useMemo(() => {
     if (!formData.region) return [];
     // Получаем список городов/районов в зависимости от выбранного региона
@@ -194,7 +198,9 @@ const RegistrationPage: React.FC = () => {
       
       <div className="registrationFormBox">
         <h2 className="formHeader">Регистрация</h2>
-        <form className="form" onSubmit={handleSubmit}>            
+        <form className="form" onSubmit={handleSubmit}>
+            {formError && <p className="form-error" role="alert">{formError}</p>}
+            {formSuccess && <p className="form-success" role="status">{formSuccess}</p>}
             
             {/* Группа 1: Организация, Регион, Адрес */}
             <div className="section">
@@ -204,7 +210,7 @@ const RegistrationPage: React.FC = () => {
                       type="text" 
                       placeholder="Введите название организации" 
                       className="inputFull"
-                      name="organizationName" // 💡 Атрибут name обязателен для handleChange
+                      name="organizationName"
                       value={formData.organizationName}
                       onChange={handleChange}
                       required

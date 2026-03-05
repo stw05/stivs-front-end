@@ -376,15 +376,13 @@ const LLMChatPage: React.FC = () => {
             timestamp: typeof payload.updated_at === 'string' ? payload.updated_at : new Date().toISOString(),
           });
         }
-      } catch (error) {
-        console.error('LLM status poll error', error);
+      } catch {
+        // polling error — silently ignored, will retry on next tick
       }
     }, 4500);
 
     pollersRef.current[requestId] = pollerId;
   }, [handleIncomingPayload, stopPolling]);
-
-  // SSE callbacks removed; polling handles lifecycle
 
   const appendUserMessage = useCallback((prompt: string) => {
     setChatMessages((prev) => [
@@ -473,8 +471,7 @@ const LLMChatPage: React.FC = () => {
       pollStatus(requestId, newRequest.statusUrl);
 
       setInputValue('');
-    } catch (error) {
-      console.error(error);
+    } catch {
       setFormError(t('llm_chat_request_failed'));
       appendSystemMessage(t('llm_chat_request_failed'));
     } finally {

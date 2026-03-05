@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react'; // 🟢 useMemo добавлен для навигации
+import { useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { User, Settings, LogOut } from 'lucide-react';
-import { useTranslation } from 'react-i18next'; // 🟢 ИМПОРТ
+import { User } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import './Header.css';
 
 const Header: React.FC = () => {
@@ -10,15 +10,14 @@ const Header: React.FC = () => {
 
   const navigationItems = useMemo(() => [
     { path: '/', label: t('home_page_title') },
-    { path: '/projects', label: t('projects_page_title') }, // 🟢 ПЕРЕВОД
-    { path: '/employees', label: t('employees_page_title') }, // 🟢 ПЕРЕВОД
-    { path: '/finances', label: t('finances_page_title') }, // 🟢 ПЕРЕВОД
-    { path: '/publications', label: t('publications_page_title') }, // 🟢 ПЕРЕВОД
+    { path: '/projects', label: t('projects_page_title') },
+    { path: '/employees', label: t('employees_page_title') },
+    { path: '/finances', label: t('finances_page_title') },
+    { path: '/publications', label: t('publications_page_title') },
     { path: '/metrics', label: t('metrics_page_title') },
     { path: '/assistant', label: t('llm_chat_nav_label') },
   ], [t]);
 
-  // 🟢 ФУНКЦИЯ ДЛЯ СМЕНЫ ЯЗЫКА
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
   };
@@ -30,35 +29,35 @@ const Header: React.FC = () => {
           <div className="header-left">
             <div className="logo">
               <Link to="/" className="app-logo-link"> 
-                <h1>{t('app_name')}</h1> {/* 🟢 ПЕРЕВОД */}
+                <h1>{t('app_name')}</h1>
               </Link>
-              <span className="logo-subtitle">{t('app_title_full')}</span> {/* 🟢 ПЕРЕВОД */}
+              <span className="logo-subtitle">{t('app_title_full')}</span>
             </div>
           </div>
 
           <div className="header-right">
             <div className="language-selector">
-              {/* 🟢 КНОПКА ДЛЯ КАЗАХСКОГО ЯЗЫКА */}
-              <span 
+              <button
+                type="button"
                 className={`lang-option ${i18n.language === 'kk' ? 'active' : ''}`}
                 onClick={() => changeLanguage('kk')}
               >
                 {t('kaz_label')}
-              </span>
-              {/* 🟢 КНОПКА ДЛЯ РУССКОГО ЯЗЫКА */}
-              <span 
+              </button>
+              <button
+                type="button"
                 className={`lang-option ${i18n.language === 'ru' ? 'active' : ''}`}
                 onClick={() => changeLanguage('ru')}
               >
                 {t('rus_label')}
-              </span>
-              {/* 🟢 КНОПКА ДЛЯ АНГЛИЙСКОГО ЯЗЫКА */}
-              <span 
+              </button>
+              <button
+                type="button"
                 className={`lang-option ${i18n.language === 'en' ? 'active' : ''}`}
                 onClick={() => changeLanguage('en')}
               >
                 EN
-              </span>
+              </button>
             </div>
             
             <div className="user-menu">
@@ -67,10 +66,7 @@ const Header: React.FC = () => {
                 <User size={20} />
                 </Link>
               </div>
-              <div className="user-dropdown">
-                <Settings size={16} />
-                <LogOut size={16} />
-              </div>
+
             </div>
           </div>
         </div>

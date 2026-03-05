@@ -1,12 +1,13 @@
-import React from 'react';
+import type { FC } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Header from './Header';
 import './Layout.css';
 
-const Layout: React.FC = () => {
+const currentYear = new Date().getFullYear();
+
+const Layout: FC = () => {
   const { t } = useTranslation();
-  const currentYear = new Date().getFullYear();
 
   return (
     <div className="layout">

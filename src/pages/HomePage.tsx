@@ -69,67 +69,67 @@ const HomePage: React.FC = () => {
   const summaryCards = useMemo(
     () => [
       {
-        title: t('card_projects_title'), // 🟢 ПЕРЕВОД
+        title: t('card_projects_title'),
         icon: <Cpu size={40} />,
         value: formatNumber(metrics.projects.total),
-        unit: t('unit_projects'), // 🟢 ПЕРЕВОД
+        unit: t('unit_projects'),
         details: [
-          { label: t('card_projects_grants'), value: formatNumber(metrics.projects.grants) }, // 🟢 ПЕРЕВОД
-          { label: t('card_projects_programs'), value: formatNumber(metrics.projects.programs) }, // 🟢 ПЕРЕВОД
-          { label: t('card_projects_contracts'), value: formatNumber(metrics.projects.contracts) }, // 🟢 ПЕРЕВОД
-          { label: t('card_projects_commercialization'), value: formatNumber(metrics.projects.commercialization) }, // 🟢 ПЕРЕВОД
+          { label: t('card_projects_grants'), value: formatNumber(metrics.projects.grants) },
+          { label: t('card_projects_programs'), value: formatNumber(metrics.projects.programs) },
+          { label: t('card_projects_contracts'), value: formatNumber(metrics.projects.contracts) },
+          { label: t('card_projects_commercialization'), value: formatNumber(metrics.projects.commercialization) },
           {
-            label: t('card_projects_trl_high'), // 🟢 ПЕРЕВОД
+            label: t('card_projects_trl_high'),
             value: metrics.projects.avgDuration.toFixed(1),
           },
         ],
       },
       {
-        title: t('card_publications_title'), // 🟢 ПЕРЕВОД
+        title: t('card_publications_title'),
         icon: <FileText size={40} />,
         value: formatNumber(metrics.publications.total),
-        unit: t('unit_publications'), // 🟢 ПЕРЕВОД
+        unit: t('unit_publications'),
         details: [
-          { label: t('card_publications_scopus'), value: formatNumber(metrics.publications.journals) }, // 🟢 ПЕРЕВОД
-          { label: t('card_publications_patents'), value: formatNumber(metrics.publications.conferences) }, // 🟢 ПЕРЕВОД
-          { label: t('card_publications_acts'), value: formatNumber(metrics.publications.books) }, // 🟢 ПЕРЕВОД
-          { label: t('card_publications_monographs'), value: formatNumber(metrics.publications.other) }, // 🟢 ПЕРЕВОД
-          { label: t('card_publications_security_docs'), value: formatNumber(metrics.publications.other) }, // 🟢 НОВЫЙ ПЕРЕВОД
-          { label: t('card_publications_implementations'), value: formatNumber(metrics.publications.other) }, // 🟢 НОВЫЙ ПЕРЕВОД
+          { label: t('card_publications_scopus'), value: formatNumber(metrics.publications.journals) },
+          { label: t('card_publications_patents'), value: formatNumber(metrics.publications.conferences) },
+          { label: t('card_publications_acts'), value: formatNumber(metrics.publications.books) },
+          { label: t('card_publications_monographs'), value: formatNumber(metrics.publications.other) },
+          { label: t('card_publications_security_docs'), value: formatNumber(metrics.publications.other) },
+          { label: t('card_publications_implementations'), value: formatNumber(metrics.publications.other) },
         ],
       },
       {
-        title: t('card_employees_title'), // 🟢 ПЕРЕВОД
+        title: t('card_employees_title'),
         icon: <Users2 size={40} />,
         value: formatNumber(metrics.people.total),
-        unit: t('unit_people'), // 🟢 ПЕРЕВОД
+        unit: t('unit_people'),
         details: [
-          { label: t('card_employees_doctors'), value: formatNumber(metrics.people.docents) }, // 🟢 ПЕРЕВОД
-          { label: t('card_employees_candidates'), value: formatNumber(metrics.people.professors) }, // 🟢 ПЕРЕВОД
-          { label: t('card_employees_masters'), value: formatNumber(metrics.people.associateProfessors) }, // 🟢 ПЕРЕВОД
-          { label: t('card_employees_h_index_high'), value: metrics.people.avgAge.toFixed(1) }, // 🟢 ПЕРЕВОД
+          { label: t('card_employees_doctors'), value: formatNumber(metrics.people.docents) },
+          { label: t('card_employees_candidates'), value: formatNumber(metrics.people.professors) },
+          { label: t('card_employees_masters'), value: formatNumber(metrics.people.associateProfessors) },
+          { label: t('card_employees_h_index_high'), value: metrics.people.avgAge.toFixed(1) },
         ],
       },
       {
-        title: t('card_finances_title'), // 🟢 ПЕРЕВОД
+        title: t('card_finances_title'),
         icon: <DollarSign size={40} />,
         value: formatNumber(metrics.finances.total, { maximumFractionDigits: 1 }),
-        unit: t('unit_mlrd_tg'), // 🟢 ПЕРЕВОД
+        unit: t('unit_mlrd_tg'),
         details: [
           {
-            label: t('card_finances_total_current_year'), // 🟢 НОВЫЙ ПЕРЕВОД
-            value: `${formatNumber(metrics.finances.lastYear, { maximumFractionDigits: 1 })} ${t('unit_mlrd_tg')}`, // 🟢 ПЕРЕВОД (Ед. изм)
+            label: t('card_finances_total_current_year'),
+            value: `${formatNumber(metrics.finances.lastYear, { maximumFractionDigits: 1 })} ${t('unit_mlrd_tg')}`,
           },
           {
-            label: t('card_finances_avg_per_project'), // 🟢 НОВЫЙ ПЕРЕВОД
-            value: `${formatNumber(metrics.finances.avgExpense, { maximumFractionDigits: 0 })} ${t('unit_thousand_tg')}`, // 🟢 НОВЫЙ ПЕРЕВОД (Ед. изм)
+            label: t('card_finances_avg_per_project'),
+            value: `${formatNumber(metrics.finances.avgExpense, { maximumFractionDigits: 0 })} ${t('unit_thousand_tg')}`,
           },
           {
-            label: t('card_finances_cofinancing_amount'), // 🟢 НОВЫЙ ПЕРЕВОД
+            label: t('card_finances_cofinancing_amount'),
             value: `${formatNumber(metrics.finances.budgetUsage, { maximumFractionDigits: 1 })}%`,
           },
           {
-            label: t('card_finances_regional_programs'), // 🟢 НОВЫЙ ПЕРЕВОД
+            label: t('card_finances_regional_programs'),
             value: formatNumber(metrics.finances.regionalPrograms),
           },
         ],
@@ -148,23 +148,23 @@ const HomePage: React.FC = () => {
 
   const mapHighlights = [
     {
-      label: t('projects_page_title'), // 🟢 ПЕРЕВОД
+      label: t('projects_page_title'),
       value: formatNumber(metrics.projects.total),
       path: '/projects',
     },
     {
-      label: t('publications_page_title'), // 🟢 ПЕРЕВОД
+      label: t('publications_page_title'),
       value: formatNumber(metrics.publications.total),
       path: '/publications',
     },
     {
-      label: t('employees_page_title'), // 🟢 ПЕРЕВОД
+      label: t('employees_page_title'),
       value: formatNumber(metrics.people.total),
       path: '/employees',
     },
     {
-      label: t('finances_page_title'), // 🟢 ПЕРЕВОД
-      value: `${formatNumber(metrics.finances.total, { maximumFractionDigits: 1 })} ${t('unit_mlrd_tg')}`, // 🟢 ПЕРЕВОД (Ед. изм)
+      label: t('finances_page_title'),
+      value: `${formatNumber(metrics.finances.total, { maximumFractionDigits: 1 })} ${t('unit_mlrd_tg')}`,
       path: '/finances',
     },
   ];
@@ -246,11 +246,11 @@ const HomePage: React.FC = () => {
 
             <aside className="map-info">
               <span className="map-tag">
-                {selectedRegion ? t('map_tag_selected') : t('map_tag_national')} {/* 🟢 ПЕРЕВОД */}
+                {selectedRegion ? t('map_tag_selected') : t('map_tag_national')}
               </span>
-              <h2>{selectedRegion?.name ?? t('republic_kazakhstan')}</h2> {/* 🟢 ПЕРЕВОД */}
+              <h2>{selectedRegion?.name ?? t('republic_kazakhstan')}</h2>
               <p className="map-info-subtitle">
-                {t('map_subtitle')} {/* 🟢 НОВЫЙ ПЕРЕВОД */}
+                {t('map_subtitle')}
                 {isDashboardLoading ? ' · Загрузка...' : ''}
               </p>
               {dashboardError && <p className="map-info-subtitle">{dashboardError}</p>}
@@ -268,7 +268,7 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      <section className="stats-section" aria-label={t('stats_section_title')}> {/* 🟢 ПЕРЕВОД */}
+      <section className="stats-section" aria-label={t('stats_section_title')}>
         <div className="stats-grid">
           {summaryCards.map((stat) => (
             <article key={stat.title} className="stat-card">

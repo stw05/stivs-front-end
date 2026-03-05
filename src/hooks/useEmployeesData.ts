@@ -45,19 +45,29 @@ export const useEmployeesData = <TEmployee>({
     degree: Array<{ value: string; count: number }>;
   } | null>(null);
   useEffect(() => {
+    const controller = new AbortController();
+
     const loadEmployeeFilters = async () => {
       try {
         const payload = await employeesApi.filters();
-        setEmployeeFilters({
-          position: payload.position,
-          degree: payload.degree,
-        });
+        if (!controller.signal.aborted) {
+          setEmployeeFilters({
+            position: payload.position,
+            degree: payload.degree,
+          });
+        }
       } catch {
-        setEmployeeFilters(null);
+        if (!controller.signal.aborted) {
+          setEmployeeFilters(null);
+        }
       }
     };
 
     void loadEmployeeFilters();
+
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   useEffect(() => {

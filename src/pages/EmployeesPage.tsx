@@ -42,7 +42,7 @@ interface Employee {
 }
 
 const initialEmployees: Employee[] = [
-  // 🟢 ОБНОВЛЕННЫЕ МОК-ДАННЫЕ (добавлены mrntiCode и classifier)
+
   { id: 'e1', name: 'Иванов И.И.', position: 'Профессор', department: 'Кафедра А', regionId: 'almaty-city', hireDate: '2015-01-10', email: 'ivanov@uni.kz', birthYear: 1985, affiliateType: 'staff', gender: 'male', degree: 'doctor', citizenship: 'resident', projectRole: 'Руководитель', hIndex: 7, mrntiCode: '11.00.00', classifier: 'technical' , scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171' },
   { id: 'e2', name: 'Петрова А.К.', position: 'Доцент', department: 'Кафедра B', regionId: 'west-kazakhstan', hireDate: '2018-05-20', email: 'petrova@uni.kz', birthYear: 1990, affiliateType: 'staff', gender: 'female', degree: 'candidate', citizenship: 'resident', projectRole: 'Исполнитель', hIndex: 4, mrntiCode: '27.00.00', classifier: 'social', scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171' },
   { id: 'e3', name: 'Сидоров Н.В.', position: 'Научный сотрудник', department: 'Лаборатория', regionId: 'shymkent-city', hireDate: '2020-09-01', email: 'sidorov@uni.kz', birthYear: 1978, affiliateType: 'external', gender: 'male', degree: 'phd', citizenship: 'non-resident', projectRole: 'Консультант', hIndex: 1, mrntiCode: '11.00.00', classifier: 'economic' , scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171' },
@@ -405,14 +405,14 @@ const EmployeesPage: React.FC = () => {
       list = list.filter((e) => e.department === department);
     }
 
-    // 🟢 7. ФИЛЬТРАЦИЯ ПО МРНТИ
+
     if (filters.mrnti !== 'all') {
         // ✅ ИСПРАВЛЕНО
         list = list.filter((emp) => emp.mrntiCode === filters.mrnti); 
     }
     
-    // 🟢 8. ФИЛЬТРАЦИЯ ПО КЛАССИФИКАТОРУ
-    // 🟢 9. ФИЛЬТРАЦИЯ ПО РЕГИОНУ (фильтр на боковой панели)
+
+
     if (filters.regionId !== 'all') {
         // ✅ ИСПРАВЛЕНО
         list = list.filter((emp) => emp.regionId === filters.regionId);
@@ -470,9 +470,8 @@ const EmployeesPage: React.FC = () => {
   }, [filters, sort, employeesData]);
 
   // Заглушка для действий с сотрудниками
-  const handleAction = (action: string, employee?: Employee) => {
-    const employeeName = employee ? employee.name : t('new_employee');
-    alert(`${action}: ${employeeName}`);
+  const handleAction = (_action: string, _employee?: Employee) => {
+    // TODO: implement employee actions
   };
   
   const totalEmployeesCount = filteredEmployees.length;
@@ -697,11 +696,11 @@ const EmployeesPage: React.FC = () => {
           </div>
 
           <div className="employees-filter-block">
-            {/* 🟢 ЗАГОЛОВОК СЕКЦИИ */}
+
             <div className="employees-filter-title">{t('filter_section_research_codes')}</div>
             <div className="employees-filters-grid">
               <div className="employees-filter-item">
-                {/* 🟢 ФИЛЬТР: МРНТИ */}
+
                 <label htmlFor="mrnti">
                   {t('filter_label_mrnti')}
                   <span className="employees-filter-badge">доступно {employeesAvailableCounts.mrnti}</span>
@@ -721,10 +720,10 @@ const EmployeesPage: React.FC = () => {
           </div>
 
          <div className="employees-filter-block">
-            {/* 🟢 ЗАГОЛОВОК СЕКЦИИ */}
+
             <div className="employees-filter-title">{t('filter_section_metrics')}</div>
             <div className="employees-filter-item employees-filter-item--vertical">
-              {/* 🟢 ФИЛЬТР: ВОЗРАСТ */}
+
               <label>{t('filter_label_age_years')}</label>
               <div className="employees-age-range">
                 <input
@@ -746,7 +745,7 @@ const EmployeesPage: React.FC = () => {
             </div>
 
             <div className="employees-filter-item">
-              {/* 🟢 ФИЛЬТР: H-INDEX */}
+
               <label htmlFor="h-index-filter">
                 {t('filter_label_hindex')}
                 <span className="employees-filter-badge">доступно {employeesAvailableCounts.hIndex}</span>
@@ -766,7 +765,7 @@ const EmployeesPage: React.FC = () => {
           </div>
 
           <div className="employees-filter-actions">
-            {/* 🟢 КНОПКА СБРОСА ФИЛЬТРОВ */}
+
             <button type="button" onClick={resetFilters}>
               {t('button_reset_filters')}
             </button>

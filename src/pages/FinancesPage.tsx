@@ -713,14 +713,14 @@ const FinancesPage: React.FC = () => {
 
     return [
       {
-        label: t('comparison_projects_count'), // 🟢 ПЕРЕВОД
+        label: t('comparison_projects_count'),
         // label: 'Финансирование, млрд. тг',
         regionValue: `${formatNumber(adjustedMetrics.finances.total, { maximumFractionDigits: 1 })}`,
         nationalValue: `${formatNumber(nationalMetrics.finances.total, { maximumFractionDigits: 1 })}`,
         delta: t('finances_share_value', { value: share.toFixed(1) }),
       },
       {
-        label: t('comparison_total_finances'), // 🟢 ПЕРЕВОД
+        label: t('comparison_total_finances'),
         // label: 'Финансирование за прошлый год, млрд. тг',
         regionValue: `${formatNumber(adjustedMetrics.finances.lastYear, { maximumFractionDigits: 1 })}`,
         nationalValue: `${formatNumber(nationalMetrics.finances.lastYear, { maximumFractionDigits: 1 })}`,
@@ -729,7 +729,7 @@ const FinancesPage: React.FC = () => {
         }),
       },
       {
-        label: t('comparison_avg_expense'), // 🟢 ПЕРЕВОД
+        label: t('comparison_avg_expense'),
         regionValue: `${formatNumber(adjustedMetrics.finances.avgExpense)}`,
         nationalValue: `${formatNumber(nationalMetrics.finances.avgExpense)}`,
         delta: t('finances_difference_currency', {
@@ -737,7 +737,7 @@ const FinancesPage: React.FC = () => {
         }),
       },
       {
-        label: t('comparison_budget_usage'), // 🟢 ПЕРЕВОД
+        label: t('comparison_budget_usage'),
         regionValue: `${formatNumber(adjustedMetrics.finances.budgetUsage, { maximumFractionDigits: 1 })}%`,
         nationalValue: `${formatNumber(nationalMetrics.finances.budgetUsage, { maximumFractionDigits: 1 })}%`,
         delta: t('finances_difference_pp', {
@@ -745,7 +745,7 @@ const FinancesPage: React.FC = () => {
         }),
       },
       {
-        label: t('comparison_regional_programs'), // 🟢 ПЕРЕВОД
+        label: t('comparison_regional_programs'),
         regionValue: `${formatNumber(adjustedMetrics.finances.regionalPrograms)}`,
         nationalValue: `${formatNumber(nationalMetrics.finances.regionalPrograms)}`,
         delta: t('finances_share_value', {
@@ -759,7 +759,7 @@ const FinancesPage: React.FC = () => {
 
   const highlightCards = [
     {
-      title: t('card_total_financing'), // 🟢 ПЕРЕВОД
+      title: t('card_total_financing'),
       value: `${formatNumber(adjustedMetrics.finances.total, { maximumFractionDigits: 1 })} ${currencyUnitShort}`,
       icon: DollarSign,
       iconBg: 'rgba(59, 130, 246, 0.15)',
@@ -767,7 +767,7 @@ const FinancesPage: React.FC = () => {
       accent: 'rgba(59, 130, 246, 0.35)',
     },
     {
-      title: t('card_current_year_financing'), // 🟢 ПЕРЕВОД
+      title: t('card_current_year_financing'),
       value: `${formatNumber(adjustedMetrics.finances.lastYear, { maximumFractionDigits: 1 })} ${currencyUnitShort}`,
       icon: TrendingUp,
       iconBg: 'rgba(16, 185, 129, 0.15)',

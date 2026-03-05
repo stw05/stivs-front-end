@@ -1,42 +1,37 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import './AdminAuthPage.css';
 import { ApiError } from '../api/client';
 import { authApi } from '../api/services';
 
-const AdminAuthPage: React.FC = () => {
+const AdminAuthPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [pin, setPin] = useState('');
-  const [rememberDevice, setRememberDevice] = useState(true);
-  const [showPin, setShowPin] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
+    setFormError(null);
     try {
       const response = await authApi.login(email, password);
       const userRole = response.role ?? response.user.role;
       if (userRole !== 'admin') {
-        alert('Доступ в админ-панель разрешён только пользователям с ролью admin.');
+        setFormError(t('admin_auth_access_denied', 'Доступ в админ-панель разрешён только пользователям с ролью admin.'));
         return;
       }
       authApi.persistAuth(response);
       navigate('/admin/console');
     } catch (error) {
-      const message = error instanceof ApiError ? error.message : 'Ошибка входа в админ-панель.';
-      alert(message);
+      const message = error instanceof ApiError ? error.message : t('admin_auth_error', 'Ошибка входа в админ-панель.');
+      setFormError(message);
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleGeneratePin = () => {
-    setShowPin(true);
   };
 
   return (
@@ -48,6 +43,8 @@ const AdminAuthPage: React.FC = () => {
         </header>
 
         <form className="admin-auth-form" onSubmit={handleSubmit}>
+          {formError && <p className="form-error" role="alert">{formError}</p>}
+
           <label className="auth-field">
             <span>{t('admin_auth_email_label')}</span>
             <input
@@ -70,37 +67,9 @@ const AdminAuthPage: React.FC = () => {
             />
           </label>
 
-          <div className="auth-mfa">
-            <div>
-              <span>{t('admin_auth_pin_label')}</span>
-              <button type="button" onClick={handleGeneratePin}>
-                {t('admin_auth_request_pin')}
-              </button>
-            </div>
-            {showPin && (
-              <input
-                type="text"
-                value={pin}
-                onChange={(event) => setPin(event.target.value)}
-                inputMode="numeric"
-                placeholder="000000"
-                maxLength={6}
-              />
-            )}
-          </div>
-
-          <label className="auth-remember">
-            <input
-              type="checkbox"
-              checked={rememberDevice}
-              onChange={(event) => setRememberDevice(event.target.checked)}
-            />
-            <span>{t('admin_auth_remember_label')}</span>
-          </label>
-
           <div className="auth-actions">
             <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Входим...' : t('admin_auth_login_button')}
+              {isSubmitting ? t('admin_auth_loading', 'Входим...') : t('admin_auth_login_button')}
             </button>
             <button type="button" className="ghost" onClick={() => navigate('/')}>{t('admin_auth_main_site')}</button>
           </div>

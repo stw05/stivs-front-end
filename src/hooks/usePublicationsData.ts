@@ -32,19 +32,29 @@ export const usePublicationsData = ({
     applicant: Array<{ value: string; count: number }>;
   } | null>(null);
   useEffect(() => {
+    const controller = new AbortController();
+
     const loadPublicationFilters = async () => {
       try {
         const payload = await publicationsApi.filters();
-        setPublicationFilters({
-          type: payload.type,
-          applicant: payload.applicant,
-        });
+        if (!controller.signal.aborted) {
+          setPublicationFilters({
+            type: payload.type,
+            applicant: payload.applicant,
+          });
+        }
       } catch {
-        setPublicationFilters(null);
+        if (!controller.signal.aborted) {
+          setPublicationFilters(null);
+        }
       }
     };
 
     void loadPublicationFilters();
+
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   useEffect(() => {

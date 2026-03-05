@@ -50,21 +50,31 @@ export const useProjectsData = <TProject>({
     financingType: Array<{ value: string; count: number }>;
   } | null>(null);
   useEffect(() => {
+    const controller = new AbortController();
+
     const loadProjectFilters = async () => {
       try {
         const payload = await projectsApi.filters();
-        setProjectFilters({
-          irn: payload.irn,
-          applicant: payload.applicant,
-          mrnti: payload.mrnti,
-          trl: payload.trl,
-        });
+        if (!controller.signal.aborted) {
+          setProjectFilters({
+            irn: payload.irn,
+            applicant: payload.applicant,
+            mrnti: payload.mrnti,
+            trl: payload.trl,
+          });
+        }
       } catch {
-        setProjectFilters(null);
+        if (!controller.signal.aborted) {
+          setProjectFilters(null);
+        }
       }
     };
 
     void loadProjectFilters();
+
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   useEffect(() => {

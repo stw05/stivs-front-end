@@ -1,13 +1,14 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import type { FC, ReactNode } from 'react';
 import { regionsData } from '../components/Home/regionsData';
 import { RegionContext } from './RegionContext';
 import type { RegionContextValue, RegionId } from './RegionContext';
 
 interface RegionProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
-export const RegionProvider: React.FC<RegionProviderProps> = ({ children }) => {
+export const RegionProvider: FC<RegionProviderProps> = ({ children }) => {
   const [selectedRegionId, setSelectedRegionId] = useState<RegionId>('national');
 
   const value = useMemo<RegionContextValue>(() => {
