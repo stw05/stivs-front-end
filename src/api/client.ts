@@ -23,6 +23,7 @@ interface RequestOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   body?: unknown;
   auth?: boolean;
+  signal?: AbortSignal;
 }
 
 export class ApiError extends Error {
@@ -53,7 +54,7 @@ export const buildUrl = (path: string, query?: Record<string, string | number | 
 };
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, auth = false } = options;
+  const { method = 'GET', body, auth = false, signal } = options;
   const headers: Record<string, string> = {
     Accept: 'application/json',
   };
@@ -73,6 +74,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
+    signal,
   });
 
   if (!response.ok) {

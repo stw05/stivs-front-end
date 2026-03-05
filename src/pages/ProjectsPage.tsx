@@ -4,9 +4,9 @@ import { useRegionContext } from '../context/RegionContext';
 import type { RegionId } from '../context/RegionContext';
 import { useTranslation } from 'react-i18next';
 import './ProjectsPage.css';
-import { ApiError } from '../api/client';
-import { mapRegionToId, projectsApi } from '../api/services';
-import type { BackendProject, PaginationMeta } from '../api/types';
+import { mapRegionToId } from '../api/services';
+import type { BackendProject } from '../api/types';
+import { useProjectsData } from '../hooks/useProjectsData';
 
 type FinancingType = 'grant' | 'program' | 'contract';
 type PriorityDirection = 'health' | 'economy' | 'ecology' | 'energy' | 'transport' | 'ai';
@@ -311,6 +311,51 @@ const formatCurrency = (value: number): string =>
 		maximumFractionDigits: 0,
 	}).format(value);
 
+const toProjectStatus = (value: string): ProjectStatus => {
+	if (value === 'active') {
+		return 'active';
+	}
+	if (value === 'completed') {
+		return 'completed';
+	}
+	return 'draft';
+};
+
+const toProject = (item: BackendProject): Project => {
+	const startYear = item.startDate ? new Date(item.startDate).getFullYear() : YEAR_RANGE.min;
+	const endYear = item.endDate ? new Date(item.endDate).getFullYear() : YEAR_RANGE.max;
+	const tags = item.tags ?? [];
+
+	let financingType: FinancingType = 'grant';
+	if (tags.some((tag) => tag.toLowerCase().includes('contract'))) {
+		financingType = 'contract';
+	} else if (tags.some((tag) => tag.toLowerCase().includes('program'))) {
+		financingType = 'program';
+	}
+
+	const parsedTrlTag = tags.find((tag) => /^trl[-\s]?\d$/i.test(tag));
+	const trlValue = parsedTrlTag ? Number(parsedTrlTag.replace(/[^\d]/g, '')) : 4;
+
+	return {
+		id: item.id,
+		irn: item.id.toUpperCase(),
+		title: item.title,
+		applicant: item.lead || '—',
+		supervisor: item.lead || '—',
+		priority: 'ai',
+		contest: 'API',
+		financingType,
+		financingTotal: item.budget,
+		regionId: mapRegionToId(item.region) as RegionId,
+		customer: '—',
+		mrnti: '—',
+		status: toProjectStatus(item.status),
+		trl: (trlValue >= 3 && trlValue <= 9 ? trlValue : 4) as TrlLevel,
+		startYear: Number.isFinite(startYear) ? startYear : YEAR_RANGE.min,
+		endYear: Number.isFinite(endYear) ? endYear : YEAR_RANGE.max,
+	};
+};
+
 const ProjectsPage: React.FC = () => {
 	const { t } = useTranslation();
 	const { selectedRegionId, setSelectedRegionId, regions } = useRegionContext();
@@ -401,31 +446,8 @@ const ProjectsPage: React.FC = () => {
 		),
 	);
 	const [isColumnPickerOpen, setIsColumnPickerOpen] = useState(false);
-	const [projectsData, setProjectsData] = useState<Project[]>(initialProjects);
-	const [isLoading, setIsLoading] = useState(false);
-	const [loadError, setLoadError] = useState<string | null>(null);
 	const [debouncedSearch, setDebouncedSearch] = useState('');
-	const [projectFilters, setProjectFilters] = useState<{
-		irn: string[];
-		applicant: string[];
-		mrnti: string[];
-		trl: string[];
-	} | null>(null);
-	const [projectFiltersMeta, setProjectFiltersMeta] = useState<{
-		irn: Array<{ value: string; count: number }>;
-		applicant: Array<{ value: string; count: number }>;
-		mrnti: Array<{ value: string; count: number }>;
-		financingType: Array<{ value: string; count: number }>;
-	} | null>(null);
 	const [currentPage, setCurrentPage] = useState(1);
-	const [pageMeta, setPageMeta] = useState<PaginationMeta>({
-		page: 1,
-		limit: PAGE_LIMIT,
-		total: 0,
-		totalPages: 0,
-		hasNextPage: false,
-		hasPrevPage: false,
-	});
 	const columnPickerRef = useRef<HTMLDivElement | null>(null);
 	const [openDropdown, setOpenDropdown] = useState<DropdownFilterKey | null>(null);
 	const [dropdownSearch, setDropdownSearch] = useState<Record<DropdownFilterKey, string>>(() =>
@@ -435,6 +457,31 @@ const ProjectsPage: React.FC = () => {
 		}, {} as Record<DropdownFilterKey, string>),
 	);
 	const dropdownRefs = useRef<Partial<Record<DropdownFilterKey, HTMLDivElement | null>>>({});
+	const regionNameById = useMemo(() => {
+		const map: Record<string, string> = {};
+		regions.forEach((region) => {
+			map[region.id] = region.name;
+		});
+		return map;
+	}, [regions]);
+
+	const {
+		projectsData,
+		isLoading,
+		loadError,
+		projectFilters,
+		projectFiltersMeta,
+		pageMeta,
+	} = useProjectsData({
+		filters,
+		debouncedSearch,
+		selectedRegionId,
+		regionNameById,
+		currentPage,
+		pageLimit: PAGE_LIMIT,
+		fallbackItems: initialProjects,
+		mapItem: toProject,
+	});
 
 	const irnOptions = useMemo(
 		() => ['all', ...(projectFilters?.irn.length ? projectFilters.irn : [...new Set(projectsData.map((item) => item.irn))])],
@@ -524,14 +571,6 @@ const ProjectsPage: React.FC = () => {
 		],
 	);
 
-	const regionNameById = useMemo(() => {
-		const map: Record<string, string> = {};
-		regions.forEach((region) => {
-			map[region.id] = region.name;
-		});
-		return map;
-	}, [regions]);
-
 	const activeColumns = useMemo(
 		() => columnDefinitionsLocal.filter((column) => visibleColumns[column.key]),
 		[visibleColumns, columnDefinitionsLocal],
@@ -574,168 +613,12 @@ const ProjectsPage: React.FC = () => {
 	}, [isColumnPickerOpen]);
 
 	useEffect(() => {
-		const loadProjectFilters = async () => {
-			try {
-				const payload = await projectsApi.filters();
-				setProjectFilters({
-					irn: payload.irn,
-					applicant: payload.applicant,
-					mrnti: payload.mrnti,
-					trl: payload.trl,
-				});
-			} catch {
-				setProjectFilters(null);
-			}
-		};
-
-		void loadProjectFilters();
-	}, []);
-
-	useEffect(() => {
 		const timeout = window.setTimeout(() => {
 			setDebouncedSearch(filters.search);
 		}, 300);
 
 		return () => window.clearTimeout(timeout);
 	}, [filters.search]);
-
-	useEffect(() => {
-		const loadProjectFilterMeta = async () => {
-			try {
-				const payload = await projectsApi.filtersMeta({
-					irn: filters.irn === 'all' ? undefined : filters.irn,
-					status: filters.status === 'all' ? undefined : filters.status,
-					region:
-						selectedRegionId === 'national'
-							? undefined
-							: (regionNameById[selectedRegionId] ?? undefined),
-					financingType: filters.financingType === 'all' ? undefined : filters.financingType,
-					priority: filters.priority === 'all' ? undefined : filters.priority,
-					applicant: filters.applicant === 'all' ? undefined : filters.applicant,
-					q: debouncedSearch || undefined,
-				});
-
-				setProjectFiltersMeta({
-					irn: payload.irn,
-					applicant: payload.applicant,
-					mrnti: payload.mrnti,
-					financingType: payload.financingType,
-				});
-			} catch {
-				setProjectFiltersMeta(null);
-			}
-		};
-
-		void loadProjectFilterMeta();
-	}, [
-		filters.applicant,
-		filters.financingType,
-		filters.irn,
-		filters.priority,
-		filters.status,
-		debouncedSearch,
-		regionNameById,
-		selectedRegionId,
-	]);
-
-	useEffect(() => {
-		const toProjectStatus = (value: string): ProjectStatus => {
-			if (value === 'active') {
-				return 'active';
-			}
-			if (value === 'completed') {
-				return 'completed';
-			}
-			return 'draft';
-		};
-
-		const toProject = (item: BackendProject): Project => {
-			const startYear = item.startDate ? new Date(item.startDate).getFullYear() : YEAR_RANGE.min;
-			const endYear = item.endDate ? new Date(item.endDate).getFullYear() : YEAR_RANGE.max;
-			const tags = item.tags ?? [];
-
-			let financingType: FinancingType = 'grant';
-			if (tags.some((tag) => tag.toLowerCase().includes('contract'))) {
-				financingType = 'contract';
-			} else if (tags.some((tag) => tag.toLowerCase().includes('program'))) {
-				financingType = 'program';
-			}
-
-			const parsedTrlTag = tags.find((tag) => /^trl[-\s]?\d$/i.test(tag));
-			const trlValue = parsedTrlTag ? Number(parsedTrlTag.replace(/[^\d]/g, '')) : 4;
-
-			return {
-				id: item.id,
-				irn: item.id.toUpperCase(),
-				title: item.title,
-				applicant: item.lead || '—',
-				supervisor: item.lead || '—',
-				priority: 'ai',
-				contest: 'API',
-				financingType,
-				financingTotal: item.budget,
-				regionId: mapRegionToId(item.region) as RegionId,
-				customer: '—',
-				mrnti: '—',
-				status: toProjectStatus(item.status),
-				trl: (trlValue >= 3 && trlValue <= 9 ? trlValue : 4) as TrlLevel,
-				startYear: Number.isFinite(startYear) ? startYear : YEAR_RANGE.min,
-				endYear: Number.isFinite(endYear) ? endYear : YEAR_RANGE.max,
-			};
-		};
-
-		const loadProjects = async () => {
-			setIsLoading(true);
-			setLoadError(null);
-			try {
-				const payload = await projectsApi.list({
-					page: currentPage,
-					limit: PAGE_LIMIT,
-					irn: filters.irn === 'all' ? undefined : filters.irn,
-					q: debouncedSearch || undefined,
-					region:
-						selectedRegionId === 'national'
-							? undefined
-							: (regionNameById[selectedRegionId] ?? undefined),
-					financingType: filters.financingType === 'all' ? undefined : filters.financingType,
-					priority: filters.priority === 'all' ? undefined : filters.priority,
-					applicant: filters.applicant === 'all' ? undefined : filters.applicant,
-					status: filters.status === 'all' ? undefined : filters.status,
-				});
-				setProjectsData(payload.items.map(toProject));
-				setPageMeta(payload.meta);
-			} catch (error) {
-				const message = error instanceof ApiError ? error.message : 'Не удалось загрузить проекты с backend.';
-				setLoadError(message);
-				const fallbackTotal = initialProjects.length;
-				const fallbackTotalPages = Math.ceil(fallbackTotal / PAGE_LIMIT);
-				const start = (currentPage - 1) * PAGE_LIMIT;
-				setProjectsData(initialProjects.slice(start, start + PAGE_LIMIT));
-				setPageMeta({
-					page: currentPage,
-					limit: PAGE_LIMIT,
-					total: fallbackTotal,
-					totalPages: fallbackTotalPages,
-					hasNextPage: currentPage < fallbackTotalPages,
-					hasPrevPage: currentPage > 1,
-				});
-			} finally {
-				setIsLoading(false);
-			}
-		};
-
-		void loadProjects();
-	}, [
-		currentPage,
-		filters.applicant,
-		filters.financingType,
-		filters.irn,
-		filters.priority,
-		filters.status,
-		debouncedSearch,
-		regionNameById,
-		selectedRegionId,
-	]);
 
 	useEffect(() => {
 		setCurrentPage(1);
@@ -899,39 +782,8 @@ const ProjectsPage: React.FC = () => {
 		setSelectedRegionId('national');
 	};
 
-	const filteredProjects = useMemo(() => {
-		let list = projectsData.filter((project) => {
-			const matchesSearch = filters.search
-				? project.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-					project.irn.toLowerCase().includes(filters.search.toLowerCase())
-				: true;
-			const matchesYears = project.startYear >= filters.startYear && project.endYear <= filters.endYear;
-			const matchesRegion = selectedRegionId === 'national' || project.regionId === selectedRegionId;
-			const matchesIrn = filters.irn === 'all' || project.irn === filters.irn;
-			const matchesFinancing = filters.financingType === 'all' || project.financingType === filters.financingType;
-			const matchesPriority = filters.priority === 'all' || project.priority === filters.priority;
-			const matchesContest = filters.contest === 'all' || project.contest === filters.contest;
-			const matchesApplicant = filters.applicant === 'all' || project.applicant === filters.applicant;
-			const matchesCustomer = filters.customer === 'all' || project.customer === filters.customer;
-			const matchesMrnti = filters.mrnti === 'all' || project.mrnti === filters.mrnti;
-			const matchesStatus = filters.status === 'all' || project.status === filters.status;
-			const matchesTrl = filters.trl === 'all' || project.trl === filters.trl;
-
-			return (
-				matchesSearch &&
-				matchesYears &&
-				matchesRegion &&
-				matchesIrn &&
-				matchesFinancing &&
-				matchesPriority &&
-				matchesContest &&
-				matchesApplicant &&
-				matchesCustomer &&
-				matchesMrnti &&
-				matchesStatus &&
-				matchesTrl
-			);
-		});
+	const visibleProjects = useMemo(() => {
+		let list = [...projectsData];
 
 		if (sort.key && sort.direction) {
 			const key = sort.key;
@@ -950,7 +802,7 @@ const ProjectsPage: React.FC = () => {
 		}
 
 		return list;
-	}, [filters, sort, selectedRegionId, projectsData]);
+	}, [sort, projectsData]);
 
 	const totalPages = Math.max(pageMeta.totalPages, 1);
 
@@ -1284,7 +1136,7 @@ const ProjectsPage: React.FC = () => {
 									</tr>
 								</thead>
 								<tbody>
-									{filteredProjects.map((project) => (
+									{visibleProjects.map((project) => (
 										<tr key={project.id}>
 											{activeColumns.map((column) => (
 												<td key={`${project.id}-${column.key}`}>
@@ -1295,12 +1147,12 @@ const ProjectsPage: React.FC = () => {
 									))}
 								</tbody>
 							</table>
-							{filteredProjects.length === 0 && (
+							{visibleProjects.length === 0 && (
 								<div className="no-results">{t('projects_not_found')}</div>
 							)}
 						</div>
 						<p className="projects-summary">
-							{t('projects_shown')} {filteredProjects.length} {t('projects_from_total')} {pageMeta.total}
+							{t('projects_shown')} {visibleProjects.length} {t('projects_from_total')} {pageMeta.total}
 						</p>
 						<div className="projects-pagination">
 							<button

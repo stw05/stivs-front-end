@@ -142,11 +142,17 @@ export const projectsApi = {
     financingType?: string;
     priority?: string;
     applicant?: string;
+    contest?: string;
+    customer?: string;
+    mrnti?: string;
+    trl?: number;
+    startYear?: number;
+    endYear?: number;
     q?: string;
     page?: number;
     limit?: number;
-  }) {
-    return apiRequest<PaginatedResponse<BackendProject>>(withQuery('/api/projects', query));
+  }, signal?: AbortSignal) {
+    return apiRequest<PaginatedResponse<BackendProject>>(withQuery('/api/projects', query), { signal });
   },
 
   filters() {
@@ -176,8 +182,8 @@ export const employeesApi = {
     q?: string;
     page?: number;
     limit?: number;
-  }) {
-    return apiRequest<PaginatedResponse<BackendEmployee>>(withQuery('/api/employees', query));
+  }, signal?: AbortSignal) {
+    return apiRequest<PaginatedResponse<BackendEmployee>>(withQuery('/api/employees', query), { signal });
   },
 
   filters() {
@@ -191,28 +197,28 @@ export const employeesApi = {
     minHIndex?: number;
     maxHIndex?: number;
     q?: string;
-  }) {
-    return apiRequest<EmployeeFilterMeta>(withQuery('/api/employees/filters-meta', query));
+  }, signal?: AbortSignal) {
+    return apiRequest<EmployeeFilterMeta>(withQuery('/api/employees/filters-meta', query), { signal });
   },
 };
 
 export const publicationsApi = {
-  list(query?: { year?: number; type?: string; q?: string; page?: number; limit?: number }) {
-    return apiRequest<PaginatedResponse<BackendPublication>>(withQuery('/api/publications', query));
+  list(query?: { year?: number; type?: string; q?: string; page?: number; limit?: number }, signal?: AbortSignal) {
+    return apiRequest<PaginatedResponse<BackendPublication>>(withQuery('/api/publications', query), { signal });
   },
 
   filters() {
     return apiRequest<PublicationFilterOptions>('/api/publications/filters');
   },
 
-  filtersMeta(query?: { year?: number; type?: string; q?: string }) {
-    return apiRequest<PublicationFilterMeta>(withQuery('/api/publications/filters-meta', query));
+  filtersMeta(query?: { year?: number; type?: string; q?: string }, signal?: AbortSignal) {
+    return apiRequest<PublicationFilterMeta>(withQuery('/api/publications/filters-meta', query), { signal });
   },
 };
 
 export const financesApi = {
-  summary(year?: number) {
-    return apiRequest<FinanceSummary>(withQuery('/api/finances/summary', year ? { year } : undefined));
+  summary(year?: number, signal?: AbortSignal) {
+    return apiRequest<FinanceSummary>(withQuery('/api/finances/summary', year ? { year } : undefined), { signal });
   },
 };
 

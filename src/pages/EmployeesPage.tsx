@@ -5,9 +5,9 @@ import { useRegionContext } from '../context/RegionContext';
 import type { RegionId } from '../context/RegionContext'; 
 import './EmployeesPage.css';
 import { useTranslation } from 'react-i18next';
-import { ApiError } from '../api/client';
-import { employeesApi, mapRegionToId } from '../api/services';
-import type { BackendEmployee, PaginationMeta } from '../api/types';
+import { mapRegionToId } from '../api/services';
+import type { BackendEmployee } from '../api/types';
+import { useEmployeesData } from '../hooks/useEmployeesData';
 
 // --- 1. Типы данных и мок-данные ---
 export type AffiliateType = 'staff' | 'external' | 'all'; // Штатный/Сторонний/Все
@@ -138,30 +138,47 @@ const createInitialFilters = (): EmployeeFilters => ({
   regionId: 'all',
 });
 
+const toEmployee = (item: BackendEmployee): Employee => {
+  const metrics = item.metrics ?? {};
+  const hIndexRaw = metrics.hIndex;
+  const hIndex = typeof hIndexRaw === 'number' ? hIndexRaw : Number(hIndexRaw ?? 0);
+  const researcherIdWosRaw = metrics.researcherIdWos;
+  const researcherIdWos = typeof researcherIdWosRaw === 'string' ? researcherIdWosRaw : '';
+  const scopusRaw = metrics.scopusAuthorId;
+  const scopusAuthorId = typeof scopusRaw === 'string' ? scopusRaw : '';
+  const hIndexScopusRaw = metrics.hIndexScopus;
+  const hIndexScopus = typeof hIndexScopusRaw === 'number'
+    ? hIndexScopusRaw
+    : Number(hIndexScopusRaw ?? hIndex);
+
+  return {
+    id: item.id,
+    name: item.name,
+    position: item.position,
+    department: item.department || '—',
+    regionId: mapRegionToId(item.region) as RegionId,
+    hireDate: new Date().toISOString().slice(0, 10),
+    email: item.email,
+    birthYear: 1990,
+    affiliateType: 'staff',
+    gender: 'male',
+    degree: 'none',
+    citizenship: 'resident',
+    projectRole: 'Исполнитель',
+    hIndex: Number.isFinite(hIndex) ? hIndex : 0,
+    hIndexScopus: Number.isFinite(hIndexScopus) ? hIndexScopus : Number.isFinite(hIndex) ? hIndex : 0,
+    mrntiCode: '11.00.00',
+    classifier: 'technical',
+    scopusAuthorId: scopusAuthorId || '-',
+    researcherIdWos: researcherIdWos || '-',
+  };
+};
+
 // --- 3. Компонент страницы ---
 const EmployeesPage: React.FC = () => {
   const { selectedRegionId, regions } = useRegionContext();
   const { t } = useTranslation(); 
-  const [employeesData, setEmployeesData] = useState<Employee[]>(initialEmployees);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [employeeFilters, setEmployeeFilters] = useState<{
-    position: string[];
-    degree: string[];
-  } | null>(null);
-  const [employeeFiltersMeta, setEmployeeFiltersMeta] = useState<{
-    position: Array<{ value: string; count: number }>;
-    degree: Array<{ value: string; count: number }>;
-  } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageMeta, setPageMeta] = useState<PaginationMeta>({
-    page: 1,
-    limit: PAGE_LIMIT,
-    total: 0,
-    totalPages: 0,
-    hasNextPage: false,
-    hasPrevPage: false,
-  });
   
   const [filters, setFilters] = useState<EmployeeFilters>(() => createInitialFilters());
   
@@ -179,6 +196,23 @@ const EmployeesPage: React.FC = () => {
     });
     return map;
   }, [regions]);
+
+  const {
+    employeesData,
+    isLoading,
+    loadError,
+    employeeFilters,
+    employeeFiltersMeta,
+    pageMeta,
+  } = useEmployeesData({
+    filters,
+    selectedRegionId,
+    regionNameById,
+    currentPage,
+    pageLimit: PAGE_LIMIT,
+    fallbackItems: initialEmployees,
+    mapItem: toEmployee,
+  });
 
   const activeColumns = useMemo(
     () => employeeColumnDefinitions.filter((column) => visibleColumns[column.key]),
@@ -231,155 +265,6 @@ const EmployeesPage: React.FC = () => {
     }),
     [allDegrees.length, allDepartments.length, allPositions.length, allProjectRoles.length, regions.length],
   );
-
-  useEffect(() => {
-    const loadEmployeeFilters = async () => {
-      try {
-        const payload = await employeesApi.filters();
-        setEmployeeFilters({
-          position: payload.position,
-          degree: payload.degree,
-        });
-      } catch {
-        setEmployeeFilters(null);
-      }
-    };
-
-    void loadEmployeeFilters();
-  }, []);
-
-  useEffect(() => {
-    const loadEmployeeFiltersMeta = async () => {
-      try {
-        const hIndexRangeByGroup: Record<HIndexGroup | 'all', { min?: number; max?: number }> = {
-          '0-1': { min: 0, max: 1 },
-          '2-5': { min: 2, max: 5 },
-          '6-10': { min: 6, max: 10 },
-          '10+': { min: 10 },
-          all: {},
-        };
-        const hIndexRange = hIndexRangeByGroup[filters.hIndexGroup];
-
-        const payload = await employeesApi.filtersMeta({
-          region: selectedRegionId === 'national' ? undefined : (regionNameById[selectedRegionId] ?? undefined),
-          position: filters.position === 'all' ? undefined : filters.position,
-          degree: filters.degree === 'all' ? undefined : filters.degree,
-          minHIndex: hIndexRange.min,
-          maxHIndex: hIndexRange.max,
-          q: filters.searchTerm || undefined,
-        });
-
-        setEmployeeFiltersMeta({
-          position: payload.position,
-          degree: payload.degree,
-        });
-      } catch {
-        setEmployeeFiltersMeta(null);
-      }
-    };
-
-    void loadEmployeeFiltersMeta();
-  }, [
-    filters.degree,
-    filters.hIndexGroup,
-    filters.position,
-    filters.searchTerm,
-    regionNameById,
-    selectedRegionId,
-  ]);
-
-  useEffect(() => {
-    const toEmployee = (item: BackendEmployee): Employee => {
-      const metrics = item.metrics ?? {};
-      const hIndexRaw = metrics.hIndex;
-      const hIndex = typeof hIndexRaw === 'number' ? hIndexRaw : Number(hIndexRaw ?? 0);
-      const researcherIdWosRaw = metrics.researcherIdWos;
-      const researcherIdWos = typeof researcherIdWosRaw === 'string' ? researcherIdWosRaw : '';
-      const scopusRaw = metrics.scopusAuthorId;
-      const scopusAuthorId = typeof scopusRaw === 'string' ? scopusRaw : '';
-      const hIndexScopusRaw = metrics.hIndexScopus;
-      const hIndexScopus = typeof hIndexScopusRaw === 'number'
-        ? hIndexScopusRaw
-        : Number(hIndexScopusRaw ?? hIndex);
-
-      return {
-        id: item.id,
-        name: item.name,
-        position: item.position,
-        department: item.department || '—',
-        regionId: mapRegionToId(item.region) as RegionId,
-        hireDate: new Date().toISOString().slice(0, 10),
-        email: item.email,
-        birthYear: 1990,
-        affiliateType: 'staff',
-        gender: 'male',
-        degree: 'none',
-        citizenship: 'resident',
-        projectRole: 'Исполнитель',
-        hIndex: Number.isFinite(hIndex) ? hIndex : 0,
-        hIndexScopus: Number.isFinite(hIndexScopus) ? hIndexScopus : Number.isFinite(hIndex) ? hIndex : 0,
-        mrntiCode: '11.00.00',
-        classifier: 'technical',
-        scopusAuthorId: scopusAuthorId || '-',
-        researcherIdWos: researcherIdWos || '-',
-      };
-    };
-
-    const loadEmployees = async () => {
-      setIsLoading(true);
-      setLoadError(null);
-      try {
-        const hIndexRangeByGroup: Record<HIndexGroup | 'all', { min?: number; max?: number }> = {
-          '0-1': { min: 0, max: 1 },
-          '2-5': { min: 2, max: 5 },
-          '6-10': { min: 6, max: 10 },
-          '10+': { min: 10 },
-          all: {},
-        };
-        const hIndexRange = hIndexRangeByGroup[filters.hIndexGroup];
-
-        const payload = await employeesApi.list({
-          page: currentPage,
-          limit: PAGE_LIMIT,
-          region: selectedRegionId === 'national' ? undefined : (regionNameById[selectedRegionId] ?? undefined),
-          position: filters.position === 'all' ? undefined : filters.position,
-          degree: filters.degree === 'all' ? undefined : filters.degree,
-          minHIndex: hIndexRange.min,
-          maxHIndex: hIndexRange.max,
-          q: filters.searchTerm || undefined,
-        });
-        setEmployeesData(payload.items.map(toEmployee));
-        setPageMeta(payload.meta);
-      } catch (error) {
-        const message = error instanceof ApiError ? error.message : 'Не удалось загрузить сотрудников с backend.';
-        setLoadError(message);
-        const fallbackTotal = initialEmployees.length;
-        const fallbackTotalPages = Math.ceil(fallbackTotal / PAGE_LIMIT);
-        const start = (currentPage - 1) * PAGE_LIMIT;
-        setEmployeesData(initialEmployees.slice(start, start + PAGE_LIMIT));
-        setPageMeta({
-          page: currentPage,
-          limit: PAGE_LIMIT,
-          total: fallbackTotal,
-          totalPages: fallbackTotalPages,
-          hasNextPage: currentPage < fallbackTotalPages,
-          hasPrevPage: currentPage > 1,
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void loadEmployees();
-  }, [
-    currentPage,
-    filters.degree,
-    filters.hIndexGroup,
-    filters.position,
-    filters.searchTerm,
-    regionNameById,
-    selectedRegionId,
-  ]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -468,15 +353,6 @@ const EmployeesPage: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isColumnPickerOpen]);
 
-
-  // Функция для преобразования H-index в группу
-  const getHIndexGroup = (hIndex: number): HIndexGroup | '10+' => {
-      if (hIndex >= 0 && hIndex <= 1) return '0-1';
-      if (hIndex >= 2 && hIndex <= 5) return '2-5';
-      if (hIndex >= 6 && hIndex <= 10) return '6-10';
-     return '10+';
-  };
-
   const renderEmployeeCell = (columnKey: EmployeeColumnKey, employee: Employee): React.ReactNode => {
     switch (columnKey) {
       case 'name':
@@ -522,17 +398,7 @@ const EmployeesPage: React.FC = () => {
   // --- ЛОГИКА ФИЛЬТРАЦИИ И СОРТИРОВКИ ---
   const filteredEmployees = useMemo(() => {
     let list = employeesData;
-    const { searchTerm, position, department, minAge, maxAge, affiliateType, gender, degree, citizenship, projectRole, hIndexGroup } = filters;
-
-    // 1. Фильтрация по региону
-    if (selectedRegionId !== 'national') {
-      list = list.filter((e) => e.regionId === selectedRegionId);
-    }
-
-    // 2. Фильтрация по должности
-    if (position !== 'all') {
-      list = list.filter((e) => e.position === position);
-    }
+    const { department, minAge, maxAge, affiliateType, gender, citizenship, projectRole } = filters;
     
     // 3. Фильтрация по подразделению
     if (department !== 'all') {
@@ -562,11 +428,6 @@ const EmployeesPage: React.FC = () => {
         list = list.filter(e => e.gender === gender);
     }
     
-    // 6. Фильтрация по ученой степени
-    if (degree !== 'all') {
-        list = list.filter(e => e.degree === degree);
-    }
-    
     // 7. Фильтрация по гражданству
     if (citizenship !== 'all') {
         list = list.filter(e => e.citizenship === citizenship);
@@ -577,31 +438,14 @@ const EmployeesPage: React.FC = () => {
         list = list.filter(e => e.projectRole === projectRole);
     }
 
-    // 9. Фильтрация по H-index
-    if (hIndexGroup !== 'all') {
-        list = list.filter(e => getHIndexGroup(e.hIndex) === hIndexGroup);
-    }
-    
-    // 10. Фильтрация по возрасту
+    // 9. Фильтрация по возрасту
     const currentYear = new Date().getFullYear();
     list = list.filter(e => {
         const age = currentYear - e.birthYear;
         return age >= minAge && age <= maxAge;
     });
 
-    // 11. Фильтрация по поисковому запросу
-    if (searchTerm) {
-      const lowerCaseSearch = searchTerm.toLowerCase();
-      list = list.filter(
-        (e) =>
-          e.name.toLowerCase().includes(lowerCaseSearch) ||
-          e.email.toLowerCase().includes(lowerCaseSearch) ||
-          e.position.toLowerCase().includes(lowerCaseSearch) ||
-          e.department.toLowerCase().includes(lowerCaseSearch),
-      );
-    }
-
-    // 12. Сортировка
+    // 10. Сортировка
     if (sort.key && sort.direction) {
       list = [...list].sort((a, b) => {
         const aValue = a[sort.key as keyof Employee];
@@ -623,7 +467,7 @@ const EmployeesPage: React.FC = () => {
     }
 
     return list;
-  }, [selectedRegionId, filters, sort, employeesData]);
+  }, [filters, sort, employeesData]);
 
   // Заглушка для действий с сотрудниками
   const handleAction = (action: string, employee?: Employee) => {

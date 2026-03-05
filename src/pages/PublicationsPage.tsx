@@ -21,9 +21,8 @@ import { useRegionContext } from '../context/RegionContext';
 import type { RegionId } from '../context/RegionContext';
 import { formatNumber } from '../utils/metrics';
 import './PublicationsPage.css';
-import { ApiError } from '../api/client';
-import { publicationsApi } from '../api/services';
 import type { BackendPublication, PaginationMeta } from '../api/types';
+import { usePublicationsData } from '../hooks/usePublicationsData';
 
 ChartJS.register(
   CategoryScale,
@@ -275,105 +274,26 @@ const PublicationsPage: React.FC = () => {
   const { t } = useTranslation();
   const { selectedRegion, selectedRegionId, setSelectedRegionId, regions } = useRegionContext();
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
-  const [publicationsData, setPublicationsData] = useState<BackendPublication[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [publicationFilters, setPublicationFilters] = useState<{
-    type: string[];
-    applicant: string[];
-  } | null>(null);
-  const [publicationFiltersMeta, setPublicationFiltersMeta] = useState<{
-    type: Array<{ value: string; count: number }>;
-    applicant: Array<{ value: string; count: number }>;
-  } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageMeta, setPageMeta] = useState<PaginationMeta>({
-    page: 1,
-    limit: PAGE_LIMIT,
-    total: 0,
-    totalPages: 0,
-    hasNextPage: false,
-    hasPrevPage: false,
+
+  const {
+    publicationsData,
+    isLoading,
+    loadError,
+    publicationFilters,
+    publicationFiltersMeta,
+    pageMeta,
+  } = usePublicationsData({
+    filters,
+    currentPage,
+    pageLimit: PAGE_LIMIT,
+    normalizeMeta: normalizePageMeta,
   });
   const statsScrollRef = useRef<HTMLDivElement | null>(null);
   const statsDragRef = useRef<{ pointerId: number | null; startX: number; scrollLeft: number }>(
     { pointerId: null, startX: 0, scrollLeft: 0 },
   );
   const [isDraggingStats, setIsDraggingStats] = useState(false);
-
-  useEffect(() => {
-    const loadPublicationFilters = async () => {
-      try {
-        const payload = await publicationsApi.filters();
-        setPublicationFilters({
-          type: payload.type,
-          applicant: payload.applicant,
-        });
-      } catch {
-        setPublicationFilters(null);
-      }
-    };
-
-    void loadPublicationFilters();
-  }, []);
-
-  useEffect(() => {
-    const loadPublicationFiltersMeta = async () => {
-      try {
-        const payload = await publicationsApi.filtersMeta({
-          q: filters.irn !== 'all' ? filters.irn : undefined,
-          type: filters.financingType !== 'all' ? filters.financingType : undefined,
-          year: filters.startYear === filters.endYear ? filters.startYear : undefined,
-        });
-
-        setPublicationFiltersMeta({
-          type: payload.type,
-          applicant: payload.applicant,
-        });
-      } catch {
-        setPublicationFiltersMeta(null);
-      }
-    };
-
-    void loadPublicationFiltersMeta();
-  }, [filters.financingType, filters.irn, filters.startYear, filters.endYear]);
-
-  useEffect(() => {
-    const loadPublications = async () => {
-      setIsLoading(true);
-      setLoadError(null);
-      try {
-        const payload = await publicationsApi.list({
-          page: currentPage,
-          limit: PAGE_LIMIT,
-          q: filters.irn !== 'all' ? filters.irn : undefined,
-          type: filters.financingType !== 'all' ? filters.financingType : undefined,
-          year: filters.startYear === filters.endYear ? filters.startYear : undefined,
-        });
-        setPublicationsData(payload.items);
-        const normalizedMeta = normalizePageMeta(payload.meta as BackendPaginationMeta, currentPage);
-        setPageMeta(normalizedMeta);
-        if (normalizedMeta.page !== currentPage) {
-          setCurrentPage(normalizedMeta.page);
-        }
-      } catch (error) {
-        const message = error instanceof ApiError ? error.message : 'Не удалось загрузить публикации с backend.';
-        setLoadError(message);
-        setPageMeta((prev) => ({
-          ...prev,
-          page: 1,
-          total: 0,
-          totalPages: 0,
-          hasNextPage: false,
-          hasPrevPage: false,
-        }));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void loadPublications();
-  }, [currentPage, filters.irn, filters.financingType, filters.startYear, filters.endYear]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -515,19 +435,13 @@ const PublicationsPage: React.FC = () => {
     } as CSSProperties;
   }, [filters.startYear, filters.endYear]);
 
-  const filteredPublications = useMemo(
+  const visiblePublications = useMemo(
     () =>
       publicationsData.filter((publication) => {
         const matchesYear = publication.year >= filters.startYear && publication.year <= filters.endYear;
-        const matchesType = filters.financingType === 'all' || publication.type === filters.financingType;
-        const matchesSearch =
-          !filters.irn ||
-          filters.irn === 'all' ||
-          publication.id.toLowerCase().includes(filters.irn.toLowerCase()) ||
-          publication.title.toLowerCase().includes(filters.irn.toLowerCase());
-        return matchesYear && matchesType && matchesSearch;
+        return matchesYear;
       }),
-    [publicationsData, filters.startYear, filters.endYear, filters.financingType, filters.irn],
+    [publicationsData, filters.startYear, filters.endYear],
   );
 
   const publicationYearsData = useMemo(() => {
@@ -540,11 +454,11 @@ const PublicationsPage: React.FC = () => {
 
   const publicationsByYear = useMemo(() => {
     const map = new Map<number, number>();
-    filteredPublications.forEach((publication) => {
+    visiblePublications.forEach((publication) => {
       map.set(publication.year, (map.get(publication.year) ?? 0) + 1);
     });
     return map;
-  }, [filteredPublications]);
+  }, [visiblePublications]);
 
   const domesticPublicationsData = useMemo(
     () => publicationYearsData.map((year) => publicationsByYear.get(Number(year)) ?? 0),
@@ -557,12 +471,12 @@ const PublicationsPage: React.FC = () => {
   );
 
   const publicationsStats = useMemo(() => {
-    const total = filteredPublications.length;
-    const patents = filteredPublications.filter((item) => item.type === 'patent').length;
-    const scopus = filteredPublications.filter((item) => item.type === 'journal').length;
-    const wos = filteredPublications.filter((item) => item.type === 'conference').length;
-    const implementations = filteredPublications.filter((item) => item.pdfUrl || item.link).length;
-    const projects = new Set(filteredPublications.map((item) => item.projectId).filter(Boolean)).size;
+    const total = visiblePublications.length;
+    const patents = visiblePublications.filter((item) => item.type === 'patent').length;
+    const scopus = visiblePublications.filter((item) => item.type === 'journal').length;
+    const wos = visiblePublications.filter((item) => item.type === 'conference').length;
+    const implementations = visiblePublications.filter((item) => item.pdfUrl || item.link).length;
+    const projects = new Set(visiblePublications.map((item) => item.projectId).filter(Boolean)).size;
 
     return {
       total,
@@ -574,7 +488,7 @@ const PublicationsPage: React.FC = () => {
       implementations,
       projects,
     };
-  }, [filteredPublications]);
+  }, [visiblePublications]);
 
   const publicationDynamicsData = useMemo(
     () => ({
@@ -814,7 +728,7 @@ const PublicationsPage: React.FC = () => {
   );
 
   const highlightCards = useMemo(() => getHighlightCards(t, publicationsStats), [t, publicationsStats]);
-  const topApplicants = useMemo(() => getTopApplicants(t, filteredPublications), [t, filteredPublications]);
+  const topApplicants = useMemo(() => getTopApplicants(t, visiblePublications), [t, visiblePublications]);
   const totalApplicantPublications = topApplicants.reduce((sum, applicant) => sum + applicant.value, 0);
   const totalPages = Math.max(pageMeta.totalPages, 1);
   const currentPageSafe = Math.min(Math.max(currentPage, 1), totalPages);

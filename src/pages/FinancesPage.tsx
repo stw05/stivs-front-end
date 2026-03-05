@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { useRegionContext } from '../context/RegionContext';
 import type { RegionId } from '../context/RegionContext';
@@ -19,9 +19,7 @@ import {
 import { Bar, Doughnut } from 'react-chartjs-2';
 import './FinancesPage.css';
 import { useTranslation } from 'react-i18next';
-import { ApiError } from '../api/client';
-import { financesApi } from '../api/services';
-import type { FinanceSummary } from '../api/types';
+import { useFinanceSummary } from '../hooks/useFinanceSummary';
 
 ChartJS.register(
   CategoryScale,
@@ -239,30 +237,10 @@ const FinancesPage: React.FC = () => {
   const { selectedRegion, selectedRegionId, setSelectedRegionId, regions, isNational } =
     useRegionContext();
 
-  const [apiSummary, setApiSummary] = useState<FinanceSummary | null>(null);
-  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
-  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const { apiSummary, isSummaryLoading, summaryError } = useFinanceSummary();
 
   const regionLabel = selectedRegion?.name ?? t('republic_kazakhstan');
   const currencyUnitShort = t('unit_bln_kzt_symbol');
-
-  useEffect(() => {
-    const loadSummary = async () => {
-      setIsSummaryLoading(true);
-      setSummaryError(null);
-      try {
-        const summary = await financesApi.summary();
-        setApiSummary(summary);
-      } catch (error) {
-        const message = error instanceof ApiError ? error.message : 'Не удалось загрузить финансовую сводку с backend.';
-        setSummaryError(message);
-      } finally {
-        setIsSummaryLoading(false);
-      }
-    };
-
-    void loadSummary();
-  }, []);
 
   const nationalMetrics = useMemo(() => {
     const base = calculateNationalMetrics();
