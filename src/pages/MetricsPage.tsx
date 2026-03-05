@@ -573,10 +573,18 @@ const MetricsPage: React.FC = () => {
     [t],
   );
 
-  const mapOptions: Array<{ value: MapMetricKey; label: string }> = useMemo(
+  const mapOptions: Array<{ value: MapMetricKey; label: string; title: string }> = useMemo(
     () => [
-      { value: 'citations', label: mapMetricConfig.citations.label },
-      { value: 'perOrg', label: mapMetricConfig.perOrg.label },
+      {
+        value: 'citations',
+        label: mapMetricConfig.citations.label,
+        title: mapMetricConfig.citations.label,
+      },
+      {
+        value: 'perOrg',
+        label: mapMetricConfig.perOrg.label,
+        title: mapMetricConfig.perOrg.label,
+      },
     ],
     [mapMetricConfig],
   );
@@ -686,7 +694,9 @@ const MetricsPage: React.FC = () => {
           <div className="metrics-map-header">
             <div>
               <h3>{t('metrics_map_title')}</h3>
-              <p className="metrics-map-current-metric">{mapMetricConfig[mapMetric].label}</p>
+              <p className="metrics-map-current-metric" title={mapMetricConfig[mapMetric].label}>
+                {mapMetricConfig[mapMetric].label}
+              </p>
               <p className="metrics-map-hint">{t('metrics_map_hint')}</p>
             </div>
             <MapIcon size={28} />
@@ -698,6 +708,7 @@ const MetricsPage: React.FC = () => {
                 type="button"
                 className={option.value === mapMetric ? 'toggle-chip active' : 'toggle-chip'}
                 onClick={() => setMapMetric(option.value)}
+                title={option.title}
               >
                 {option.label}
               </button>

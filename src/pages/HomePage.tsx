@@ -12,19 +12,28 @@ import { ApiError } from '../api/client';
 import { dashboardApi } from '../api/services';
 import type { DashboardSummary } from '../api/types';
 
+const HOME_YEAR_RANGE = { min: 2020, max: new Date().getFullYear() } as const;
+
 const HomePage: React.FC = () => {
   const { t } = useTranslation();
   const { selectedRegionId, selectedRegion, setSelectedRegionId } = useRegionContext();
   const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null);
   const [isDashboardLoading, setIsDashboardLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number>(HOME_YEAR_RANGE.max);
+
+  const yearOptions = useMemo(
+    () =>
+      Array.from({ length: HOME_YEAR_RANGE.max - HOME_YEAR_RANGE.min + 1 }, (_, index) => HOME_YEAR_RANGE.max - index),
+    [],
+  );
 
   useEffect(() => {
     const loadDashboardSummary = async () => {
       setIsDashboardLoading(true);
       setDashboardError(null);
       try {
-        const summary = await dashboardApi.summary(selectedRegion?.name);
+        const summary = await dashboardApi.summary(selectedRegion?.name, selectedYear);
         setDashboardSummary(summary);
       } catch (error) {
         const message = error instanceof ApiError ? error.message : 'Не удалось загрузить сводку главной страницы.';
@@ -36,7 +45,7 @@ const HomePage: React.FC = () => {
     };
 
     void loadDashboardSummary();
-  }, [selectedRegion?.name]);
+  }, [selectedRegion?.name, selectedYear]);
 
   const nationalMetrics = useMemo(() => calculateNationalMetrics(), []);
   const metrics = useMemo(() => {
@@ -133,6 +142,10 @@ const HomePage: React.FC = () => {
     setSelectedRegionId(event.target.value as RegionId);
   };
 
+  const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedYear(Number(event.target.value));
+  };
+
   const mapHighlights = [
     {
       label: t('projects_page_title'), // 🟢 ПЕРЕВОД
@@ -160,42 +173,73 @@ const HomePage: React.FC = () => {
     <div className="home-page" data-testid="home-page">
       <section className="map-section">
         <div className="map-container">
-          <div className="region-selector">
-            <select value={selectedRegionId} onChange={handleRegionChange} aria-label={t('map_overview_title')}> {/* 🟢 ПЕРЕВОД */}
-              <option value="national">{t('republic_kazakhstan')}</option> {/* 🟢 ПЕРЕВОД */}
-              {regionsData.map((region) => (
-                <option key={region.id} value={region.id}>
-                  {region.name}
-                </option>
-              ))}
-            </select>
-            <select defaultValue="direction" aria-label={t('filter_select_direction')}> {/* 🟢 ПЕРЕВОД */}
-              <option value="direction">{t('filter_select_direction')}</option> {/* 🟢 ПЕРЕВОД */}
-              <option value="research">{t('filter_research')}</option> {/* 🟢 НОВЫЙ ПЕРЕВОД */}
-              <option value="commercialization">{t('filter_commercialization')}</option> {/* 🟢 НОВЫЙ ПЕРЕВОД */}
-              <option value="international">{t('filter_international_projects')}</option> {/* 🟢 НОВЫЙ ПЕРЕВОД */}
-            </select>
-            <select defaultValue="organization" aria-label={t('filter_select_organization')}> {/* 🟢 ПЕРЕВОД */}
-              <option value="organization">{t('filter_all_organizations')}</option> {/* 🟢 ПЕРЕВОД */}
-              {/* Опции для организаций остаются на английском, так как это названия */}
-              <option value="su">Satbayev University</option>
-              <option value="kaznu">KazNU</option>
-              <option value="enu">ENU</option>
-            </select>
-            <select defaultValue="priority" aria-label={t('filter_select_priority')}> {/* 🟢 ПЕРЕВОД */}
-              <option value="priority">{t('filter_all_priorities')}</option> {/* 🟢 ПЕРЕВОД */}
-              {/* Все приоритетные направления */}
-              <option value="energy">{t('priority_energy_transport')}</option>
-              <option value="advanced-tech">{t('priority_advanced_tech')}</option>
-              <option value="intellect-natural">{t('priority_intellect_natural')}</option>
-              <option value="intellect-social">{t('priority_intellect_social')}</option>
-              <option value="agriculture">{t('priority_agriculture')}</option>
-              <option value="life-health">{t('priority_life_health')}</option>
-              <option value="security">{t('priority_security')}</option>
-              <option value="commercialization">{t('priority_commercialization')}</option>
-              <option value="ecology">{t('priority_ecology')}</option>
-            </select>
-          </div>
+          <section className="home-filter-bar" aria-label={t('map_overview_title')}>
+            <div className="home-filter-group">
+              <label htmlFor="home-filter-region">{t('map_overview_title')}</label>
+              <select
+                id="home-filter-region"
+                className="home-filter-select"
+                value={selectedRegionId}
+                onChange={handleRegionChange}
+              >
+                <option value="national">{t('republic_kazakhstan')}</option>
+                {regionsData.map((region) => (
+                  <option key={region.id} value={region.id}>
+                    {region.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="home-filter-group">
+              <label htmlFor="home-filter-direction">{t('filter_select_direction')}</label>
+              <select id="home-filter-direction" className="home-filter-select" defaultValue="direction">
+                <option value="direction">{t('filter_select_direction')}</option>
+                <option value="research">{t('filter_research')}</option>
+                <option value="commercialization">{t('filter_commercialization')}</option>
+                <option value="international">{t('filter_international_projects')}</option>
+              </select>
+            </div>
+
+            <div className="home-filter-group">
+              <label htmlFor="home-filter-organization">{t('filter_select_organization')}</label>
+              <select id="home-filter-organization" className="home-filter-select" defaultValue="organization">
+                <option value="organization">{t('filter_all_organizations')}</option>
+                <option value="su">Satbayev University</option>
+                <option value="kaznu">KazNU</option>
+                <option value="enu">ENU</option>
+              </select>
+            </div>
+
+            <div className="home-filter-group">
+              <label htmlFor="home-filter-priority" title={t('filter_select_priority')}>
+                {t('filter_select_priority')}
+              </label>
+              <select id="home-filter-priority" className="home-filter-select" defaultValue="priority">
+                <option value="priority">{t('filter_all_priorities')}</option>
+                <option value="energy">{t('priority_energy_transport')}</option>
+                <option value="advanced-tech">{t('priority_advanced_tech')}</option>
+                <option value="intellect-natural">{t('priority_intellect_natural')}</option>
+                <option value="intellect-social">{t('priority_intellect_social')}</option>
+                <option value="agriculture">{t('priority_agriculture')}</option>
+                <option value="life-health">{t('priority_life_health')}</option>
+                <option value="security">{t('priority_security')}</option>
+                <option value="commercialization">{t('priority_commercialization')}</option>
+                <option value="ecology">{t('priority_ecology')}</option>
+              </select>
+            </div>
+
+            <div className="home-filter-group">
+              <label htmlFor="home-filter-year">{t('filter_year_range')}</label>
+              <select id="home-filter-year" className="home-filter-select" value={selectedYear} onChange={handleYearChange}>
+                {yearOptions.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </section>
 
           <div className="map-panel">
             <KazakhstanMap selectedRegionId={selectedRegionId} onRegionSelect={handleRegionSelect} />

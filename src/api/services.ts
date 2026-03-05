@@ -223,7 +223,7 @@ export const financesApi = {
 };
 
 export const dashboardApi = {
-  summary(region?: string) {
-    return apiRequest<DashboardSummary>(withQuery('/api/dashboard/summary', region ? { region } : undefined));
+  summary(region?: string, year?: number) {
+    return apiRequest<DashboardSummary>(withQuery('/api/dashboard/summary', { region, year }));
   },
 };
