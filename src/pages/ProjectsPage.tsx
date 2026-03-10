@@ -550,24 +550,30 @@ const ProjectsPage: React.FC = () => {
 		[filters.endYear, filters.startYear],
 	);
 
+	const renderCompactText = (value: string, className = 'projects-cell-ellipsis') => (
+		<span className={className} title={value}>
+			{value}
+		</span>
+	);
+
 	const renderCellContent = (columnKey: ColumnKey, project: Project): React.ReactNode => {
 		switch (columnKey) {
 			case 'irn':
-				return project.irn;
+				return renderCompactText(project.irn);
 			case 'title':
-				return project.title;
+				return renderCompactText(project.title);
 			case 'applicant':
-				return project.applicant;
+				return renderCompactText(project.applicant);
 			case 'priority':
-				return priorityLabels[project.priority];
+				return renderCompactText(priorityLabels[project.priority]);
 			case 'financingType':
-				return financingLabels[project.financingType];
+				return renderCompactText(financingLabels[project.financingType]);
 			case 'financingTotal':
 				return formatCurrency(project.financingTotal);
 			case 'region':
-				return regionNameById[project.regionId] ?? '—';
+				return renderCompactText(regionNameById[project.regionId] ?? '—');
 			case 'status':
-				return statusLabels[project.status];
+				return renderCompactText(statusLabels[project.status]);
 			case 'period':
 				return `${project.startYear}-${project.endYear}`;
 			default:
@@ -998,14 +1004,18 @@ const ProjectsPage: React.FC = () => {
 													<th
 														key={column.key}
 														onClick={() => handleSort(column.sortKey!)}
-														className={headerState}
+														className={`${headerState ?? ''} projects-col projects-col--${column.key}`.trim()}
 													>
 														{column.label}
 														<ArrowUpDown size={14} />
 													</th>
 												);
 											}
-											return <th key={column.key}>{column.label}</th>;
+											return (
+												<th key={column.key} className={`projects-col projects-col--${column.key}`}>
+													{column.label}
+												</th>
+											);
 										})}
 									</tr>
 								</thead>
@@ -1013,7 +1023,10 @@ const ProjectsPage: React.FC = () => {
 									{visibleProjects.map((project) => (
 										<tr key={project.id}>
 											{activeColumns.map((column) => (
-												<td key={`${project.id}-${column.key}`}>
+												<td
+													key={`${project.id}-${column.key}`}
+													className={`projects-cell projects-cell--${column.key}`}
+												>
 													{renderCellContent(column.key, project)}
 												</td>
 											))}

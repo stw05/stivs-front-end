@@ -343,20 +343,33 @@ const EmployeesPage: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isColumnPickerOpen]);
 
+  const renderTruncatedText = (value: string, className = 'employee-cell-ellipsis') => (
+    <span className={className} title={value}>
+      {value}
+    </span>
+  );
+
   const renderEmployeeCell = (columnKey: EmployeeColumnKey, employee: Employee): React.ReactNode => {
     switch (columnKey) {
-      case 'name':
+      case 'name': {
+        const fullName = `${employee.name} (${employee.gender === 'male' ? t('gender_short_male') : t('gender_short_female')})`;
         return (
-          <Link to={`/employees/profile/${employee.id}`} state={{ employee }}>
-            {employee.name} ({employee.gender === 'male' ? t('gender_short_male') : t('gender_short_female')})
+          <Link
+            to={`/employees/profile/${employee.id}`}
+            state={{ employee }}
+            className="employee-cell-link employee-cell-ellipsis"
+            title={fullName}
+          >
+            {fullName}
           </Link>
         );
+      }
       case 'position':
-        return employee.position;
+        return renderTruncatedText(employee.position);
       case 'degree':
-        return employee.degree === 'none' ? '-' : employee.degree;
+        return renderTruncatedText(employee.degree === 'none' ? '-' : employee.degree);
       case 'scopusAuthorId':
-        return employee.scopusAuthorId;
+        return renderTruncatedText(employee.scopusAuthorId);
       case 'hIndexScopus':
         return employee.hIndexScopus ?? employee.hIndex;
       case 'researcherIdWos':
@@ -368,7 +381,8 @@ const EmployeesPage: React.FC = () => {
             href={employee.researcherIdWos}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ overflowWrap: 'break-word', wordBreak: 'break-all' }}
+            className="employee-cell-link employee-cell-ellipsis"
+            title={employee.researcherIdWos}
           >
             {employee.researcherIdWos}
           </a>
@@ -376,7 +390,7 @@ const EmployeesPage: React.FC = () => {
       case 'hIndex':
         return employee.hIndex;
       case 'region':
-        return regionNameById[employee.regionId] ?? t('not_available_short');
+        return renderTruncatedText(regionNameById[employee.regionId] ?? t('not_available_short'));
       case 'age':
         return currentYear - employee.birthYear;
       default:
@@ -799,7 +813,12 @@ const EmployeesPage: React.FC = () => {
                   {filteredEmployees.map((employee) => (
                     <tr key={employee.id}>
                       {activeColumns.map((column) => (
-                        <td key={`${employee.id}-${column.key}`}>{renderEmployeeCell(column.key, employee)}</td>
+                        <td
+                          key={`${employee.id}-${column.key}`}
+                          className={`employee-cell employee-cell--${column.key}`}
+                        >
+                          {renderEmployeeCell(column.key, employee)}
+                        </td>
                       ))}
                     </tr>
                   ))}

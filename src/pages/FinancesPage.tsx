@@ -43,7 +43,8 @@ type ProjectStatus = 'all' | 'active' | 'completed' | 'pipeline';
 
 interface FilterState {
   irn: string;
-  period: number;
+  startYear: number;
+  endYear: number;
   financingType: FinancingType;
   cofinancing: CofinancingType;
   expense: ExpenseCategory;
@@ -200,7 +201,8 @@ const adjustFinancesByFilters = (
   const typeFactor = typeFactors[filters.financingType];
   const cofinFactor = cofinancingFactors[filters.cofinancing];
   const expenseFactor = expenseAdjustments[filters.expense];
-  const periodFactor = 1 + (filters.period - 2030) * 0.008;
+  const effectivePeriod = Math.round((filters.startYear + filters.endYear) / 2);
+  const periodFactor = 1 + (effectivePeriod - 2030) * 0.008;
   const irnFactor = filters.irn === 'all' ? 1 : irnFactors[filters.irn] ?? 1;
 
   const combinedTotalFactor = typeFactor * cofinFactor * expenseFactor.total * periodFactor * irnFactor;
@@ -282,7 +284,8 @@ const FinancesPage: React.FC = () => {
   
   const [filters, setFilters] = useState<FilterState>({
     irn: 'all',
-    period: 2030,
+    startYear: 2026,
+    endYear: 2034,
     financingType: 'gf',
     cofinancing: 'contract',
     expense: 'salary',
@@ -441,7 +444,8 @@ const FinancesPage: React.FC = () => {
 
   const approvalChartData = useMemo(() => {
     const base = Math.max(adjustedMetrics.finances.lastYear * 0.8, 1);
-    const progress = clampValue((filters.period - 2020) / 20, 0.2, 1.2);
+    const effectivePeriod = Math.round((filters.startYear + filters.endYear) / 2);
+    const progress = clampValue((effectivePeriod - 2020) / 20, 0.2, 1.2);
     const multipliers = [0.84, 0.9, 0.98, 1.06, 1.12 * progress];
 
     const timeline = COFINANCING_YEAR_LABELS.map((_, index) =>
@@ -461,7 +465,7 @@ const FinancesPage: React.FC = () => {
         },
       ],
     };
-  }, [adjustedMetrics.finances.lastYear, filters.period, t]);
+  }, [adjustedMetrics.finances.lastYear, filters.endYear, filters.startYear, t]);
 
   const approvalChartOptions = useMemo<ChartOptions<'bar'>>(
     () => ({
@@ -884,21 +888,32 @@ const FinancesPage: React.FC = () => {
     [handleChartFilterRemove],
   );
 
-  const handlePeriodChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      setFilters((prev) => ({ ...prev, period: Number(event.target.value) }));
+  const handleYearRangeChange = useCallback(
+    (key: 'startYear' | 'endYear', value: number) => {
+      setFilters((prev) => {
+        const next = { ...prev, [key]: value };
+        if (next.startYear > next.endYear) {
+          if (key === 'startYear') {
+            next.endYear = next.startYear;
+          } else {
+            next.startYear = next.endYear;
+          }
+        }
+        return next;
+      });
     },
     [setFilters],
   );
 
   const periodRangeStyle = useMemo(() => {
     const total = FINANCES_PERIOD_RANGE.max - FINANCES_PERIOD_RANGE.min;
-    const progress = ((filters.period - FINANCES_PERIOD_RANGE.min) / total) * 100;
+    const startProgress = ((filters.startYear - FINANCES_PERIOD_RANGE.min) / total) * 100;
+    const endProgress = ((filters.endYear - FINANCES_PERIOD_RANGE.min) / total) * 100;
     return {
-      '--range-start': '0%',
-      '--range-end': `${progress}%`,
+      '--range-start': `${startProgress}%`,
+      '--range-end': `${endProgress}%`,
     } as CSSProperties;
-  }, [filters.period]);
+  }, [filters.endYear, filters.startYear]);
 
   const handleMapSelect = useCallback(
     (regionId: string) => {
@@ -959,12 +974,12 @@ const FinancesPage: React.FC = () => {
         <div className="finances-filter-group finances-filter-group--range">
           <div className="finances-filter-label">
             <label htmlFor="filter-period">{t('filter_year_range')}</label>
-            <span className="finances-filter-value">{t('finances_period_value', { year: filters.period })}</span>
+            <span className="finances-filter-value">{filters.startYear} — {filters.endYear}</span>
           </div>
           <div className="period-range-slider" style={periodRangeStyle}>
             <div className="period-range-values">
-              <span className="period-range-value">{FINANCES_PERIOD_RANGE.min}</span>
-              <span className="period-range-value">{filters.period}</span>
+              <span className="period-range-value">{filters.startYear}</span>
+              <span className="period-range-value">{filters.endYear}</span>
             </div>
             <div className="period-range-track" />
             <div className="period-range-inputs">
@@ -974,8 +989,17 @@ const FinancesPage: React.FC = () => {
                 min={FINANCES_PERIOD_RANGE.min}
                 max={FINANCES_PERIOD_RANGE.max}
                 step={1}
-                value={filters.period}
-                onChange={handlePeriodChange}
+                value={filters.startYear}
+                onChange={(event) => handleYearRangeChange('startYear', Number(event.target.value))}
+                className="period-range-thumb"
+              />
+              <input
+                type="range"
+                min={FINANCES_PERIOD_RANGE.min}
+                max={FINANCES_PERIOD_RANGE.max}
+                step={1}
+                value={filters.endYear}
+                onChange={(event) => handleYearRangeChange('endYear', Number(event.target.value))}
                 className="period-range-thumb period-range-thumb--upper"
               />
             </div>
