@@ -721,7 +721,8 @@ const PublicationsPage: React.FC = () => {
   const highlightCards = useMemo(() => getHighlightCards(t, publicationsStats), [t, publicationsStats]);
   const topApplicants = useMemo(() => getTopApplicants(t, visiblePublications), [t, visiblePublications]);
   const totalApplicantPublications = topApplicants.reduce((sum, applicant) => sum + applicant.value, 0);
-  const isDataPending = !hasLoaded || isLoading;
+  const isDataPending = !hasLoaded && isLoading;
+  const isRefreshing = hasLoaded && isLoading;
   return (
     <div className="publications-page">
       <header className="publications-page-header">
@@ -744,6 +745,8 @@ const PublicationsPage: React.FC = () => {
       <div className="publications-module-banner" role="status" aria-live="polite">
         модуль находится на стадии интеграции и тестирования
       </div>
+
+      {isRefreshing && <PageLoader className="page-loader--inline" message="Обновление данных..." />}
 
       {isDataPending ? (
         <PageLoader />

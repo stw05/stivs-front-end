@@ -170,6 +170,7 @@ const EmployeesPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   
   const [filters, setFilters] = useState<EmployeeFilters>(() => createInitialFilters());
+  const [appliedFilters, setAppliedFilters] = useState<EmployeeFilters>(() => createInitialFilters());
   
   const [sort, setSort] = useState<SortState>({ key: 'name', direction: 'asc' });
   const [visibleColumns, setVisibleColumns] = useState<Record<EmployeeColumnKey, boolean>>(() => ({
@@ -195,7 +196,7 @@ const EmployeesPage: React.FC = () => {
     employeeFiltersMeta,
     pageMeta,
   } = useEmployeesData({
-    filters,
+    filters: appliedFilters,
     selectedRegionId,
     regionNameById,
     currentPage,
@@ -258,7 +259,7 @@ const EmployeesPage: React.FC = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filters.degree, filters.hIndexGroup, filters.position, filters.searchTerm, selectedRegionId]);
+  }, [appliedFilters.degree, appliedFilters.hIndexGroup, appliedFilters.position, appliedFilters.searchTerm, selectedRegionId]);
 
   useEffect(() => {
     if (pageMeta.totalPages > 0 && currentPage > pageMeta.totalPages) {
@@ -272,7 +273,14 @@ const EmployeesPage: React.FC = () => {
   };
   
   const resetFilters = () => {
-    setFilters(createInitialFilters());
+    const initial = createInitialFilters();
+    setFilters(initial);
+    setAppliedFilters(initial);
+  };
+
+  const applyFilters = () => {
+    setAppliedFilters(filters);
+    setCurrentPage(1);
   };
   
   // Обработчик для ввода возраста
@@ -402,7 +410,7 @@ const EmployeesPage: React.FC = () => {
   // --- ЛОГИКА ФИЛЬТРАЦИИ И СОРТИРОВКИ ---
   const filteredEmployees = useMemo(() => {
     let list = employeesData;
-    const { department, minAge, maxAge, affiliateType, gender, citizenship, projectRole } = filters;
+    const { department, minAge, maxAge, affiliateType, gender, citizenship, projectRole } = appliedFilters;
     
     // 3. Фильтрация по подразделению
     if (department !== 'all') {
@@ -410,16 +418,16 @@ const EmployeesPage: React.FC = () => {
     }
 
 
-    if (filters.mrnti !== 'all') {
+    if (appliedFilters.mrnti !== 'all') {
         // ✅ ИСПРАВЛЕНО
-        list = list.filter((emp) => emp.mrntiCode === filters.mrnti); 
+      list = list.filter((emp) => emp.mrntiCode === appliedFilters.mrnti); 
     }
     
 
 
-    if (filters.regionId !== 'all') {
+    if (appliedFilters.regionId !== 'all') {
         // ✅ ИСПРАВЛЕНО
-        list = list.filter((emp) => emp.regionId === filters.regionId);
+      list = list.filter((emp) => emp.regionId === appliedFilters.regionId);
     }
     
     // 4. Фильтрация по аффилированности
@@ -471,7 +479,7 @@ const EmployeesPage: React.FC = () => {
     }
 
     return list;
-  }, [filters, sort, employeesData]);
+  }, [appliedFilters, sort, employeesData]);
 
   // Заглушка для действий с сотрудниками
   const handleAction = () => {
@@ -480,7 +488,9 @@ const EmployeesPage: React.FC = () => {
   
   const totalEmployeesCount = filteredEmployees.length;
   const totalPages = Math.max(pageMeta.totalPages, 1);
-  const isDataPending = !hasLoaded || isLoading;
+  const isDataPending = !hasLoaded && isLoading;
+  const isRefreshing = hasLoaded && isLoading;
+  const tableSkeletonRows = 6;
 
   return (
     <div className="employees-page">
@@ -515,6 +525,13 @@ const EmployeesPage: React.FC = () => {
               onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
             />
           </div>
+          <button
+            type="button"
+            className="employees-primary-button"
+            onClick={applyFilters}
+          >
+            Поиск
+          </button>
           <div className="employees-column-picker" ref={columnPickerRef}>
             <button
               type="button"
@@ -772,8 +789,11 @@ const EmployeesPage: React.FC = () => {
           </div>
 
           <div className="employees-filter-actions">
+            <button type="button" className="employees-primary-button" onClick={applyFilters}>
+              Применить
+            </button>
 
-            <button type="button" onClick={resetFilters}>
+            <button type="button" className="employees-header-button employees-reset-button" onClick={resetFilters}>
               {t('button_reset_filters')}
             </button>
           </div>
@@ -810,22 +830,35 @@ const EmployeesPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredEmployees.map((employee) => (
-                    <tr key={employee.id}>
-                      {activeColumns.map((column) => (
-                        <td
-                          key={`${employee.id}-${column.key}`}
-                          className={`employee-cell employee-cell--${column.key}`}
-                        >
-                          {renderEmployeeCell(column.key, employee)}
-                        </td>
+                  {isRefreshing
+                    ? Array.from({ length: tableSkeletonRows }).map((_, rowIndex) => (
+                        <tr key={`employees-skeleton-${rowIndex}`} className="employees-skeleton-row">
+                          {activeColumns.map((column) => (
+                            <td
+                              key={`employees-skeleton-${rowIndex}-${column.key}`}
+                              className={`employee-cell employee-cell--${column.key}`}
+                            >
+                              <span className="employees-skeleton-cell" aria-hidden="true" />
+                            </td>
+                          ))}
+                        </tr>
+                      ))
+                    : filteredEmployees.map((employee) => (
+                        <tr key={employee.id}>
+                          {activeColumns.map((column) => (
+                            <td
+                              key={`${employee.id}-${column.key}`}
+                              className={`employee-cell employee-cell--${column.key}`}
+                            >
+                              {renderEmployeeCell(column.key, employee)}
+                            </td>
+                          ))}
+                        </tr>
                       ))}
-                    </tr>
-                  ))}
                 </tbody>
               </table>
 
-              {filteredEmployees.length === 0 && (
+              {!isRefreshing && filteredEmployees.length === 0 && (
                 <div className="no-results">{t('employees_not_found')}</div>
               )}
             </div>

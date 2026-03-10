@@ -318,22 +318,47 @@
 .projects-filter-actions {
 	display: flex;
 	justify-content: flex-end;
+	gap: 0.55rem;
+	align-items: center;
 }
 
-.projects-filter-actions button {
-	padding: 0.45rem 0.9rem;
-	border-radius: 8px;
-	border: 1px solid rgba(148, 163, 184, 0.4);
-	background: #f1f5f9;
-	color: #1e3a8a;
+.projects-filter-actions .projects-header-button,
+.projects-filter-actions .projects-primary-button {
+	height: 38px;
+	padding: 0 0.95rem;
+	border-radius: 10px;
 	font-weight: 600;
 	font-size: 0.85rem;
-	cursor: pointer;
-	transition: all 0.15s ease;
+	line-height: 1;
+	min-width: 118px;
+	justify-content: center;
 }
 
-.projects-filter-actions button:hover {
-	background: #e2e8f0;
+.projects-filter-actions .projects-primary-button {
+	box-shadow: 0 10px 20px rgba(37, 99, 235, 0.24);
+}
+
+.projects-filter-actions .projects-primary-button:hover {
+	transform: translateY(-1px);
+}
+
+.projects-filter-actions .projects-header-button {
+	background: #f1f5f9;
+	border-color: rgba(148, 163, 184, 0.4);
+}
+
+.projects-filter-actions .projects-reset-button {
+	background: transparent;
+	color: #64748b;
+	border-color: rgba(148, 163, 184, 0.35);
+	box-shadow: none;
+	min-width: 104px;
+}
+
+.projects-filter-actions .projects-reset-button:hover {
+	background: rgba(148, 163, 184, 0.12);
+	color: #334155;
+	transform: none;
 }
 
 .projects-search-line {
@@ -426,6 +451,30 @@
 .projects-column-button:focus-visible {
 	outline: none;
 	box-shadow: 0 0 0 3px rgba(248, 250, 252, 0.6), 0 0 0 6px rgba(37, 99, 235, 0.4);
+}
+
+.projects-skeleton-row .projects-cell {
+	padding-top: 0.65rem;
+	padding-bottom: 0.65rem;
+}
+
+.projects-skeleton-cell {
+	display: block;
+	height: 0.85rem;
+	width: 100%;
+	border-radius: 999px;
+	background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+	background-size: 200% 100%;
+	animation: projects-skeleton-shimmer 1.2s linear infinite;
+}
+
+@keyframes projects-skeleton-shimmer {
+	0% {
+		background-position: 200% 0;
+	}
+	100% {
+		background-position: -200% 0;
+	}
 }
 
 .projects-column-list {

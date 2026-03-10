@@ -36,6 +36,20 @@ interface Project {
 
 const YEAR_RANGE = { min: 2021, max: 2025 } as const;
 const PAGE_LIMIT = 20;
+const DEFAULT_FILTERS: FilterState = {
+	search: '',
+	startYear: YEAR_RANGE.min,
+	endYear: YEAR_RANGE.max,
+	irn: 'all',
+	financingType: 'all',
+	priority: 'all',
+	contest: 'all',
+	applicant: 'all',
+	customer: 'all',
+	mrnti: 'all',
+	status: 'all',
+	trl: 'all',
+};
 
 type ColumnKey =
 	| 'irn'
@@ -293,20 +307,8 @@ const ProjectsPage: React.FC = () => {
 		[columnLabels],
 	);
 	
-	const [filters, setFilters] = useState<FilterState>({
-		search: '',
-		startYear: YEAR_RANGE.min,
-		endYear: YEAR_RANGE.max,
-		irn: 'all',
-		financingType: 'all',
-		priority: 'all',
-		contest: 'all',
-		applicant: 'all',
-		customer: 'all',
-		mrnti: 'all',
-		status: 'all',
-		trl: 'all',
-	});
+	const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+	const [appliedFilters, setAppliedFilters] = useState<FilterState>(DEFAULT_FILTERS);
 	const [sort, setSort] = useState<SortState>({ key: '', direction: '' });
 	const [visibleColumns, setVisibleColumns] = useState<Record<ColumnKey, boolean>>(() =>
 		columnDefinitionsLocal.reduce(
@@ -318,7 +320,6 @@ const ProjectsPage: React.FC = () => {
 		),
 	);
 	const [isColumnPickerOpen, setIsColumnPickerOpen] = useState(false);
-	const [debouncedSearch, setDebouncedSearch] = useState('');
 	const [currentPage, setCurrentPage] = useState(1);
 	const columnPickerRef = useRef<HTMLDivElement | null>(null);
 	const [openDropdown, setOpenDropdown] = useState<DropdownFilterKey | null>(null);
@@ -346,8 +347,8 @@ const ProjectsPage: React.FC = () => {
 		projectFiltersMeta,
 		pageMeta,
 	} = useProjectsData({
-		filters,
-		debouncedSearch,
+		filters: appliedFilters,
+		debouncedSearch: appliedFilters.search,
 		selectedRegionId,
 		regionNameById,
 		currentPage,
@@ -486,24 +487,8 @@ const ProjectsPage: React.FC = () => {
 	}, [isColumnPickerOpen]);
 
 	useEffect(() => {
-		const timeout = window.setTimeout(() => {
-			setDebouncedSearch(filters.search);
-		}, 300);
-
-		return () => window.clearTimeout(timeout);
-	}, [filters.search]);
-
-	useEffect(() => {
 		setCurrentPage(1);
-	}, [
-		filters.applicant,
-		filters.financingType,
-		filters.irn,
-		filters.priority,
-		filters.search,
-		filters.status,
-		selectedRegionId,
-	]);
+	}, [appliedFilters, selectedRegionId]);
 
 	useEffect(() => {
 		if (pageMeta.totalPages > 0 && currentPage > pageMeta.totalPages) {
@@ -644,21 +629,14 @@ const ProjectsPage: React.FC = () => {
 	};
 
 	const resetFilters = () => {
-		setFilters({
-			search: '',
-			startYear: YEAR_RANGE.min,
-			endYear: YEAR_RANGE.max,
-			irn: 'all',
-			financingType: 'all',
-			priority: 'all',
-			contest: 'all',
-			applicant: 'all',
-			customer: 'all',
-			mrnti: 'all',
-			status: 'all',
-			trl: 'all',
-		});
+		setFilters(DEFAULT_FILTERS);
+		setAppliedFilters(DEFAULT_FILTERS);
 		setSelectedRegionId('national');
+	};
+
+	const applyFilters = () => {
+		setAppliedFilters(filters);
+		setCurrentPage(1);
 	};
 
 	const visibleProjects = useMemo(() => {
@@ -684,7 +662,9 @@ const ProjectsPage: React.FC = () => {
 	}, [sort, projectsData]);
 
 	const totalPages = Math.max(pageMeta.totalPages, 1);
-	const isDataPending = !hasLoaded || isLoading;
+	const isDataPending = !hasLoaded && isLoading;
+	const isRefreshing = hasLoaded && isLoading;
+	const tableSkeletonRows = 6;
 
 	return (
 		<div className="projects-page">
@@ -713,6 +693,9 @@ const ProjectsPage: React.FC = () => {
 							onChange={(event) => handleFilterChange('search', event.target.value)}
 						/>
 					</div>
+					<button type="button" className="projects-primary-button" onClick={applyFilters}>
+						Поиск
+					</button>
 					<div className="projects-column-picker" ref={columnPickerRef}>
 					<button
 						type="button"
@@ -985,7 +968,10 @@ const ProjectsPage: React.FC = () => {
 					</div>
 
 				<div className="projects-filter-actions">
-					<button type="button" onClick={resetFilters}>
+					<button type="button" className="projects-primary-button" onClick={applyFilters}>
+						Применить
+					</button>
+					<button type="button" className="projects-header-button projects-reset-button" onClick={resetFilters}>
 						{t('projects_button_reset_filters')}
 					</button>
 				</div>
@@ -1020,21 +1006,34 @@ const ProjectsPage: React.FC = () => {
 									</tr>
 								</thead>
 								<tbody>
-									{visibleProjects.map((project) => (
-										<tr key={project.id}>
-											{activeColumns.map((column) => (
-												<td
-													key={`${project.id}-${column.key}`}
-													className={`projects-cell projects-cell--${column.key}`}
-												>
-													{renderCellContent(column.key, project)}
-												</td>
-											))}
-										</tr>
-									))}
+									{isRefreshing
+										? Array.from({ length: tableSkeletonRows }).map((_, rowIndex) => (
+											<tr key={`projects-skeleton-${rowIndex}`} className="projects-skeleton-row">
+												{activeColumns.map((column) => (
+													<td
+														key={`projects-skeleton-${rowIndex}-${column.key}`}
+														className={`projects-cell projects-cell--${column.key}`}
+													>
+														<span className="projects-skeleton-cell" aria-hidden="true" />
+													</td>
+												))}
+											</tr>
+										))
+										: visibleProjects.map((project) => (
+											<tr key={project.id}>
+												{activeColumns.map((column) => (
+													<td
+														key={`${project.id}-${column.key}`}
+														className={`projects-cell projects-cell--${column.key}`}
+													>
+														{renderCellContent(column.key, project)}
+													</td>
+												))}
+											</tr>
+										))}
 								</tbody>
 							</table>
-							{visibleProjects.length === 0 && (
+							{!isRefreshing && visibleProjects.length === 0 && (
 								<div className="no-results">{t('projects_not_found')}</div>
 							)}
 						</div>
