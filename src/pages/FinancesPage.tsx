@@ -20,6 +20,7 @@ import { Bar, Doughnut } from 'react-chartjs-2';
 import './FinancesPage.css';
 import { useTranslation } from 'react-i18next';
 import { useFinanceSummary } from '../hooks/useFinanceSummary';
+import PageLoader from '../components/PageLoader/PageLoader';
 
 ChartJS.register(
   CategoryScale,
@@ -915,7 +916,6 @@ const FinancesPage: React.FC = () => {
           <h1>{t('finances_page_heading')}</h1>
           <p>
             {t('finances_page_description', { region: regionLabel })}
-            {isSummaryLoading ? ' · Загрузка...' : ''}
           </p>
           {summaryError && <p>{summaryError}</p>}
         </div>
@@ -1079,6 +1079,10 @@ const FinancesPage: React.FC = () => {
         </div>
       </section>
 
+      {isSummaryLoading && <PageLoader />}
+
+      {!isSummaryLoading && (
+      <>
       <section className="finances-visuals" aria-label={t('finances_visuals_aria_label')}>
         <div className="finances-top-row">
           <article className="finances-map-card">
@@ -1469,6 +1473,8 @@ const FinancesPage: React.FC = () => {
           )}
         </section>
       </div>
+      </>
+      )}
     </div>
   );
 };

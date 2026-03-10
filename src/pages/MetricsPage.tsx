@@ -14,6 +14,7 @@ import type {
   ChartOptions,
   ChartType,
   Plugin,
+  ScriptableContext,
   ScatterDataPoint,
 } from 'chart.js';
 import { SlidersHorizontal, Sparkles, Map as MapIcon, RefreshCcw, CircleHelp } from 'lucide-react';
@@ -236,7 +237,7 @@ const MetricsPage: React.FC = () => {
           ? t('metrics_legend_cities')
           : t('metrics_legend_regions'),
       data: pointsByType[type],
-      pointBackgroundColor: (context: any) => {
+      pointBackgroundColor: (context: ScriptableContext<'line'>) => {
         const raw = context.raw as ScatterPoint;
         const isSelected = raw?.regionId === selectedRegionId;
         if (isSelected) {
@@ -246,8 +247,8 @@ const MetricsPage: React.FC = () => {
       },
       pointBorderColor: 'rgba(255,255,255,0.9)',
       pointBorderWidth: 2,
-      pointRadius: (context: any) => (context.raw as ScatterPoint)?.size ?? 8,
-      pointHoverRadius: (context: any) => ((context.raw as ScatterPoint)?.size ?? 8) + 2,
+      pointRadius: (context: ScriptableContext<'line'>) => (context.raw as ScatterPoint)?.size ?? 8,
+      pointHoverRadius: (context: ScriptableContext<'line'>) => ((context.raw as ScatterPoint)?.size ?? 8) + 2,
     }));
 
     datasets.push({

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { projectsApi } from '../api/services';
+import type { BackendProject } from '../api/types';
 import { usePaginatedRemoteData } from './usePaginatedRemoteData';
 
 interface ProjectsFilterParams {
@@ -24,7 +25,7 @@ interface UseProjectsDataParams<TProject> {
   currentPage: number;
   pageLimit: number;
   fallbackItems: TProject[];
-  mapItem: (item: any) => TProject;
+  mapItem: (item: BackendProject) => TProject;
 }
 
 export const useProjectsData = <TProject>({
@@ -159,6 +160,7 @@ export const useProjectsData = <TProject>({
   const {
     data: projectsData,
     isLoading,
+    hasLoaded,
     loadError,
     pageMeta,
   } = usePaginatedRemoteData({
@@ -173,6 +175,7 @@ export const useProjectsData = <TProject>({
   return {
     projectsData,
     isLoading,
+    hasLoaded,
     loadError,
     projectFilters,
     projectFiltersMeta,

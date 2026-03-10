@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { ApiError } from '../api/client';
 import { dashboardApi } from '../api/services';
 import type { DashboardSummary } from '../api/types';
+import PageLoader from '../components/PageLoader/PageLoader';
 
 const HOME_YEAR_RANGE = { min: 2020, max: new Date().getFullYear() } as const;
 
@@ -18,7 +19,7 @@ const HomePage: React.FC = () => {
   const { t } = useTranslation();
   const { selectedRegionId, selectedRegion, setSelectedRegionId } = useRegionContext();
   const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null);
-  const [isDashboardLoading, setIsDashboardLoading] = useState(false);
+  const [isDashboardLoading, setIsDashboardLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number>(HOME_YEAR_RANGE.max);
 
@@ -251,7 +252,6 @@ const HomePage: React.FC = () => {
               <h2>{selectedRegion?.name ?? t('republic_kazakhstan')}</h2>
               <p className="map-info-subtitle">
                 {t('map_subtitle')}
-                {isDashboardLoading ? ' · Загрузка...' : ''}
               </p>
               {dashboardError && <p className="map-info-subtitle">{dashboardError}</p>}
 
@@ -269,6 +269,9 @@ const HomePage: React.FC = () => {
       </section>
 
       <section className="stats-section" aria-label={t('stats_section_title')}>
+        {isDashboardLoading ? (
+          <PageLoader />
+        ) : (
         <div className="stats-grid">
           {summaryCards.map((stat) => (
             <article key={stat.title} className="stat-card">
@@ -293,6 +296,7 @@ const HomePage: React.FC = () => {
             </article>
           ))}
         </div>
+        )}
       </section>
     </div>
   );

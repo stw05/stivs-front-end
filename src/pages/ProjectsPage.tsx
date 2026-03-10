@@ -7,6 +7,7 @@ import './ProjectsPage.css';
 import { mapRegionToId } from '../api/services';
 import type { BackendProject } from '../api/types';
 import { useProjectsData } from '../hooks/useProjectsData';
+import PageLoader from '../components/PageLoader/PageLoader';
 
 type FinancingType = 'grant' | 'program' | 'contract';
 type PriorityDirection = 'health' | 'economy' | 'ecology' | 'energy' | 'transport' | 'ai';
@@ -35,135 +36,6 @@ interface Project {
 
 const YEAR_RANGE = { min: 2021, max: 2025 } as const;
 const PAGE_LIMIT = 20;
-
-const initialProjects: Project[] = [
-	{
-		id: 'cp230198765',
-		irn: 'CP230198765',
-		title: 'Исследование воздействия климата на аграрные экосистемы',
-		applicant: 'КНУ',
-		supervisor: 'Кадыров Р.Р.',
-		priority: 'health',
-		contest: 'Конкурс 4',
-		financingType: 'grant',
-		financingTotal: 4_500_000,
-		regionId: 'almaty',
-		customer: 'Минсельхоз',
-		mrnti: '62.33.15',
-		status: 'active',
-		trl: 5,
-		startYear: 2021,
-		endYear: 2024,
-	},
-	{
-		id: 'bp240112233',
-		irn: 'BP240112233',
-		title: 'Разработка квантовых технологий',
-		applicant: 'КарГУ',
-		supervisor: 'Гумаров Е.Н.',
-		priority: 'economy',
-		contest: 'Конкурс 6',
-		financingType: 'program',
-		financingTotal: 2_540_000,
-		regionId: 'karaganda',
-		customer: 'Минцифра',
-		mrnti: '12.45.01',
-		status: 'active',
-		trl: 4,
-		startYear: 2022,
-		endYear: 2025,
-	},
-	{
-		id: 'ap130123456',
-		irn: 'AP130123456',
-		title: 'Исследование новых методов лечения рака',
-		applicant: 'КАЗНУ',
-		supervisor: 'Жоламанов А.С.',
-		priority: 'health',
-		contest: 'Конкурс 1',
-		financingType: 'grant',
-		financingTotal: 5_000_000,
-		regionId: 'almaty-city',
-		customer: 'Минздрав',
-		mrnti: '11.22.31',
-		status: 'completed',
-		trl: 6,
-		startYear: 2020,
-		endYear: 2023,
-	},
-	{
-		id: 'bp240987654',
-		irn: 'BP240987654',
-		title: 'Разработка новой технологии переработки отходов',
-		applicant: 'ЕНУ',
-		supervisor: 'Темиргалиев П.Р.',
-		priority: 'ecology',
-		contest: 'Конкурс 2',
-		financingType: 'contract',
-		financingTotal: 2_000_222,
-		regionId: 'astana-city',
-		customer: 'Акимат Астаны',
-		mrnti: '28.91.05',
-		status: 'active',
-		trl: 7,
-		startYear: 2023,
-		endYear: 2025,
-	},
-	{
-		id: 'ap210567890',
-		irn: 'AP210567890',
-		title: 'Исследования',
-		applicant: 'Асфен',
-		supervisor: 'Оспанбеков Ж.',
-		priority: 'energy',
-		contest: 'Конкурс 5',
-		financingType: 'contract',
-		financingTotal: 384_564_000,
-		regionId: 'atyrau',
-		customer: 'АО "КазМунайГаз"',
-		mrnti: '21.54.12',
-		status: 'active',
-		trl: 8,
-		startYear: 2021,
-		endYear: 2024,
-	},
-	{
-		id: 'ap230456789',
-		irn: 'AP230456789',
-		title: 'Создание энергоэффективного транспорта',
-		applicant: 'Аль-Фараби',
-		supervisor: 'Хусаинов А.Г.',
-		priority: 'transport',
-		contest: 'Конкурс 3',
-		financingType: 'program',
-		financingTotal: 7_500_000,
-		regionId: 'almaty-city',
-		customer: 'Минтранс',
-		mrnti: '45.10.07',
-		status: 'completed',
-		trl: 6,
-		startYear: 2020,
-		endYear: 2022,
-	},
-	{
-		id: 'ap250334455',
-		irn: 'AP250334455',
-		title: 'Искусственный интеллект в медицине',
-		applicant: 'Nazarbayev Uni',
-		supervisor: 'Мехди Х.',
-		priority: 'ai',
-		contest: 'Конкурс 7',
-		financingType: 'grant',
-		financingTotal: 1_000_000,
-		regionId: 'astana-city',
-		customer: 'Минздрав',
-		mrnti: '62.45.10',
-		status: 'draft',
-		trl: 3,
-		startYear: 2024,
-		endYear: 2026,
-	},
-];
 
 type ColumnKey =
 	| 'irn'
@@ -468,6 +340,7 @@ const ProjectsPage: React.FC = () => {
 	const {
 		projectsData,
 		isLoading,
+		hasLoaded,
 		loadError,
 		projectFilters,
 		projectFiltersMeta,
@@ -479,7 +352,7 @@ const ProjectsPage: React.FC = () => {
 		regionNameById,
 		currentPage,
 		pageLimit: PAGE_LIMIT,
-		fallbackItems: initialProjects,
+		fallbackItems: [],
 		mapItem: toProject,
 	});
 
@@ -805,16 +678,14 @@ const ProjectsPage: React.FC = () => {
 	}, [sort, projectsData]);
 
 	const totalPages = Math.max(pageMeta.totalPages, 1);
+	const isDataPending = !hasLoaded || isLoading;
 
 	return (
 		<div className="projects-page">
 			<header className="projects-header">
 				<div>
 					<h1>{t('projects_page_header')}</h1>
-					<p>
-						{t('projects_found_count')}{pageMeta.total}
-						{isLoading ? ' · Загрузка...' : ''}
-					</p>
+					<p>{t('projects_found_count')}{pageMeta.total}</p>
 					{loadError && <p className="projects-load-error">{loadError}</p>}
 				</div>
 				<div className="projects-header-actions">
@@ -863,6 +734,9 @@ const ProjectsPage: React.FC = () => {
 				</div>
 			</div>
 
+			{isDataPending ? (
+				<PageLoader />
+			) : (
 			<div className="projects-content">
 				<aside className="projects-sidebar">
 					<div className="projects-filter-block">
@@ -1176,6 +1050,7 @@ const ProjectsPage: React.FC = () => {
 					</section>
 				</main>
 			</div>
+			)}
 		</div>
 	);
 };

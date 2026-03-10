@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, useRef, useEffect, type CSSProperties } from 'react';
+import React, { useCallback, useMemo, useState, useRef, type CSSProperties } from 'react';
 import { Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Bar, Doughnut, Chart as ChartComponent } from 'react-chartjs-2';
@@ -23,6 +23,7 @@ import { formatNumber } from '../utils/metrics';
 import './PublicationsPage.css';
 import type { BackendPublication, PaginationMeta } from '../api/types';
 import { usePublicationsData } from '../hooks/usePublicationsData';
+import PageLoader from '../components/PageLoader/PageLoader';
 
 ChartJS.register(
   CategoryScale,
@@ -274,18 +275,18 @@ const PublicationsPage: React.FC = () => {
   const { t } = useTranslation();
   const { selectedRegion, selectedRegionId, setSelectedRegionId, regions } = useRegionContext();
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
-  const [currentPage, setCurrentPage] = useState(1);
 
   const {
     publicationsData,
     isLoading,
+    hasLoaded,
     loadError,
     publicationFilters,
     publicationFiltersMeta,
     pageMeta,
   } = usePublicationsData({
     filters,
-    currentPage,
+    currentPage: 1,
     pageLimit: PAGE_LIMIT,
     normalizeMeta: normalizePageMeta,
   });
@@ -294,16 +295,6 @@ const PublicationsPage: React.FC = () => {
     { pointerId: null, startX: 0, scrollLeft: 0 },
   );
   const [isDraggingStats, setIsDraggingStats] = useState(false);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filters.irn, filters.financingType, filters.startYear, filters.endYear]);
-
-  useEffect(() => {
-    if (pageMeta.totalPages > 0 && currentPage > pageMeta.totalPages) {
-      setCurrentPage(pageMeta.totalPages);
-    }
-  }, [currentPage, pageMeta.totalPages]);
 
   // Get translated filter options
   const translatedFilterOptions = useMemo(() => getPublicationFilterOptions(t), [t]);
@@ -730,9 +721,7 @@ const PublicationsPage: React.FC = () => {
   const highlightCards = useMemo(() => getHighlightCards(t, publicationsStats), [t, publicationsStats]);
   const topApplicants = useMemo(() => getTopApplicants(t, visiblePublications), [t, visiblePublications]);
   const totalApplicantPublications = topApplicants.reduce((sum, applicant) => sum + applicant.value, 0);
-  const totalPages = Math.max(pageMeta.totalPages, 1);
-  const currentPageSafe = Math.min(Math.max(currentPage, 1), totalPages);
-
+  const isDataPending = !hasLoaded || isLoading;
   return (
     <div className="publications-page">
       <header className="publications-page-header">
@@ -741,30 +730,10 @@ const PublicationsPage: React.FC = () => {
           <p>
             {t('publications_page_description')}
             {` Всего: ${pageMeta.total}`}
-            {isLoading ? ' · Загрузка...' : ''}
           </p>
           {loadError && <p>{loadError}</p>}
         </div>
         <div className="publications-header-actions">
-          <div className="publications-pagination">
-            <button
-              type="button"
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={isLoading || currentPageSafe <= 1 || !pageMeta.hasPrevPage}
-            >
-              Назад
-            </button>
-            <span>
-              Страница {currentPageSafe} из {totalPages}
-            </span>
-            <button
-              type="button"
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={isLoading || currentPageSafe >= totalPages || !pageMeta.hasNextPage}
-            >
-              Вперёд
-            </button>
-          </div>
           <button type="button" className="publications-export-button">
             <Download size={18} />
             {t('publications_export_button')}
@@ -776,6 +745,10 @@ const PublicationsPage: React.FC = () => {
         модуль находится на стадии интеграции и тестирования
       </div>
 
+      {isDataPending ? (
+        <PageLoader />
+      ) : (
+      <>
       <section className="publications-stats-row" aria-label={t('publications_stats_aria')}>
         <div
           className={`publications-stats-scroll${isDraggingStats ? ' is-dragging' : ''}`}
@@ -954,7 +927,6 @@ const PublicationsPage: React.FC = () => {
           </div>
         </article>
       </section>
-
       <section className="publications-chart-grid">
         <article className="publications-chart-card chart-span-2">
           <header>
@@ -1042,6 +1014,8 @@ const PublicationsPage: React.FC = () => {
           </div>
         </article>
       </section>
+      </>
+      )}
     </div>
   );
 };

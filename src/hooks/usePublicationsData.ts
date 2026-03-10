@@ -14,7 +14,7 @@ interface UsePublicationsDataParams {
   filters: PublicationsFilterParams;
   currentPage: number;
   pageLimit: number;
-  normalizeMeta: (meta: any, fallbackPage: number) => PaginationMeta;
+  normalizeMeta: (meta: PaginationMeta | undefined, fallbackPage: number) => PaginationMeta;
 }
 
 export const usePublicationsData = ({
@@ -105,6 +105,7 @@ export const usePublicationsData = ({
   const {
     data: publicationsData,
     isLoading,
+    hasLoaded,
     loadError,
     pageMeta,
   } = usePaginatedRemoteData<BackendPublication, BackendPublication>({
@@ -119,6 +120,7 @@ export const usePublicationsData = ({
   return {
     publicationsData,
     isLoading,
+    hasLoaded,
     loadError,
     publicationFilters,
     publicationFiltersMeta,

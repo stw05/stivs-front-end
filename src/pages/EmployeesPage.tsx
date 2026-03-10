@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { mapRegionToId } from '../api/services';
 import type { BackendEmployee } from '../api/types';
 import { useEmployeesData } from '../hooks/useEmployeesData';
+import PageLoader from '../components/PageLoader/PageLoader';
 
 // --- 1. Типы данных и мок-данные ---
 export type AffiliateType = 'staff' | 'external' | 'all'; // Штатный/Сторонний/Все
@@ -40,18 +41,6 @@ interface Employee {
   hIndexScopus?: number;
   researcherIdWos: string; // Researcher ID Web of Science
 }
-
-const initialEmployees: Employee[] = [
-
-  { id: 'e1', name: 'Иванов И.И.', position: 'Профессор', department: 'Кафедра А', regionId: 'almaty-city', hireDate: '2015-01-10', email: 'ivanov@uni.kz', birthYear: 1985, affiliateType: 'staff', gender: 'male', degree: 'doctor', citizenship: 'resident', projectRole: 'Руководитель', hIndex: 7, mrntiCode: '11.00.00', classifier: 'technical' , scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171' },
-  { id: 'e2', name: 'Петрова А.К.', position: 'Доцент', department: 'Кафедра B', regionId: 'west-kazakhstan', hireDate: '2018-05-20', email: 'petrova@uni.kz', birthYear: 1990, affiliateType: 'staff', gender: 'female', degree: 'candidate', citizenship: 'resident', projectRole: 'Исполнитель', hIndex: 4, mrntiCode: '27.00.00', classifier: 'social', scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171' },
-  { id: 'e3', name: 'Сидоров Н.В.', position: 'Научный сотрудник', department: 'Лаборатория', regionId: 'shymkent-city', hireDate: '2020-09-01', email: 'sidorov@uni.kz', birthYear: 1978, affiliateType: 'external', gender: 'male', degree: 'phd', citizenship: 'non-resident', projectRole: 'Консультант', hIndex: 1, mrntiCode: '11.00.00', classifier: 'economic' , scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171' },
-  { id: 'e4', name: 'Касымов Р.Ж.', position: 'Профессор', department: 'Кафедра А', regionId: 'almaty-city', hireDate: '2012-03-01', email: 'kasymov@uni.kz', birthYear: 1965, affiliateType: 'staff', gender: 'male', degree: 'doctor', citizenship: 'resident', projectRole: 'Руководитель', hIndex: 11, mrntiCode: '55.00.00', classifier: 'technical', scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171' },
-  { id: 'e5', name: 'Ахметова З.М.', position: 'Ассистент', department: 'Кафедра C', regionId: 'west-kazakhstan', hireDate: '2023-11-15', email: 'akhmetova@uni.kz', birthYear: 2000, affiliateType: 'staff', gender: 'female', degree: 'master', citizenship: 'resident', projectRole: 'Исполнитель', hIndex: 0, mrntiCode: '27.00.00', classifier: 'social' , scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171'},
-  { id: 'e6', name: 'Нурланов Б.К.', position: 'Консультант', department: 'Внештатно', regionId: 'astana-city', hireDate: '2023-01-01', email: 'nurlan@ext.kz', birthYear: 1995, affiliateType: 'external', gender: 'male', degree: 'none', citizenship: 'non-resident', projectRole: 'Исполнитель', hIndex: 2, mrntiCode: '55.00.00', classifier: 'technical' , scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171'},
-  { id: 'e7', name: 'Есимова М.Е.', position: 'Лаборант', department: 'Кафедра C', regionId: 'astana-city', hireDate: '2024-02-10', email: 'esimova@uni.kz', birthYear: 1998, affiliateType: 'staff', gender: 'female', degree: 'master', citizenship: 'resident', projectRole: 'Исполнитель', hIndex: 1, mrntiCode: '11.00.00', classifier: 'economic', scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171' },
-  { id: 'e8', name: 'Байтереков С.Т.', position: 'Младший научный сотрудник', department: 'Лаборатория', regionId: 'almaty-city', hireDate: '2024-03-01', email: 'baiterek@uni.kz', birthYear: 1996, affiliateType: 'staff', gender: 'male', degree: 'master', citizenship: 'resident', projectRole: 'Исполнитель', hIndex: 0, mrntiCode: '27.00.00', classifier: 'technical', scopusAuthorId: '56481630300', researcherIdWos: 'https://orcid.org/0000-0002-2348-171' },
-];
 
 // --- 2. Определение значений фильтров и типов ---
 const currentYear = new Date().getFullYear();
@@ -200,6 +189,7 @@ const EmployeesPage: React.FC = () => {
   const {
     employeesData,
     isLoading,
+    hasLoaded,
     loadError,
     employeeFilters,
     employeeFiltersMeta,
@@ -210,7 +200,7 @@ const EmployeesPage: React.FC = () => {
     regionNameById,
     currentPage,
     pageLimit: PAGE_LIMIT,
-    fallbackItems: initialEmployees,
+    fallbackItems: [],
     mapItem: toEmployee,
   });
 
@@ -470,12 +460,13 @@ const EmployeesPage: React.FC = () => {
   }, [filters, sort, employeesData]);
 
   // Заглушка для действий с сотрудниками
-  const handleAction = (_action: string, _employee?: Employee) => {
-    // TODO: implement employee actions
+  const handleAction = () => {
+    // Intentionally no-op until action handlers are connected.
   };
   
   const totalEmployeesCount = filteredEmployees.length;
   const totalPages = Math.max(pageMeta.totalPages, 1);
+  const isDataPending = !hasLoaded || isLoading;
 
   return (
     <div className="employees-page">
@@ -484,7 +475,6 @@ const EmployeesPage: React.FC = () => {
           <h1>{t('employees_page_title')}</h1>
           <p>
             {t('in_database')}{pageMeta.total} {t('found_count')}{totalEmployeesCount}
-            {isLoading ? ' · Загрузка...' : ''}
           </p>
           {loadError && <p>{loadError}</p>}
         </div>
@@ -492,7 +482,7 @@ const EmployeesPage: React.FC = () => {
           <button
             type="button"
             className="employees-header-button"
-            onClick={() => handleAction('Выгрузка отчета')}
+            onClick={handleAction}
           >
             <Download size={18} />
             {t('button_export_report')}
@@ -538,6 +528,9 @@ const EmployeesPage: React.FC = () => {
         </div>
       </div>
 
+      {isDataPending ? (
+        <PageLoader />
+      ) : (
       <div className="employees-content">
         <aside className="employees-sidebar">
           <div className="employees-filter-block">
@@ -842,6 +835,7 @@ const EmployeesPage: React.FC = () => {
           </section>
         </main>
       </div>
+      )}
     </div>
   );
 };

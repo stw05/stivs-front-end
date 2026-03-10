@@ -5,7 +5,7 @@ import { financesApi } from '../api/services';
 
 export const useFinanceSummary = () => {
   const [apiSummary, setApiSummary] = useState<FinanceSummary | null>(null);
-  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(true);
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
   useEffect(() => {

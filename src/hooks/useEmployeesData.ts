@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { employeesApi } from '../api/services';
+import type { BackendEmployee } from '../api/types';
 import { usePaginatedRemoteData } from './usePaginatedRemoteData';
 
 interface EmployeesFilterParams {
@@ -24,7 +25,7 @@ interface UseEmployeesDataParams<TEmployee> {
   currentPage: number;
   pageLimit: number;
   fallbackItems: TEmployee[];
-  mapItem: (item: any) => TEmployee;
+  mapItem: (item: BackendEmployee) => TEmployee;
 }
 
 export const useEmployeesData = <TEmployee>({
@@ -138,6 +139,7 @@ export const useEmployeesData = <TEmployee>({
   const {
     data: employeesData,
     isLoading,
+    hasLoaded,
     loadError,
     pageMeta,
   } = usePaginatedRemoteData({
@@ -152,6 +154,7 @@ export const useEmployeesData = <TEmployee>({
   return {
     employeesData,
     isLoading,
+    hasLoaded,
     loadError,
     employeeFilters,
     employeeFiltersMeta,

@@ -2,10 +2,7 @@
   background: linear-gradient(135deg, #0c224f 0%, #1e3a8a 55%, #2563eb 100%);
   color: white;
   padding: 0;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.2);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.18);
 }
 
 .header-content {
@@ -88,24 +85,47 @@
 
 .language-selector {
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 3px;
 }
 
 .lang-option {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.4rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.lang-option:hover:not(.active) {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .lang-option.active {
-  background: rgba(255, 255, 255, 0.22);
-  font-weight: 600;
+  background: #ffffff;
+  color: #1e3a8a;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
 }
 
-.lang-option:hover {
-  background: rgba(255, 255, 255, 0.1);
+.lang-option:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 1px;
 }
 
 .user-menu {
@@ -132,21 +152,7 @@
   transform: translateY(-1px);
 }
 
-.user-dropdown {
-  display: flex;
-  gap: 0.5rem;
-}
 
-.user-dropdown svg {
-  padding: 0.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.user-dropdown svg:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
 
 @media (max-width: 768px) {
   .header-content {
@@ -176,7 +182,12 @@
     justify-content: space-between;
   }
   .language-selector {
-    gap: 0.4rem;
+    padding: 2px;
+  }
+  .lang-option {
+    padding: 0.23rem 0.5rem;
+    font-size: 0.75rem;
+    min-width: 2rem;
   }
   .logo h1 {
     font-size: 1.5rem;
