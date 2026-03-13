@@ -5,6 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
 
 const TOKEN_KEY = 'uisks_token';
 const USER_KEY = 'uisks_user';
+const API_PREFIX = '/api/v1';
 
 export const authStorage = {
   getToken: (): string | null => localStorage.getItem(TOKEN_KEY),
@@ -37,7 +38,13 @@ export class ApiError extends Error {
 }
 
 export const buildUrl = (path: string, query?: Record<string, string | number | undefined>): string => {
-  const base = `${API_BASE_URL}${path}`;
+  const normalizedPath =
+    path.startsWith('/api/v1/')
+      ? path
+      : path.startsWith('/api/')
+        ? `${API_PREFIX}${path.slice('/api'.length)}`
+        : path;
+  const base = `${API_BASE_URL}${normalizedPath}`;
   if (!query) {
     return base;
   }
