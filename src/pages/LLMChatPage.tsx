@@ -13,8 +13,8 @@ import {
 } from 'lucide-react';
 import './LLMChatPage.css';
 
-const CHAT_ENDPOINT = (import.meta.env.VITE_LLM_CHAT_ENDPOINT as string | undefined) ?? '/api/v1/llm/jobs.php';
-const STATUS_ENDPOINT = (import.meta.env.VITE_LLM_STATUS_ENDPOINT as string | undefined) ?? '/api/v1/llm/status.php';
+const CHAT_ENDPOINT = (import.meta.env.VITE_LLM_CHAT_ENDPOINT as string | undefined) ?? '/api/llm/jobs.php';
+const STATUS_ENDPOINT = (import.meta.env.VITE_LLM_STATUS_ENDPOINT as string | undefined) ?? '/api/llm/status.php';
 const CALLBACK_URL = (import.meta.env.VITE_LLM_CALLBACK_URL as string | undefined) ?? '';
 
 type RequestStatus = 'queued' | 'processing' | 'ready' | 'failed' | 'done';
@@ -114,8 +114,8 @@ const normalizeLlmApiUrl = (value?: string): string | undefined => {
 
   const normalizedPath = (path: string) =>
     path
-      .replace(/\/api\/(status|download)\.php$/i, '/api/v1/llm/$1.php')
-      .replace(/\/api\/llm\/(jobs|status|download)\.php$/i, '/api/v1/llm/$1.php');
+      .replace(/\/api\/(status|download)\.php$/i, '/api/llm/$1.php')
+      .replace(/\/api\/llm\/(jobs|status|download)\.php$/i, '/api/llm/$1.php');
 
   try {
     const baseOrigin =
@@ -138,8 +138,8 @@ const normalizeLlmApiUrl = (value?: string): string | undefined => {
     return parsedUrl.toString();
   } catch {
     const fallback = value
-      .replace(/\/api\/(status|download)\.php(?=\?|#|$)/i, '/api/v1/llm/$1.php')
-      .replace(/\/api\/llm\/(jobs|status|download)\.php(?=\?|#|$)/i, '/api/v1/llm/$1.php');
+      .replace(/\/api\/(status|download)\.php(?=\?|#|$)/i, '/api/llm/$1.php')
+      .replace(/\/api\/llm\/(jobs|status|download)\.php(?=\?|#|$)/i, '/api/llm/$1.php');
     if (typeof window !== 'undefined' && window.location.protocol === 'https:' && fallback.startsWith('http://')) {
       return fallback.replace(/^http:\/\//i, 'https://');
     }
