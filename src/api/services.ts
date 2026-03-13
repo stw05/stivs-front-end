@@ -5,10 +5,13 @@ import type {
   BackendEmployee,
   BackendProject,
   BackendPublication,
+  DashboardFilterOptions,
   DashboardSummary,
   EmployeeFilterOptions,
   EmployeeFilterMeta,
   ProjectFilterMeta,
+  FinanceFilterMeta,
+  FinanceFilterOptions,
   FinanceSummary,
   PaginatedResponse,
   ProjectFilterOptions,
@@ -134,6 +137,51 @@ const withQuery = (path: string, query?: Record<string, string | number | undefi
   return queryString ? `${path}?${queryString}` : path;
 };
 
+const toDashboardFilterOption = (item: unknown): { value: string; label: string } | null => {
+  if (typeof item === 'string') {
+    const value = item.trim();
+    return value.length > 0 ? { value, label: value } : null;
+  }
+
+  if (item && typeof item === 'object') {
+    const source = item as Record<string, unknown>;
+    const rawValue = source.value;
+    const rawLabel = source.label ?? source.name ?? source.title;
+
+    if (typeof rawValue === 'string' && rawValue.trim().length > 0) {
+      const value = rawValue.trim();
+      const label = typeof rawLabel === 'string' && rawLabel.trim().length > 0 ? rawLabel.trim() : value;
+      return { value, label };
+    }
+
+    if (typeof rawLabel === 'string' && rawLabel.trim().length > 0) {
+      const value = rawLabel.trim();
+      return { value, label: value };
+    }
+  }
+
+  return null;
+};
+
+const toDashboardFilterList = (value: unknown): Array<{ value: string; label: string }> => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const options = value
+    .map((item) => toDashboardFilterOption(item))
+    .filter((option): option is { value: string; label: string } => option !== null);
+
+  const uniqueOptions = new Map<string, { value: string; label: string }>();
+  options.forEach((option) => {
+    if (!uniqueOptions.has(option.value)) {
+      uniqueOptions.set(option.value, option);
+    }
+  });
+
+  return Array.from(uniqueOptions.values());
+};
+
 export const projectsApi = {
   list(query?: {
     irn?: string;
@@ -174,9 +222,20 @@ export const projectsApi = {
 
 export const employeesApi = {
   list(query?: {
+    searchTerm?: string;
     region?: string;
     position?: string;
+    department?: string;
+    minAge?: number;
+    maxAge?: number;
+    affiliateType?: string;
+    gender?: string;
     degree?: string;
+    citizenship?: string;
+    projectRole?: string;
+    hIndexGroup?: string;
+    mrnti?: string;
+    classifier?: string;
     minHIndex?: number;
     maxHIndex?: number;
     q?: string;
@@ -193,7 +252,17 @@ export const employeesApi = {
   filtersMeta(query?: {
     region?: string;
     position?: string;
+    department?: string;
+    minAge?: number;
+    maxAge?: number;
+    affiliateType?: string;
+    gender?: string;
     degree?: string;
+    citizenship?: string;
+    projectRole?: string;
+    hIndexGroup?: string;
+    mrnti?: string;
+    classifier?: string;
     minHIndex?: number;
     maxHIndex?: number;
     q?: string;
@@ -217,13 +286,61 @@ export const publicationsApi = {
 };
 
 export const financesApi = {
-  summary(year?: number, signal?: AbortSignal) {
-    return apiRequest<FinanceSummary>(withQuery('/api/finances/summary', year ? { year } : undefined), { signal });
+  summary(query?: {
+    year?: number;
+    startYear?: number;
+    endYear?: number;
+    region?: string;
+    irn?: string;
+    financingType?: string;
+    cofinancing?: string;
+    expense?: string;
+    priority?: string;
+    competition?: string;
+    applicant?: string;
+    customer?: string;
+    status?: string;
+  }, signal?: AbortSignal) {
+    return apiRequest<FinanceSummary>(withQuery('/api/finances/summary', query), { signal });
+  },
+
+  filters() {
+    return apiRequest<FinanceFilterOptions>('/api/finances/filters');
+  },
+
+  filtersMeta(query?: {
+    year?: number;
+    startYear?: number;
+    endYear?: number;
+    region?: string;
+    irn?: string;
+    financingType?: string;
+    cofinancing?: string;
+    expense?: string;
+    priority?: string;
+    competition?: string;
+    applicant?: string;
+    customer?: string;
+    status?: string;
+  }, signal?: AbortSignal) {
+    return apiRequest<FinanceFilterMeta>(withQuery('/api/finances/filters-meta', query), { signal });
   },
 };
 
 export const dashboardApi = {
-  summary(region?: string, year?: number) {
-    return apiRequest<DashboardSummary>(withQuery('/api/dashboard/summary', { region, year }));
+  async filters() {
+    const payload = await apiRequest<Record<string, unknown>>('/api/dashboard/filters');
+
+    const priority = toDashboardFilterList(payload.priority);
+    const applicant = toDashboardFilterList(payload.applicant ?? payload.organization);
+
+    return {
+      priority,
+      applicant,
+    } as DashboardFilterOptions;
+  },
+
+  summary(query?: { priority?: string; organization?: string; region?: string; year?: number }) {
+    return apiRequest<DashboardSummary>(withQuery('/api/dashboard/summary', query));
   },
 };

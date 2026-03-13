@@ -10,18 +10,22 @@ import './HomePage.css';
 import { useTranslation } from 'react-i18next';
 import { ApiError } from '../api/client';
 import { dashboardApi } from '../api/services';
-import type { DashboardSummary } from '../api/types';
+import type { DashboardFilterOptions, DashboardSummary } from '../api/types';
 import PageLoader from '../components/PageLoader/PageLoader';
 
-const HOME_YEAR_RANGE = { min: 2020, max: new Date().getFullYear() } as const;
+const HOME_YEAR_RANGE = { min: 2020, max: 2025 } as const;
 
 const HomePage: React.FC = () => {
   const { t } = useTranslation();
   const { selectedRegionId, selectedRegion, setSelectedRegionId } = useRegionContext();
   const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null);
+  const [dashboardFilters, setDashboardFilters] = useState<DashboardFilterOptions>({ priority: [], applicant: [] });
   const [isDashboardLoading, setIsDashboardLoading] = useState(true);
+  const [isFiltersLoading, setIsFiltersLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number>(HOME_YEAR_RANGE.max);
+  const [selectedPriority, setSelectedPriority] = useState<string>('');
+  const [selectedOrganization, setSelectedOrganization] = useState<string>('');
 
   const yearOptions = useMemo(
     () =>
@@ -30,11 +34,60 @@ const HomePage: React.FC = () => {
   );
 
   useEffect(() => {
+    const loadDashboardFilters = async () => {
+      setIsFiltersLoading(true);
+      try {
+        const filters = await dashboardApi.filters();
+        setDashboardFilters(filters);
+      } catch {
+        setDashboardFilters({ priority: [], applicant: [] });
+      } finally {
+        setIsFiltersLoading(false);
+      }
+    };
+
+    void loadDashboardFilters();
+  }, []);
+
+  const normalizedNoFilterValues = useMemo(() => {
+    const normalizeFilterValue = (value: string) => value.trim().toLowerCase();
+
+    return new Set([
+      '',
+      normalizeFilterValue(t('filter_select_direction')),
+      normalizeFilterValue(t('filter_select_organization')),
+      normalizeFilterValue('Все направления'),
+      normalizeFilterValue('Выбор организации'),
+      normalizeFilterValue('All directions'),
+      normalizeFilterValue('Choose organization'),
+    ]);
+  }, [t]);
+
+  const normalizeDashboardFilterValue = (value: string) => value.trim().toLowerCase();
+
+  const asDashboardFilterParam = (value: string): string | undefined => {
+    if (!value) {
+      return undefined;
+    }
+
+    return normalizedNoFilterValues.has(normalizeDashboardFilterValue(value)) ? undefined : value;
+  };
+
+  useEffect(() => {
     const loadDashboardSummary = async () => {
       setIsDashboardLoading(true);
       setDashboardError(null);
       try {
-        const summary = await dashboardApi.summary(selectedRegion?.name, selectedYear);
+        const yearForRequest =
+          selectedYear >= HOME_YEAR_RANGE.min && selectedYear <= HOME_YEAR_RANGE.max
+            ? selectedYear
+            : undefined;
+        const summary = await dashboardApi.summary({
+          priority: asDashboardFilterParam(selectedPriority),
+          organization: asDashboardFilterParam(selectedOrganization),
+          region: selectedRegion?.name ?? 'all',
+          year: yearForRequest,
+        });
         setDashboardSummary(summary);
       } catch (error) {
         const message = error instanceof ApiError ? error.message : 'Не удалось загрузить сводку главной страницы.';
@@ -46,7 +99,7 @@ const HomePage: React.FC = () => {
     };
 
     void loadDashboardSummary();
-  }, [selectedRegion?.name, selectedYear]);
+  }, [selectedOrganization, selectedPriority, selectedRegion?.name, selectedYear]);
 
   const nationalMetrics = useMemo(() => calculateNationalMetrics(), []);
   const metrics = useMemo(() => {
@@ -147,6 +200,14 @@ const HomePage: React.FC = () => {
     setSelectedYear(Number(event.target.value));
   };
 
+  const handlePriorityChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedPriority(event.target.value);
+  };
+
+  const handleOrganizationChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedOrganization(event.target.value);
+  };
+
   const mapHighlights = [
     {
       label: t('projects_page_title'),
@@ -194,21 +255,37 @@ const HomePage: React.FC = () => {
 
             <div className="home-filter-group">
               <label htmlFor="home-filter-direction">{t('filter_select_direction')}</label>
-              <select id="home-filter-direction" className="home-filter-select" defaultValue="direction">
-                <option value="direction">{t('filter_select_direction')}</option>
-                <option value="research">{t('filter_research')}</option>
-                <option value="commercialization">{t('filter_commercialization')}</option>
-                <option value="international">{t('filter_international_projects')}</option>
+              <select
+                id="home-filter-direction"
+                className="home-filter-select"
+                value={selectedPriority}
+                onChange={handlePriorityChange}
+                disabled={isFiltersLoading}
+              >
+                <option value="">{t('filter_select_direction')}</option>
+                {dashboardFilters.priority.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </div>
 
             <div className="home-filter-group">
               <label htmlFor="home-filter-organization">{t('filter_select_organization')}</label>
-              <select id="home-filter-organization" className="home-filter-select" defaultValue="organization">
-                <option value="organization">{t('filter_all_organizations')}</option>
-                <option value="su">Satbayev University</option>
-                <option value="kaznu">KazNU</option>
-                <option value="enu">ENU</option>
+              <select
+                id="home-filter-organization"
+                className="home-filter-select"
+                value={selectedOrganization}
+                onChange={handleOrganizationChange}
+                disabled={isFiltersLoading}
+              >
+                <option value="">{t('filter_select_organization')}</option>
+                {dashboardFilters.applicant.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -216,17 +293,19 @@ const HomePage: React.FC = () => {
               <label htmlFor="home-filter-priority" title={t('filter_select_priority')}>
                 {t('filter_select_priority')}
               </label>
-              <select id="home-filter-priority" className="home-filter-select" defaultValue="priority">
-                <option value="priority">{t('filter_all_priorities')}</option>
-                <option value="energy">{t('priority_energy_transport')}</option>
-                <option value="advanced-tech">{t('priority_advanced_tech')}</option>
-                <option value="intellect-natural">{t('priority_intellect_natural')}</option>
-                <option value="intellect-social">{t('priority_intellect_social')}</option>
-                <option value="agriculture">{t('priority_agriculture')}</option>
-                <option value="life-health">{t('priority_life_health')}</option>
-                <option value="security">{t('priority_security')}</option>
-                <option value="commercialization">{t('priority_commercialization')}</option>
-                <option value="ecology">{t('priority_ecology')}</option>
+              <select
+                id="home-filter-priority"
+                className="home-filter-select"
+                value={selectedPriority}
+                onChange={handlePriorityChange}
+                disabled={isFiltersLoading}
+              >
+                <option value="">{t('filter_all_priorities')}</option>
+                {dashboardFilters.priority.map((option) => (
+                  <option key={`priority-${option.value}`} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </div>
 

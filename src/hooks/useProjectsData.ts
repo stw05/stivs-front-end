@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { projectsApi } from '../api/services';
-import type { BackendProject } from '../api/types';
+import type { BackendProject, ProjectFilterOptions } from '../api/types';
 import { usePaginatedRemoteData } from './usePaginatedRemoteData';
 
 interface ProjectsFilterParams {
@@ -38,12 +38,7 @@ export const useProjectsData = <TProject>({
   fallbackItems,
   mapItem,
 }: UseProjectsDataParams<TProject>) => {
-  const [projectFilters, setProjectFilters] = useState<{
-    irn: string[];
-    applicant: string[];
-    mrnti: string[];
-    trl: string[];
-  } | null>(null);
+  const [projectFilters, setProjectFilters] = useState<ProjectFilterOptions | null>(null);
   const [projectFiltersMeta, setProjectFiltersMeta] = useState<{
     irn: Array<{ value: string; count: number }>;
     applicant: Array<{ value: string; count: number }>;
@@ -58,10 +53,16 @@ export const useProjectsData = <TProject>({
         const payload = await projectsApi.filters();
         if (!controller.signal.aborted) {
           setProjectFilters({
-            irn: payload.irn,
-            applicant: payload.applicant,
-            mrnti: payload.mrnti,
-            trl: payload.trl,
+            irn: payload.irn ?? [],
+            status: payload.status ?? [],
+            region: payload.region ?? [],
+            financingType: payload.financingType ?? [],
+            priority: payload.priority ?? [],
+            applicant: payload.applicant ?? [],
+            contest: payload.contest ?? [],
+            customer: payload.customer ?? [],
+            mrnti: payload.mrnti ?? [],
+            trl: payload.trl ?? [],
           });
         }
       } catch {

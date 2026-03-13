@@ -175,13 +175,13 @@ interface FilterState {
 	startYear: number;
 	endYear: number;
 	irn: string;
-	financingType: FinancingType | 'all';
-	priority: PriorityDirection | 'all';
+	financingType: string;
+	priority: string;
 	contest: string;
 	applicant: string;
 	customer: string;
 	mrnti: string;
-	status: ProjectStatus | 'all';
+	status: string;
 	trl: TrlLevel | 'all';
 }
 
@@ -247,7 +247,7 @@ const ProjectsPage: React.FC = () => {
 	const { selectedRegionId, setSelectedRegionId, regions } = useRegionContext();
 	
 	// Динамические переводы
-	const priorityLabels = useMemo<Record<PriorityDirection, string>>(
+	const priorityLabels = useMemo<Record<string, string>>(
 		() => ({
 			health: t('projects_priority_health'),
 			economy: t('projects_priority_economy'),
@@ -259,7 +259,7 @@ const ProjectsPage: React.FC = () => {
 		[t],
 	);
 
-	const financingLabels = useMemo<Record<FinancingType, string>>(
+	const financingLabels = useMemo<Record<string, string>>(
 		() => ({
 			grant: t('projects_financing_grant'),
 			program: t('projects_financing_program'),
@@ -268,7 +268,7 @@ const ProjectsPage: React.FC = () => {
 		[t],
 	);
 
-	const statusLabels = useMemo<Record<ProjectStatus, string>>(
+	const statusLabels = useMemo<Record<string, string>>(
 		() => ({
 			active: t('projects_status_active'),
 			completed: t('projects_status_completed'),
@@ -361,15 +361,33 @@ const ProjectsPage: React.FC = () => {
 		() => ['all', ...(projectFilters?.irn.length ? projectFilters.irn : [...new Set(projectsData.map((item) => item.irn))])],
 		[projectFilters?.irn, projectsData],
 	);
-	const contestOptions = useMemo(() => ['all', ...new Set(projectsData.map((item) => item.contest))], [projectsData]);
+	const financingTypeOptions = useMemo(
+		() => ['all', ...(projectFilters?.financingType.length ? projectFilters.financingType : ['grant', 'program', 'contract'])],
+		[projectFilters?.financingType],
+	);
+	const priorityOptions = useMemo(
+		() => ['all', ...(projectFilters?.priority.length ? projectFilters.priority : Object.keys(priorityLabels))],
+		[priorityLabels, projectFilters?.priority],
+	);
+	const contestOptions = useMemo(
+		() => ['all', ...(projectFilters?.contest.length ? projectFilters.contest : [...new Set(projectsData.map((item) => item.contest))])],
+		[projectFilters?.contest, projectsData],
+	);
 	const applicantOptions = useMemo(
 		() => ['all', ...(projectFilters?.applicant.length ? projectFilters.applicant : [...new Set(projectsData.map((item) => item.applicant))])],
 		[projectFilters?.applicant, projectsData],
 	);
-	const customerOptions = useMemo(() => ['all', ...new Set(projectsData.map((item) => item.customer))], [projectsData]);
+	const customerOptions = useMemo(
+		() => ['all', ...(projectFilters?.customer.length ? projectFilters.customer : [...new Set(projectsData.map((item) => item.customer))])],
+		[projectFilters?.customer, projectsData],
+	);
 	const mrntiOptions = useMemo(
 		() => ['all', ...(projectFilters?.mrnti.length ? projectFilters.mrnti : [...new Set(projectsData.map((item) => item.mrnti))])],
 		[projectFilters?.mrnti, projectsData],
+	);
+	const statusOptions = useMemo(
+		() => ['all', ...(projectFilters?.status.length ? projectFilters.status : Object.keys(statusLabels))],
+		[projectFilters?.status, statusLabels],
 	);
 	const trlOptions = useMemo<(TrlLevel | 'all')[]>(() => {
 		if (projectFilters?.trl.length) {
@@ -389,19 +407,20 @@ const ProjectsPage: React.FC = () => {
 		const mrntiCountMap = toCountMap(projectFiltersMeta?.mrnti);
 		const financingTypeCountMap = toCountMap(projectFiltersMeta?.financingType);
 
-		const withCount = (value: string, countMap?: Map<string, number>): string => {
+		const withCount = (value: string, label: string, countMap?: Map<string, number>): string => {
 			const count = countMap?.get(value);
-			return count !== undefined ? `${value} (${count})` : value;
+			return count !== undefined ? `${label} (${count})` : label;
 		};
 
 		const buildOptions = (
 			options: string[],
 			allLabel: string,
 			countMap?: Map<string, number>,
+			labelResolver: (value: string) => string = (value) => value,
 		): OptionItem[] =>
 			options.map((value) => ({
 				value,
-				label: value === 'all' ? allLabel : withCount(value, countMap),
+				label: value === 'all' ? allLabel : withCount(value, labelResolver(value), countMap),
 			}));
 
 		return {
@@ -409,38 +428,37 @@ const ProjectsPage: React.FC = () => {
 			applicant: buildOptions(applicantOptions, t('projects_filter_applicant'), applicantCountMap),
 			customer: buildOptions(customerOptions, t('projects_filter_customer')),
 			mrnti: buildOptions(mrntiOptions, t('projects_filter_mrnti'), mrntiCountMap),
-			financingType: (['all', 'grant', 'program', 'contract'] as (FinancingType | 'all')[]).map((value) => ({
-				value,
-				label:
-					value === 'all'
-						? t('projects_filter_financing_type')
-						: withCount(financingLabels[value as FinancingType], financingTypeCountMap),
-			})),
+			financingType: buildOptions(
+				financingTypeOptions,
+				t('projects_filter_financing_type'),
+				financingTypeCountMap,
+				(value) => financingLabels[value] ?? value,
+			),
 		};
-	}, [applicantOptions, customerOptions, irnOptions, mrntiOptions, t, financingLabels, projectFiltersMeta]);
+	}, [applicantOptions, customerOptions, financingLabels, financingTypeOptions, irnOptions, mrntiOptions, projectFiltersMeta, t]);
 	const projectAvailableCounts = useMemo(
 		() => ({
 			region: regions.length,
 			irn: Math.max(irnOptions.length - 1, 0),
 			financingType: Math.max(dropdownOptions.financingType.length - 1, 0),
-			priority: Object.keys(priorityLabels).length,
+			priority: Math.max(priorityOptions.length - 1, 0),
 			contest: Math.max(contestOptions.length - 1, 0),
 			applicant: Math.max(applicantOptions.length - 1, 0),
 			customer: Math.max(customerOptions.length - 1, 0),
 			mrnti: Math.max(mrntiOptions.length - 1, 0),
-			status: Object.keys(statusLabels).length,
+			status: Math.max(statusOptions.length - 1, 0),
 			trl: trlOptions.filter((option) => option !== 'all').length,
 		}),
 		[
 			regions.length,
 			irnOptions.length,
 			dropdownOptions.financingType.length,
-			priorityLabels,
+			priorityOptions.length,
 			contestOptions.length,
 			applicantOptions.length,
 			customerOptions.length,
 			mrntiOptions.length,
-			statusLabels,
+			statusOptions.length,
 			trlOptions,
 		],
 	);
@@ -550,15 +568,15 @@ const ProjectsPage: React.FC = () => {
 			case 'applicant':
 				return renderCompactText(project.applicant);
 			case 'priority':
-				return renderCompactText(priorityLabels[project.priority]);
+				return renderCompactText(priorityLabels[project.priority] ?? project.priority);
 			case 'financingType':
-				return renderCompactText(financingLabels[project.financingType]);
+				return renderCompactText(financingLabels[project.financingType] ?? project.financingType);
 			case 'financingTotal':
 				return formatCurrency(project.financingTotal);
 			case 'region':
 				return renderCompactText(regionNameById[project.regionId] ?? '—');
 			case 'status':
-				return renderCompactText(statusLabels[project.status]);
+				return renderCompactText(statusLabels[project.status] ?? project.status);
 			case 'period':
 				return `${project.startYear}-${project.endYear}`;
 			default:
@@ -830,14 +848,11 @@ const ProjectsPage: React.FC = () => {
 								<select
 									id="filter-priority"
 									value={filters.priority}
-									onChange={(event) =>
-										handleFilterChange('priority', event.target.value as FilterState['priority'])
-									}
+									onChange={(event) => handleFilterChange('priority', event.target.value)}
 								>
-									<option value="all">{t('projects_option_all_priorities')}</option>
-									{(Object.keys(priorityLabels) as PriorityDirection[]).map((priority) => (
+									{priorityOptions.map((priority) => (
 										<option key={priority} value={priority}>
-											{priorityLabels[priority]}
+											{priority === 'all' ? t('projects_option_all_priorities') : (priorityLabels[priority] ?? priority)}
 										</option>
 									))}
 								</select>
@@ -929,14 +944,11 @@ const ProjectsPage: React.FC = () => {
 								<select
 									id="filter-status"
 									value={filters.status}
-									onChange={(event) =>
-										handleFilterChange('status', event.target.value as FilterState['status'])
-									}
+									onChange={(event) => handleFilterChange('status', event.target.value)}
 								>
-									<option value="all">{t('projects_option_all_statuses')}</option>
-									{(Object.keys(statusLabels) as ProjectStatus[]).map((status) => (
+									{statusOptions.map((status) => (
 										<option key={status} value={status}>
-											{statusLabels[status]}
+											{status === 'all' ? t('projects_option_all_statuses') : (statusLabels[status] ?? status)}
 										</option>
 									))}
 								</select>

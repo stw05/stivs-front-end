@@ -70,6 +70,36 @@ export interface FinanceSummary {
   byRegion: Array<{ region: string; amount: number }>;
 }
 
+export interface FinanceFilterOptions {
+  irn: string[];
+  financingType: string[];
+  cofinancing: string[];
+  expense: string[];
+  priority: string[];
+  competition: string[];
+  applicant: string[];
+  customer: string[];
+  status: string[];
+  yearRange?: {
+    min: number;
+    max: number;
+  };
+}
+
+export interface FinanceFilterMeta {
+  irn: FilterOptionCountString[];
+  financingType: FilterOptionCountString[];
+  cofinancing: FilterOptionCountString[];
+  expense: FilterOptionCountString[];
+  priority: FilterOptionCountString[];
+  competition: FilterOptionCountString[];
+  applicant: FilterOptionCountString[];
+  customer: FilterOptionCountString[];
+  status: FilterOptionCountString[];
+  minYear?: number;
+  maxYear?: number;
+}
+
 export interface PaginationMeta {
   page: number;
   limit: number;
@@ -91,14 +121,27 @@ export interface ProjectFilterOptions {
   financingType: string[];
   priority: string[];
   applicant: string[];
+  contest: string[];
+  customer: string[];
   mrnti: string[];
   trl: string[];
 }
 
 export interface EmployeeFilterOptions {
+  searchTerm?: string;
   region: string[];
   position: string[];
+  department: string[];
+  minAge: number;
+  maxAge: number;
+  affiliateType: string[];
+  gender: string[];
   degree: string[];
+  citizenship: string[];
+  projectRole: string[];
+  hIndexGroup: string[];
+  mrnti: string[];
+  classifier: string[];
 }
 
 export interface PublicationFilterOptions {
@@ -131,7 +174,17 @@ export interface ProjectFilterMeta {
 export interface EmployeeFilterMeta {
   region: FilterOptionCountString[];
   position: FilterOptionCountString[];
+  department: FilterOptionCountString[];
+  affiliateType: FilterOptionCountString[];
+  gender: FilterOptionCountString[];
   degree: FilterOptionCountString[];
+  citizenship: FilterOptionCountString[];
+  projectRole: FilterOptionCountString[];
+  hIndexGroup: FilterOptionCountString[];
+  mrnti: FilterOptionCountString[];
+  classifier: FilterOptionCountString[];
+  minAge: number;
+  maxAge: number;
 }
 
 export interface PublicationFilterMeta {
@@ -146,6 +199,16 @@ export interface DashboardRegionSummary {
   publications: number;
   employees: number;
   budget: number;
+}
+
+export interface DashboardFilterOption {
+  value: string;
+  label: string;
+}
+
+export interface DashboardFilterOptions {
+  priority: DashboardFilterOption[];
+  applicant: DashboardFilterOption[];
 }
 
 export interface DashboardSummary {

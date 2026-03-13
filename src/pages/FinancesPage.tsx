@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { useRegionContext } from '../context/RegionContext';
 import type { RegionId } from '../context/RegionContext';
@@ -20,6 +20,8 @@ import { Bar, Doughnut } from 'react-chartjs-2';
 import './FinancesPage.css';
 import { useTranslation } from 'react-i18next';
 import { useFinanceSummary } from '../hooks/useFinanceSummary';
+import { financesApi } from '../api/services';
+import type { FinanceFilterMeta, FinanceFilterOptions } from '../api/types';
 import PageLoader from '../components/PageLoader/PageLoader';
 
 ChartJS.register(
@@ -240,10 +242,186 @@ const FinancesPage: React.FC = () => {
   const { selectedRegion, selectedRegionId, setSelectedRegionId, regions, isNational } =
     useRegionContext();
 
-  const { apiSummary, isSummaryLoading, summaryError } = useFinanceSummary();
-
   const regionLabel = selectedRegion?.name ?? t('republic_kazakhstan');
   const currencyUnitShort = t('unit_bln_kzt_symbol');
+  
+  // Generate translated options
+  const defaultFinancesOptions = useMemo(() => getFinancesOptions(t), [t]);
+
+  const [apiFilterOptions, setApiFilterOptions] = useState<FinanceFilterOptions | null>(null);
+  const [apiFilterMeta, setApiFilterMeta] = useState<FinanceFilterMeta | null>(null);
+  
+  const [filters, setFilters] = useState<FilterState>({
+    irn: 'all',
+    startYear: 2026,
+    endYear: 2034,
+    financingType: 'gf',
+    cofinancing: 'contract',
+    expense: 'salary',
+    priority: 'all',
+    competition: 'all',
+    applicant: 'all',
+    customer: 'all',
+    status: 'all',
+  });
+
+  const resolveOptionLabel = useCallback(
+    (value: string, options: Array<{ value: string; label: string }>) =>
+      options.find((option) => option.value === value)?.label ?? value,
+    [],
+  );
+
+  const toOptions = useCallback(
+    (
+      values: string[] | undefined,
+      fallbackOptions: Array<{ value: string; label: string }>,
+      includeAllOption = false,
+    ) => {
+      if (!values?.length) {
+        return fallbackOptions;
+      }
+
+      const mapped = values.map((value) => ({
+        value,
+        label: resolveOptionLabel(value, fallbackOptions),
+      }));
+
+      if (includeAllOption && !mapped.some((option) => option.value === 'all')) {
+        const fallbackAll = fallbackOptions.find((option) => option.value === 'all');
+        if (fallbackAll) {
+          return [fallbackAll, ...mapped];
+        }
+      }
+
+      return mapped;
+    },
+    [resolveOptionLabel],
+  );
+
+  const financesOptions = useMemo(
+    () => ({
+      irn: toOptions(apiFilterOptions?.irn, defaultFinancesOptions.irn, true),
+      financingType: toOptions(apiFilterOptions?.financingType, defaultFinancesOptions.financingType),
+      cofinancing: toOptions(apiFilterOptions?.cofinancing, defaultFinancesOptions.cofinancing),
+      expense: toOptions(apiFilterOptions?.expense, defaultFinancesOptions.expense),
+      priority: toOptions(apiFilterOptions?.priority, defaultFinancesOptions.priority, true),
+      competition: toOptions(apiFilterOptions?.competition, defaultFinancesOptions.competition, true),
+      applicant: toOptions(apiFilterOptions?.applicant, defaultFinancesOptions.applicant, true),
+      customer: toOptions(apiFilterOptions?.customer, defaultFinancesOptions.customer, true),
+      status: toOptions(apiFilterOptions?.status, defaultFinancesOptions.status, true),
+    }),
+    [apiFilterOptions, defaultFinancesOptions, toOptions],
+  );
+
+  // Create aliases for backward compatibility with JSX
+  const IRN_OPTIONS = financesOptions.irn;
+  const FINANCING_TYPE_OPTIONS = financesOptions.financingType;
+  const PRIORITY_OPTIONS = financesOptions.priority;
+  const COMPETITION_OPTIONS = financesOptions.competition;
+  const APPLICANT_OPTIONS = financesOptions.applicant;
+  const CUSTOMER_OPTIONS = financesOptions.customer;
+  const STATUS_OPTIONS = financesOptions.status;
+  const COFINANCING_OPTIONS = financesOptions.cofinancing;
+  const EXPENSE_OPTIONS = financesOptions.expense;
+
+  const periodRange = useMemo(
+    () => ({
+      min: apiFilterOptions?.yearRange?.min ?? apiFilterMeta?.minYear ?? FINANCES_PERIOD_RANGE.min,
+      max: apiFilterOptions?.yearRange?.max ?? apiFilterMeta?.maxYear ?? FINANCES_PERIOD_RANGE.max,
+    }),
+    [apiFilterMeta?.maxYear, apiFilterMeta?.minYear, apiFilterOptions?.yearRange?.max, apiFilterOptions?.yearRange?.min],
+  );
+
+  useEffect(() => {
+    setFilters((prev) => ({
+      ...prev,
+      startYear: clampValue(prev.startYear, periodRange.min, periodRange.max),
+      endYear: clampValue(prev.endYear, periodRange.min, periodRange.max),
+    }));
+  }, [periodRange.max, periodRange.min]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadFilters = async () => {
+      try {
+        const payload = await financesApi.filters();
+        if (!controller.signal.aborted) {
+          setApiFilterOptions(payload);
+        }
+      } catch {
+        if (!controller.signal.aborted) {
+          setApiFilterOptions(null);
+        }
+      }
+    };
+
+    void loadFilters();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
+  const toQueryValue = useCallback((value: string) => (value === 'all' ? undefined : value), []);
+
+  const financeQuery = useMemo(
+    () => ({
+      year: filters.endYear,
+      startYear: filters.startYear,
+      endYear: filters.endYear,
+      region: selectedRegion?.name ?? 'all',
+      irn: toQueryValue(filters.irn),
+      financingType: toQueryValue(filters.financingType),
+      cofinancing: toQueryValue(filters.cofinancing),
+      expense: toQueryValue(filters.expense),
+      priority: toQueryValue(filters.priority),
+      competition: toQueryValue(filters.competition),
+      applicant: toQueryValue(filters.applicant),
+      customer: toQueryValue(filters.customer),
+      status: toQueryValue(filters.status),
+    }),
+    [
+      filters.applicant,
+      filters.cofinancing,
+      filters.competition,
+      filters.customer,
+      filters.endYear,
+      filters.expense,
+      filters.financingType,
+      filters.irn,
+      filters.priority,
+      filters.startYear,
+      filters.status,
+      selectedRegion?.name,
+      toQueryValue,
+    ],
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadFiltersMeta = async () => {
+      try {
+        const payload = await financesApi.filtersMeta(financeQuery, controller.signal);
+        if (!controller.signal.aborted) {
+          setApiFilterMeta(payload);
+        }
+      } catch {
+        if (!controller.signal.aborted) {
+          setApiFilterMeta(null);
+        }
+      }
+    };
+
+    void loadFiltersMeta();
+
+    return () => {
+      controller.abort();
+    };
+  }, [financeQuery]);
+
+  const { apiSummary, isSummaryLoading, summaryError } = useFinanceSummary(financeQuery);
 
   const nationalMetrics = useMemo(() => {
     const base = calculateNationalMetrics();
@@ -267,34 +445,6 @@ const FinancesPage: React.FC = () => {
     };
   }, [apiSummary]);
   const metrics = selectedRegion?.stats ?? nationalMetrics;
-  
-  // Generate translated options
-  const financesOptions = useMemo(() => getFinancesOptions(t), [t]);
-  
-  // Create aliases for backward compatibility with JSX
-  const IRN_OPTIONS = financesOptions.irn;
-  const FINANCING_TYPE_OPTIONS = financesOptions.financingType;
-  const PRIORITY_OPTIONS = financesOptions.priority;
-  const COMPETITION_OPTIONS = financesOptions.competition;
-  const APPLICANT_OPTIONS = financesOptions.applicant;
-  const CUSTOMER_OPTIONS = financesOptions.customer;
-  const STATUS_OPTIONS = financesOptions.status;
-  const COFINANCING_OPTIONS = financesOptions.cofinancing;
-  const EXPENSE_OPTIONS = financesOptions.expense;
-  
-  const [filters, setFilters] = useState<FilterState>({
-    irn: 'all',
-    startYear: 2026,
-    endYear: 2034,
-    financingType: 'gf',
-    cofinancing: 'contract',
-    expense: 'salary',
-    priority: 'all',
-    competition: 'all',
-    applicant: 'all',
-    customer: 'all',
-    status: 'all',
-  });
   const [chartFilters, setChartFilters] = useState<ChartFilterState>({
     cofinancing: [],
     expenses: [],
@@ -891,7 +1041,7 @@ const FinancesPage: React.FC = () => {
   const handleYearRangeChange = useCallback(
     (key: 'startYear' | 'endYear', value: number) => {
       setFilters((prev) => {
-        const next = { ...prev, [key]: value };
+        const next = { ...prev, [key]: clampValue(value, periodRange.min, periodRange.max) };
         if (next.startYear > next.endYear) {
           if (key === 'startYear') {
             next.endYear = next.startYear;
@@ -902,18 +1052,18 @@ const FinancesPage: React.FC = () => {
         return next;
       });
     },
-    [setFilters],
+    [periodRange.max, periodRange.min],
   );
 
   const periodRangeStyle = useMemo(() => {
-    const total = FINANCES_PERIOD_RANGE.max - FINANCES_PERIOD_RANGE.min;
-    const startProgress = ((filters.startYear - FINANCES_PERIOD_RANGE.min) / total) * 100;
-    const endProgress = ((filters.endYear - FINANCES_PERIOD_RANGE.min) / total) * 100;
+    const total = Math.max(periodRange.max - periodRange.min, 1);
+    const startProgress = ((filters.startYear - periodRange.min) / total) * 100;
+    const endProgress = ((filters.endYear - periodRange.min) / total) * 100;
     return {
       '--range-start': `${startProgress}%`,
       '--range-end': `${endProgress}%`,
     } as CSSProperties;
-  }, [filters.endYear, filters.startYear]);
+  }, [filters.endYear, filters.startYear, periodRange.max, periodRange.min]);
 
   const handleMapSelect = useCallback(
     (regionId: string) => {
@@ -986,8 +1136,8 @@ const FinancesPage: React.FC = () => {
               <input
                 id="filter-period"
                 type="range"
-                min={FINANCES_PERIOD_RANGE.min}
-                max={FINANCES_PERIOD_RANGE.max}
+                min={periodRange.min}
+                max={periodRange.max}
                 step={1}
                 value={filters.startYear}
                 onChange={(event) => handleYearRangeChange('startYear', Number(event.target.value))}
@@ -995,8 +1145,8 @@ const FinancesPage: React.FC = () => {
               />
               <input
                 type="range"
-                min={FINANCES_PERIOD_RANGE.min}
-                max={FINANCES_PERIOD_RANGE.max}
+                min={periodRange.min}
+                max={periodRange.max}
                 step={1}
                 value={filters.endYear}
                 onChange={(event) => handleYearRangeChange('endYear', Number(event.target.value))}

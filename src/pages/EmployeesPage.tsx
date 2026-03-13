@@ -222,6 +222,26 @@ const EmployeesPage: React.FC = () => {
     () => (employeeFilters?.degree.length ? employeeFilters.degree : ['doctor', 'candidate', 'phd', 'master', 'none']),
     [employeeFilters?.degree],
   );
+  const allGenders = useMemo(
+    () => (employeeFilters?.gender.length ? employeeFilters.gender : ['male', 'female']),
+    [employeeFilters?.gender],
+  );
+  const allAffiliateTypes = useMemo(
+    () => (employeeFilters?.affiliateType.length ? employeeFilters.affiliateType : ['staff', 'external']),
+    [employeeFilters?.affiliateType],
+  );
+  const allCitizenships = useMemo(
+    () => (employeeFilters?.citizenship.length ? employeeFilters.citizenship : ['resident', 'non-resident']),
+    [employeeFilters?.citizenship],
+  );
+  const allHIndexGroups = useMemo(
+    () => (employeeFilters?.hIndexGroup.length ? employeeFilters.hIndexGroup : ['0-1', '2-5', '6-10', '10+']),
+    [employeeFilters?.hIndexGroup],
+  );
+  const allMrntiCodes = useMemo(
+    () => (employeeFilters?.mrnti.length ? employeeFilters.mrnti : ['11.00.00', '27.00.00', '55.00.00']),
+    [employeeFilters?.mrnti],
+  );
   const positionCountByValue = useMemo(
     () => new Map((employeeFiltersMeta?.position ?? []).map((item) => [item.value, item.count])),
     [employeeFiltersMeta?.position],
@@ -230,31 +250,75 @@ const EmployeesPage: React.FC = () => {
     () => new Map((employeeFiltersMeta?.degree ?? []).map((item) => [item.value, item.count])),
     [employeeFiltersMeta?.degree],
   );
+  const departmentCountByValue = useMemo(
+    () => new Map((employeeFiltersMeta?.department ?? []).map((item) => [item.value, item.count])),
+    [employeeFiltersMeta?.department],
+  );
+  const projectRoleCountByValue = useMemo(
+    () => new Map((employeeFiltersMeta?.projectRole ?? []).map((item) => [item.value, item.count])),
+    [employeeFiltersMeta?.projectRole],
+  );
+  const genderCountByValue = useMemo(
+    () => new Map((employeeFiltersMeta?.gender ?? []).map((item) => [item.value, item.count])),
+    [employeeFiltersMeta?.gender],
+  );
+  const affiliateCountByValue = useMemo(
+    () => new Map((employeeFiltersMeta?.affiliateType ?? []).map((item) => [item.value, item.count])),
+    [employeeFiltersMeta?.affiliateType],
+  );
+  const citizenshipCountByValue = useMemo(
+    () => new Map((employeeFiltersMeta?.citizenship ?? []).map((item) => [item.value, item.count])),
+    [employeeFiltersMeta?.citizenship],
+  );
+  const hIndexGroupCountByValue = useMemo(
+    () => new Map((employeeFiltersMeta?.hIndexGroup ?? []).map((item) => [item.value, item.count])),
+    [employeeFiltersMeta?.hIndexGroup],
+  );
+  const mrntiCountByValue = useMemo(
+    () => new Map((employeeFiltersMeta?.mrnti ?? []).map((item) => [item.value, item.count])),
+    [employeeFiltersMeta?.mrnti],
+  );
 
   const allProjectRoles = useMemo(
-    () => Array.from(new Set(employeesData.map((employee) => employee.projectRole))).sort(),
-    [employeesData],
+    () => (employeeFilters?.projectRole.length
+      ? employeeFilters.projectRole
+      : Array.from(new Set(employeesData.map((employee) => employee.projectRole))).sort()),
+    [employeeFilters?.projectRole, employeesData],
   );
 
   const allDepartments = useMemo(
-    () => Array.from(new Set(employeesData.map((employee) => employee.department))).sort(),
-    [employeesData],
+    () => (employeeFilters?.department.length
+      ? employeeFilters.department
+      : Array.from(new Set(employeesData.map((employee) => employee.department))).sort()),
+    [employeeFilters?.department, employeesData],
   );
   const employeesAvailableCounts = useMemo(
     () => ({
-      gender: 2,
-      affiliate: 2,
-      citizenship: 2,
-      region: regions.length,
+      gender: allGenders.length,
+      affiliate: allAffiliateTypes.length,
+      citizenship: allCitizenships.length,
+      region: employeeFilters?.region.length || regions.length,
       degree: allDegrees.length,
       position: allPositions.length,
       department: allDepartments.length,
       projectRole: allProjectRoles.length,
-      mrnti: 3,
+      mrnti: allMrntiCodes.length,
       classifier: 3,
-      hIndex: 4,
+      hIndex: allHIndexGroups.length,
     }),
-    [allDegrees.length, allDepartments.length, allPositions.length, allProjectRoles.length, regions.length],
+    [
+      allAffiliateTypes.length,
+      allCitizenships.length,
+      allDegrees.length,
+      allDepartments.length,
+      allGenders.length,
+      allHIndexGroups.length,
+      allMrntiCodes.length,
+      allPositions.length,
+      allProjectRoles.length,
+      employeeFilters?.region.length,
+      regions.length,
+    ],
   );
 
   useEffect(() => {
@@ -486,7 +550,7 @@ const EmployeesPage: React.FC = () => {
     // Intentionally no-op until action handlers are connected.
   };
   
-  const totalEmployeesCount = filteredEmployees.length;
+  // const totalEmployeesCount = filteredEmployees.length;
   const totalPages = Math.max(pageMeta.totalPages, 1);
   const isDataPending = !hasLoaded && isLoading;
   const isRefreshing = hasLoaded && isLoading;
@@ -498,7 +562,7 @@ const EmployeesPage: React.FC = () => {
         <div>
           <h1>{t('employees_page_title')}</h1>
           <p>
-            {t('in_database')}{pageMeta.total} {t('found_count')}{totalEmployeesCount}
+            {t('projects_found_count')}{pageMeta.total}
           </p>
           {loadError && <p>{loadError}</p>}
         </div>
@@ -578,8 +642,12 @@ const EmployeesPage: React.FC = () => {
                   onChange={(e) => handleFilterChange('gender', e.target.value as GenderType)}
                 >
                   <option value="all">{t('filter_option_any')}</option>
-                  <option value="male">{t('gender_male')}</option>
-                  <option value="female">{t('gender_female')}</option>
+                  {allGenders.map((genderOption) => (
+                    <option key={genderOption} value={genderOption}>
+                      {genderOption === 'male' ? t('gender_male') : genderOption === 'female' ? t('gender_female') : genderOption}
+                      {genderCountByValue.get(genderOption) !== undefined ? ` (${genderCountByValue.get(genderOption)})` : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -594,8 +662,12 @@ const EmployeesPage: React.FC = () => {
                   onChange={(e) => handleFilterChange('affiliateType', e.target.value as AffiliateType)}
                 >
                   <option value="all">{t('filter_option_all')}</option>
-                  <option value="staff">{t('affiliate_staff')}</option>
-                  <option value="external">{t('affiliate_external')}</option>
+                  {allAffiliateTypes.map((affiliateOption) => (
+                    <option key={affiliateOption} value={affiliateOption}>
+                      {affiliateOption === 'staff' ? t('affiliate_staff') : affiliateOption === 'external' ? t('affiliate_external') : affiliateOption}
+                      {affiliateCountByValue.get(affiliateOption) !== undefined ? ` (${affiliateCountByValue.get(affiliateOption)})` : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -610,8 +682,16 @@ const EmployeesPage: React.FC = () => {
                   onChange={(e) => handleFilterChange('citizenship', e.target.value as CitizenshipType)}
                 >
                   <option value="all">{t('filter_option_any')}</option>
-                  <option value="resident">{t('citizenship_resident')}</option>
-                  <option value="non-resident">{t('citizenship_nonresident')}</option>
+                  {allCitizenships.map((citizenshipOption) => (
+                    <option key={citizenshipOption} value={citizenshipOption}>
+                      {citizenshipOption === 'resident'
+                        ? t('citizenship_resident')
+                        : citizenshipOption === 'non-resident'
+                          ? t('citizenship_nonresident')
+                          : citizenshipOption}
+                      {citizenshipCountByValue.get(citizenshipOption) !== undefined ? ` (${citizenshipCountByValue.get(citizenshipOption)})` : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -693,6 +773,7 @@ const EmployeesPage: React.FC = () => {
                   {allDepartments.map((department) => (
                     <option key={department} value={department}>
                       {department}
+                      {departmentCountByValue.get(department) !== undefined ? ` (${departmentCountByValue.get(department)})` : ''}
                     </option>
                   ))}
                 </select>
@@ -712,6 +793,7 @@ const EmployeesPage: React.FC = () => {
                   {allProjectRoles.map((role) => (
                     <option key={role} value={role}>
                       {role}
+                      {projectRoleCountByValue.get(role) !== undefined ? ` (${projectRoleCountByValue.get(role)})` : ''}
                     </option>
                   ))}
                 </select>
@@ -735,9 +817,18 @@ const EmployeesPage: React.FC = () => {
                   onChange={(e) => handleFilterChange('mrnti', e.target.value as MRNTIType)}
                 >
                   <option value="all">{t('filter_option_all_codes')}</option>
-                  <option value="11.00.00">11.00.00 — {t('mrnti_11_desc')}</option>
-                  <option value="27.00.00">27.00.00 — {t('mrnti_27_desc')}</option>
-                  <option value="55.00.00">55.00.00 — {t('mrnti_55_desc')}</option>
+                  {allMrntiCodes.map((mrntiOption) => (
+                    <option key={mrntiOption} value={mrntiOption}>
+                      {mrntiOption === '11.00.00'
+                        ? `${mrntiOption} — ${t('mrnti_11_desc')}`
+                        : mrntiOption === '27.00.00'
+                          ? `${mrntiOption} — ${t('mrnti_27_desc')}`
+                          : mrntiOption === '55.00.00'
+                            ? `${mrntiOption} — ${t('mrnti_55_desc')}`
+                            : mrntiOption}
+                      {mrntiCountByValue.get(mrntiOption) !== undefined ? ` (${mrntiCountByValue.get(mrntiOption)})` : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -780,10 +871,12 @@ const EmployeesPage: React.FC = () => {
                 onChange={(e) => handleFilterChange('hIndexGroup', e.target.value as HIndexGroup)}
               >
                 <option value="all">{t('filter_option_all_values')}</option>
-                <option value="0-1">0 - 1</option>
-                <option value="2-5">2 - 5</option>
-                <option value="6-10">6 - 10</option>
-                <option value="10+">{t('hindex_10_plus')}</option>
+                {allHIndexGroups.map((hIndexGroupOption) => (
+                  <option key={hIndexGroupOption} value={hIndexGroupOption}>
+                    {hIndexGroupOption === '10+' ? t('hindex_10_plus') : hIndexGroupOption.replace('-', ' - ')}
+                    {hIndexGroupCountByValue.get(hIndexGroupOption) !== undefined ? ` (${hIndexGroupCountByValue.get(hIndexGroupOption)})` : ''}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
