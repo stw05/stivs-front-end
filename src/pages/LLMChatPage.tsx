@@ -115,6 +115,7 @@ const normalizeLlmApiUrl = (value?: string): string | undefined => {
   const normalizedPath = (path: string) =>
     path
       .replace(/\/api\/(status|download)\.php$/i, '/api/llm/$1.php')
+      .replace(/\/api\/v1\/llm\/(jobs|status|download)\.php$/i, '/api/llm/$1.php')
       .replace(/\/api\/llm\/(jobs|status|download)\.php$/i, '/api/llm/$1.php');
 
   try {
@@ -139,6 +140,7 @@ const normalizeLlmApiUrl = (value?: string): string | undefined => {
   } catch {
     const fallback = value
       .replace(/\/api\/(status|download)\.php(?=\?|#|$)/i, '/api/llm/$1.php')
+      .replace(/\/api\/v1\/llm\/(jobs|status|download)\.php(?=\?|#|$)/i, '/api/llm/$1.php')
       .replace(/\/api\/llm\/(jobs|status|download)\.php(?=\?|#|$)/i, '/api/llm/$1.php');
     if (typeof window !== 'undefined' && window.location.protocol === 'https:' && fallback.startsWith('http://')) {
       return fallback.replace(/^http:\/\//i, 'https://');
